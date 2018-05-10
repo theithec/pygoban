@@ -1,0 +1,2 @@
+class RuleViolation(Exception):
+    pass

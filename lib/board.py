@@ -1,9 +1,9 @@
 '''Boards'''
 
-import math
+from copy import copy
 
-from .status import (
-    EMPTY, BLACK, WHITE, KO, LONGSTRSTATUS, DEAD_BLACK, DEAD_WHITE)
+from . import (
+        EMPTY, BLACK, WHITE, KO, DEAD_BLACK, DEAD_WHITE)
 
 
 class Board(list):
@@ -11,77 +11,63 @@ class Board(list):
         A situation in a go game/movetree
     """
 
-    def __init__(self, boardsize=None, oldboard=None, *args, **kwargs):
+    def __init__(self, boardsize, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if boardsize:
-            self.extend([EMPTY for index in range(boardsize**2)])
-            self.prisoners = {
-                BLACK: 0,
-                WHITE: 0,
-            }
 
-        if oldboard:
-            self.extend(oldboard)
-            self.prisoners = oldboard.prisoners
-            self.last_color = oldboard.last_color
-        else:
-            self.last_color = None
-
-        self.boardsize = int(math.sqrt(len(self)))
-        if boardsize:
-            assert boardsize == self.boardsize
-
-    def get_index(self, x, y):
-        """index from x, y"""
-        return (y*self.boardsize) + x
+        for x in range(boardsize):
+            self.append([])
+            for y in range(boardsize):
+                self[x].append(EMPTY)
+        self.boardsize = boardsize
 
     def _adjacent_ins(self, index):
+
         adjacents = {}
-        y, x = int(index / self.boardsize), int(index % self.boardsize)
+        x, y = index
         if x > 0:
-            aindex = self.get_index(x-1, y)
-            adjacents[aindex] = self[aindex]
+            adjacents[(x-1, y)] = self[x-1][y]
 
         if x < self.boardsize-1:
-            aindex = self.get_index(x+1, y)
-            adjacents[aindex] = self[aindex]
+            adjacents[(x+1, y)] = self[x+1][y]
 
         if y > 0:
-            aindex = self.get_index(x, y-1)
-            adjacents[aindex] = self[aindex]
+            adjacents[(x, y-1)] = self[x][y-1]
 
         if y < self.boardsize-1:
-            aindex = self.get_index(x, y+1)
-            adjacents[aindex] = self[aindex]
+            adjacents[(x, y+1)] = self[x][y+1]
 
         return adjacents
 
-    def analyze(self, index, started=None, group=None, killed=None,
+    def analyze(self, x, y, started=None, group=None, killed=None,
                 libs=0, findkilled=True):
         '''Analyze from a starting point'''
         started = started or set()
         group = group or set()
         killed = killed or set()
-        col = self[index]
-        started.add(index)
-        group.add(index)
-        adjacents = self._adjacent_ins(index)
+        col = self[x][y]
+        pos = (x, y)
+        started.add(pos)
+        group.add(pos)
+        adjacents = self._adjacent_ins(pos)
         for axy, acol in adjacents.items():
+            if axy in started:
+                continue
+
             # a liberty
-            if acol < 1 and axy not in started:
+            if acol < 1:
                 started.add(axy)
                 libs += 1
 
             # friend
-            if acol == col and axy not in started:
+            elif acol == col:
                 started, group, killed, libs = self.analyze(
                     axy, started=started, group=group, killed=killed,
                     libs=libs, findkilled=False)[:4]
 
             # enemy!
-            if findkilled and acol > 0 and acol != col and axy not in started:
+            elif findkilled:
                 #  ostarted, ogroup, okilled, olibs, ofindkilled = self._move(
-                result = self.analyze(axy, findkilled=False)
+                result = self.analyze(axy[0], axy[1], findkilled=False)
                 ogroup = result[1]
                 olibs = result[3]
                 if olibs == 0:
@@ -92,27 +78,29 @@ class Board(list):
 
         return started, group, killed, libs, findkilled
 
-    def result(self, col_id, x, y):
+    def result(self, col_id, x, y, do_apply=True):
         '''Result of a move (may be invalid)'''
-        cpy = Board(
-            oldboard=self
-        )
-        index = self.get_index(x, y)
-        cpy[index] = col_id
-        result = cpy.analyze(index)
-        killed = result[2]
-        cpy.prisoners = self.prisoners
-        cpy.prisoners[col_id] += len(killed)
-        for k in killed:
-            cpy[k] = EMPTY
-
-        return {
-            'index': index,
-            'board': cpy,
-            'killed': killed,
-            'group': result[1],
-            'libs': result[3]
+        cpy = copy(self)
+        cpy[x][y] = col_id
+        raw = cpy.analyze(x, y)
+        result = {
+                'col_id': col_id,
+                'x': x,
+                'y': y,
+                'group': raw[1],
+                'killed': raw[2],
+                'libs': raw[3]
         }
+        if do_apply:
+            self.apply_result(result)
+
+        return result
+
+    def apply_result(self, result):
+        r = result
+        self[r['x']][r['y']] = r['col_id']
+        for x, y in r['killed']:
+            self[x][y] = EMPTY
 
     def __str__(self):
         legend = {
@@ -127,16 +115,11 @@ class Board(list):
         txt += " ".join([chr(65 + i) for i in range(self.boardsize)])
         txt += "\n\n"
         for i, x in enumerate(range(self.boardsize)):
-            txt += "%2s  " % (self.boardsize - i)
+            txt += "%2s  " % (i+1)
             txt += " ".join(
-                ["%s" % legend[self[(x*self.boardsize + y)]]
-                 for y in range(self.boardsize)])
+                ["%s" % legend[self[x][y]]
+                    for y in range(self.boardsize)])
+
             txt += "\n"
 
-        for color in (BLACK, WHITE):
-            print("%s captured %s" % (
-                LONGSTRSTATUS[color],
-                self.prisoners[color],
-            ))
-
-            return txt
+        return txt
