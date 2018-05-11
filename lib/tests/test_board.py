@@ -13,9 +13,9 @@ class BoardTest(unittest.TestCase):
             #    import pdb; pdb.set_trace()
             result = self.board.result(col_id, x, y)
             self.assertEqual(
-                len(result['killed']),
+                len(result.killed),
                 killed,
-                "Move %s [%s][%s] %s != %s" % (index, x, y, len(result['killed']), killed))
+                "Move %s [%s][%s] %s != %s" % (index, x, y, len(result.killed), killed))
 
         print(self.board)
         return result

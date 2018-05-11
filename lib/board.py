@@ -1,9 +1,13 @@
 '''Boards'''
 
-from copy import copy
+from copy import deepcopy
+from collections import  namedtuple
 
 from . import (
         EMPTY, BLACK, WHITE, KO, DEAD_BLACK, DEAD_WHITE)
+
+
+Result = namedtuple('Result', ['x', 'y', 'col_id', 'libs', 'killed', 'group'])
 
 
 class Board(list):
@@ -61,12 +65,11 @@ class Board(list):
             # friend
             elif acol == col:
                 started, group, killed, libs = self.analyze(
-                    axy, started=started, group=group, killed=killed,
+                    axy[0], axy[1], started=started, group=group, killed=killed,
                     libs=libs, findkilled=False)[:4]
 
             # enemy!
             elif findkilled:
-                #  ostarted, ogroup, okilled, olibs, ofindkilled = self._move(
                 result = self.analyze(axy[0], axy[1], findkilled=False)
                 ogroup = result[1]
                 olibs = result[3]
@@ -80,17 +83,17 @@ class Board(list):
 
     def result(self, col_id, x, y, do_apply=True):
         '''Result of a move (may be invalid)'''
-        cpy = copy(self)
+        cpy = deepcopy(self)
         cpy[x][y] = col_id
         raw = cpy.analyze(x, y)
-        result = {
-                'col_id': col_id,
-                'x': x,
-                'y': y,
-                'group': raw[1],
-                'killed': raw[2],
-                'libs': raw[3]
-        }
+        result = Result(
+            col_id=col_id,
+            x=x,
+            y=y,
+            group=raw[1],
+            killed=raw[2],
+            libs=raw[3]
+        )
         if do_apply:
             self.apply_result(result)
 
@@ -98,8 +101,8 @@ class Board(list):
 
     def apply_result(self, result):
         r = result
-        self[r['x']][r['y']] = r['col_id']
-        for x, y in r['killed']:
+        self[r.x][r.y] = r.col_id
+        for x, y in r.killed:
             self[x][y] = EMPTY
 
     def __str__(self):

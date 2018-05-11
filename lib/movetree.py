@@ -1,36 +1,27 @@
 from . import BLACK, WHITE
 from .move import Move
 from .board import Board
-from .rulesets import RuleViolation
 
 
 class MoveTree:
 
-    def __init__(self, boardsize, ruleset=None):
+    def __init__(self, boardsize):
         self.board = Board(boardsize)
-        self.ruleset = ruleset
         self.root = Move(None)
-        self.refresh(self.root)
+        self.set_cursor(self.root)
 
-    def add(self, col_id, x, y, parent=None):
-        oldcursor = self.cursor
-        self.cursor = parent or self.cursor
+    def test_move(self, col_id, x, y, apply_result=False):
+        result = self.board.result(col_id, x, y, do_apply=apply_result)
+        if apply_result:
+            self.apply_result(result)
 
-        if parent and parent != self.cursor:
-            self.refresh(parent)
-
-        result = self.board.result(col_id, x, y, do_apply=False)
-        if self.ruleset:
-            try:
-                self.ruleset.validate(result)
-            except RuleViolation as e:
-                self.refresh(oldcursor)
-                raise e
-
-        self.board.apply_result(result)
-        self.prisoners[col_id] += len(result['killed'])
-        self.cursor = Move(col_id, x, y, self.cursor)
         return result
+
+    def apply_result(self, result, move=None):
+        self.board.apply_result(result)
+        col_id = result.col_id
+        self.prisoners[col_id] += len(result.killed)
+        self.cursor = move or Move(col_id, result.x, result.y, self.cursor)
 
     def get_path(self):
         path = []
@@ -42,12 +33,15 @@ class MoveTree:
         path.reverse()
         return path
 
-    def refresh(self, move):
+    def set_cursor(self, move):
         self.cursor = move
         self.prisoners = {BLACK: 0, WHITE: 0}
         path = self.get_path()
+        print("PATH", [str(m) for m in path])
         self.board = Board(self.board.boardsize)
 
         for move in path:
             if not move.is_pass:
-                self.add(move.col_id, move.x, move.y)
+                result = self.test_move(move.col_id, move.x, move.y)
+                self.apply_result(result, move)
+

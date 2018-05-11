@@ -5,9 +5,8 @@ from lib.rulesets import RuleViolation
 
 
 class MoveTreeTest(unittest.TestCase):
-    ruleset = None
     def setUp(self):
-        self.tree = MoveTree(boardsize=9, ruleset=self.ruleset)
+        self.tree = MoveTree(boardsize=9)
 
     def play(self, moves):
         prisoners = moves.pop(0)
@@ -15,7 +14,7 @@ class MoveTreeTest(unittest.TestCase):
             x, y, col_id = move
             # if index == 5:
             #    import pdb; pdb.set_trace()
-            self.tree.add(col_id, x, y)
+            self.tree.test_move(col_id, x, y, apply_result=True)
 
         self.assertEqual(self.tree.prisoners[BLACK], prisoners[0])
         self.assertEqual(self.tree.prisoners[WHITE], prisoners[1])
@@ -48,16 +47,6 @@ class MoveTreeMovesTest(MoveTreeTest):
 
         self.play(moves)
 
-class DenyAllRuleset:
-    def validate(self, *args, **kwargs):
-        raise RuleViolation("BAD")
-
-class MoveTreeRulesetTest(MoveTreeTest):
-    ruleset = DenyAllRuleset
-
-    def test_raise(self):
-        with self.assertRaises(RuleViolation):
-            self.tree.add(BLACK, 0, 0)
-
-if __name__ == '__main__':
-    unittest.main()
+#
+#if __name__ == '__main__':
+#    unittest.main()

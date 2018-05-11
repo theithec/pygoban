@@ -15,4 +15,3 @@ STATUS = {
     DEAD_WHITE: "w"
 }
 
-
