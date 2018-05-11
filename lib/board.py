@@ -7,8 +7,9 @@ from . import (
         EMPTY, BLACK, WHITE, KO, DEAD_BLACK, DEAD_WHITE)
 
 
-Result = namedtuple('Result', ['x', 'y', 'col_id', 'libs', 'killed', 'group'])
+Result2 = namedtuple('Result', ['x', 'y', 'col_id', 'libs', 'killed', 'group', 'extra'])
 
+default_result = Result2(-1, -1, None, None, None, None, None)
 
 class Board(list):
     """
@@ -86,7 +87,7 @@ class Board(list):
         cpy = deepcopy(self)
         cpy[x][y] = col_id
         raw = cpy.analyze(x, y)
-        result = Result(
+        result = default_result._replace(
             col_id=col_id,
             x=x,
             y=y,

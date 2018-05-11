@@ -1,28 +1,8 @@
 from . import STATUS, BLACK, WHITE
 from .movetree import MoveTree
 from .rulesets import RuleViolation
-
-
-class Observer:
-    def __init__(self, game):
-        self.game = game
-
-    def set_turn(self, col_id):
-        self.game.players[col_id].set_turn(True)
-        self.game.otherplayer(col_id).set_turn(False)
-
-    def handle_exception(self, exception):
-        print(exception)
-        raise(exception)
-
-
-class ConsoleObserver(Observer):
-
-    def set_turn(self, col_id):
-        super().set_turn(col_id)
-        print(self.game.movetree.board)
-        print(self.game.movetree.prisoners)
-        print("Has turn", STATUS[col_id])
+from .observer import ConsoleObserver
+from .board import default_result
 
 
 class Game:
@@ -38,15 +18,25 @@ class Game:
         observer_cls = observer_cls or ConsoleObserver
         self.ruleset = ruleset_cls(self) if ruleset_cls else None
         self.observer = observer_cls(self)
+        for player in self.players.values():
+            player.set_game(self)
+
+        self.set_currentcolor(self.firstplayer().col_id)
+
 
     @property
     def currentcolor(self):
         return self.__currentcolor
 
-    @currentcolor.setter
-    def currentcolor(self, col_id):
+    # @currentcolor.setter
+    # def currentcolor(self, col_id):
+    #     #import pdb; pdb.set_trace()
+    #     self.__currentcolor = col_id
+    #     self.observer.set_turn(col_id)
+
+    def set_currentcolor(self, col_id, result=None):
         self.__currentcolor = col_id
-        self.observer.set_turn(col_id)
+        self.observer.set_turn(col_id, result)
 
 
     def player(self, color=None):
@@ -70,13 +60,20 @@ class Game:
                 self.ruleset.validate(result)
             except RuleViolation as e:
                 self.observer.handle_exception(e)
-                return
-
-        self.movetree.apply_result(result)
-        self.currentcolor = self.otherplayer().col_id
+                self.set_currentcolor(col_id)
+            else:
+                self.movetree.apply_result(result)
+                self.set_currentcolor(self.otherplayer().col_id, result)
 
     def undo(self):
         parent = self.movetree.cursor.parent
         self.movetree.set_cursor(parent)
-        self.currentcolor = self.otherplayer(parent.col_id).col_id
-        self.observer.set_turn(self.currentcolor)
+        self.set_currentcolor(
+            self.otherplayer(parent.col_id).col_id,
+            default_result._replace(extra="undo"))
+
+    def sgf_coords(self, x, y):
+        return "%s%s" % (chr(65+x), y+1)
+
+    def array_indexes(self, coords):
+        return (ord(coords[0])-65, int(coords[1])-1)
