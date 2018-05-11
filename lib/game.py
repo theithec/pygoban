@@ -34,10 +34,20 @@ class Game:
             BLACK: black,
             WHITE: white
         }
-        self.currentcolor = self.firstplayer().col_id
+        self.__currentcolor = self.firstplayer().col_id
         observer_cls = observer_cls or ConsoleObserver
         self.ruleset = ruleset_cls(self) if ruleset_cls else None
         self.observer = observer_cls(self)
+
+    @property
+    def currentcolor(self):
+        return self.__currentcolor
+
+    @currentcolor.setter
+    def currentcolor(self, col_id):
+        self.__currentcolor = col_id
+        self.observer.set_turn(col_id)
+
 
     def player(self, color=None):
         color = color or self.currentcolor
@@ -63,16 +73,10 @@ class Game:
                 return
 
         self.movetree.apply_result(result)
-        othercolor = self.otherplayer().col_id
-        self.observer.set_turn(othercolor)
-        self.currentcolor = othercolor
+        self.currentcolor = self.otherplayer().col_id
 
     def undo(self):
-        print("UNDO")
-        print("CURR", self.movetree.cursor)
         parent = self.movetree.cursor.parent
-        print("parent", parent)
         self.movetree.set_cursor(parent)
         self.currentcolor = self.otherplayer(parent.col_id).col_id
-        # import pdb; pdb.set_trace()
         self.observer.set_turn(self.currentcolor)

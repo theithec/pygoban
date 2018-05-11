@@ -11,7 +11,6 @@ class BaseGameTest(unittest.TestCase):
     def setUp(self):
         black = Player(BLACK)
         white = Player(WHITE)
-        print("SR", self.ruleset_cls)
         self.game = Game(9, black, white, ruleset_cls=self.ruleset_cls)
 
     def play(self, moves):
@@ -19,6 +18,7 @@ class BaseGameTest(unittest.TestCase):
             x, y = move
             player = self.game.player()
             self.game.play(player.col_id, x, y)
+
 
 class GameTest(BaseGameTest):
     ruleset_cls = BaseRuleset
@@ -90,6 +90,7 @@ class GameTest(BaseGameTest):
         self.game.undo()
         self.assertEqual(EMPTY, self.game.movetree.board[3][3])
         self.assertEqual(WHITE, self.game.currentcolor)
+
 
 class DenyAllRuleset(BaseRuleset):
     def validate(self, *args, **kwargs):

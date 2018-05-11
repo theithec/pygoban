@@ -37,11 +37,9 @@ class MoveTree:
         self.cursor = move
         self.prisoners = {BLACK: 0, WHITE: 0}
         path = self.get_path()
-        print("PATH", [str(m) for m in path])
         self.board = Board(self.board.boardsize)
 
         for move in path:
             if not move.is_pass:
                 result = self.test_move(move.col_id, move.x, move.y)
                 self.apply_result(result, move)
-
