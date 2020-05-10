@@ -1,11 +1,10 @@
 '''Boards'''
 
 from copy import deepcopy
-
-from typing import Optional, Set
 from dataclasses import dataclass, field
+from typing import Optional, Set
 
-from .status import STATUS, EMPTY, Status
+from .status import EMPTY, STATUS, Status
 
 
 def letter_coord_from_int(pos, boardsize):
@@ -47,16 +46,16 @@ class Board(list):
         adjacents = {}
         x, y = index
         if x > 0:
-            adjacents[(x-1, y)] = self[x-1][y]
+            adjacents[(x - 1, y)] = self[x - 1][y]
 
-        if x < self.boardsize-1:
-            adjacents[(x+1, y)] = self[x+1][y]
+        if x < self.boardsize - 1:
+            adjacents[(x + 1, y)] = self[x + 1][y]
 
         if y > 0:
-            adjacents[(x, y-1)] = self[x][y-1]
+            adjacents[(x, y - 1)] = self[x][y - 1]
 
-        if y < self.boardsize-1:
-            adjacents[(x, y+1)] = self[x][y+1]
+        if y < self.boardsize - 1:
+            adjacents[(x, y + 1)] = self[x][y + 1]
 
         return adjacents
 
@@ -102,7 +101,10 @@ class Board(list):
     def result(self, color: Status, x, y, do_apply=True):
         '''Result of a move (may be invalid)'''
         cpy = deepcopy(self)
-        cpy[x][y] = color
+        try:
+            cpy[x][y] = color
+        except IndexError:
+            raise  # import pudb; pudb.set_trace()
         raw = cpy.analyze(x, y)
         result = MoveResult(
             x=x,
@@ -133,7 +135,6 @@ class Board(list):
             txt += " ".join(
                 ["%s" % (self[x][y]).short()
                     for y in range(self.boardsize)])
-
             txt += "\n"
 
         return txt

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Any
 from .status import STATUS, Status
 
 
@@ -22,8 +22,8 @@ class Move:
 
         self.is_pass = self.x == -1
         self.is_root = self.color is None
-        self.comments = []
-        self.decorations = {}
+        self.comments: List[str] = []
+        self.decorations: Dict[Any, Any] = {}
 
     def __del__(self):
         if self.parent:
@@ -32,12 +32,12 @@ class Move:
     def __str__(self):
         if self.is_root:
             return "ROOT"
-
-        txt = "%s={}" % self.color.intval
+        txt = "{color_char}[{val}]"
         if self.is_pass:
-            return txt.format(" pass ")
+            val = ""
         else:
-            return txt.format("%s,%s" % (self.x, self.y))
+            val = "%s,%s" % (self.x, self.y)
+        return txt.format(color_char=self.color.shortval, val=val)
 
     def get_decorated_variations(self, tree=None):
         '''all variations'''

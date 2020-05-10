@@ -61,7 +61,6 @@ class MoveTree:
         while curr:
             path.append(curr)
             curr = curr.parent
-        print("P", path)
 
         path.reverse()
         return path
@@ -76,5 +75,3 @@ class MoveTree:
         for move in path:
             if not move.is_pass:
                 self.test_move(move.color, move.x, move.y, apply_result=True)
-
-

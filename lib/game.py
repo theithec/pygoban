@@ -7,7 +7,7 @@ class Game:
     def __init__(self, boardsize, ruleset_cls=None):
         self.movetree = MoveTree(SZ=boardsize)
         self.currentcolor = BLACK
-        self.ruleset = ruleset_cls(self) if ruleset_cls else None
+        self.ruleset = ruleset_cls(self)
 
     def get_othercolor(self, color=None):
         color = color or self.currentcolor
@@ -31,14 +31,13 @@ class Game:
     def sgf_coords(self, x, y):
         return "%s%s" % (
             letter_coord_from_int(y, self.movetree.board.boardsize),
-            x + 1
-        )
+            x + 1)
 
     def array_indexes(self, coords):
-        xcoord = int(coords[1:])-1
+        xcoord = int(coords[1:]) - 1
         yord = ord(coords[0].upper())
         ycoord = yord - (66 if yord > 72 else 65)
-        assert xcoord < self.movetree.board.boardsize
-        assert ycoord < self.movetree.board.boardsize
+        assert 0 < xcoord < self.movetree.board.boardsize
+        assert 0 < ycoord < self.movetree.board.boardsize
         res = xcoord, ycoord
         return res
