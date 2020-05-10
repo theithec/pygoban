@@ -1,5 +1,6 @@
 import unittest
-from lib.board import Board, BLACK, WHITE
+from lib.board import Board
+from lib.status import BLACK, WHITE
 
 
 class BoardTest(unittest.TestCase):

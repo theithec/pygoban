@@ -1,57 +1,103 @@
+from . import logging
+from typing import Type
 import time
+import datetime
 from threading import Thread
 import subprocess
-
-from . import STATUS, BLACK, WHITE
+from . import status
 
 
 class Player():
-    def __init__(self, col_id, name=None, game=None):
-        self.col_id = col_id
-        self.name = name or STATUS[col_id]
+    def __init__(self, color: Type["status.Status"], name=None):
+        self.color = color
+        self.name = name or str(color)
 
-    def set_game(self, game):
-        self._game = game
+    def lost_by_overtime(self):
+        self.end()
+        self.controller.player_lost_by_overtime(self)
 
-    def play(self, x, y):
-        self._game.play(self.col_id, x, y)
+    def set_controller(self, controller):
+        self.controller = controller
 
-    def set_turn(self, has_turn, result):
+    def end(self):
         pass
+
+    def set_timesettings(self, timesettings):
+        self.timesettings = timesettings
+
+    def _get_move(self):
+        raise NotImplementedError()
+
+    def set_turn(self, result):
+        raise NotImplementedError()
 
 
 class ConsolePlayer(Player):
-    def set_turn(self, has_turn, result):
-        if has_turn:
-            x = None
-            while x is None:
-                print("Player", STATUS[self.col_id])
-                try:
-                    txt = input(" x y: ")
-                    x, y = [int(part) for part in txt.strip().split(" ")]
-                except ValueError:
-                    pass
+    def _get_move(self):
+        move = input("cmd: ").strip()
+        try:
+            valid = True  # move in ("resign", "undo", "pass") or self._game.array_indexes(move)
+            if move.startswith("#"):
+                valid = False
+        except (ValueError, IndexError):
+            valid = False
+        if not valid:
+            return self._get_move()
 
-            self.play(x, y)
+        return move
 
-
-def worker(cmd, player):
-    player.process.stdin.write(("%s\r\n" % cmd).encode())
-    player.process.stdin.flush()
-    res = ""
-    while True:
-        nextline = player.process.stdout.readline().decode()
-        if not nextline.strip():
-            #  == '' and process.poll() is not None:
-            break
-        res += nextline
-
-    player.handle_result(cmd, res)
+    def set_turn(self, result):
+        try:
+            move = self._get_move()
+            self.controller.handle_move(self.color, move)
+        except AssertionError:
+            self.set_turn(result)
 
 
-class ThreadPlayer(Player):
+class GTPComm(Thread):
+    def __init__(self, player, cmd, handle_output):
+        super().__init__()
+        self.player = player
+        self.cmd = cmd
+        self.handle_output = handle_output
+        self.start()
+
+    def run(self):
+        if not self.player.process.pid:
+            return
+
+        try:
+            self.player.process.stdin.write(("%s\r\n" % self.cmd).encode())
+            self.player.process.stdin.flush()
+        except BrokenPipeError:
+            raise
+            return
+        res = ""
+        while self.player.process.pid:
+            try:
+                nextline = self.player.process.stdout.readline().decode()
+                if not nextline.strip():
+                    break
+            except BrokenPipeError:
+                raise
+                break
+            res += nextline
+
+        print(self.cmd, "->", res)
+        if self.handle_output:
+            res = res.lower()
+            move = res.split("=")[-1].strip()
+            if move:
+                self.player.controller.handle_move(self.player.color, move)
+
+
+class GTPPlayer(Player):
     def __init__(self, *args, **kwargs):
         self.command = kwargs.pop('cmd')
+        super().__init__(*args, **kwargs)
+
+    def set_controller(self, controller):
+        super().set_controller(controller)
         self.process = subprocess.Popen(
             self.command.split(" "),
             shell=False,
@@ -59,28 +105,39 @@ class ThreadPlayer(Player):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
         )
-        super().__init__(*args, **kwargs)
-        self.do_cmd("boardsize 9")
-        self.do_cmd("showboard")
+        time.sleep(1)
+        self.do_cmd("boardsize %s" % self.controller.game.movetree.board.boardsize, False)
 
-    def do_cmd(self, cmd):
-        print("CMD", cmd)
-        self.thread = Thread(target=worker, args=(cmd, self))
-        self.thread.start()
-        self.thread.join()
+    def set_timesettings(self, timesettings):
+        self.timesettings = timesettings
+        ts = self.timesettings
+        self.do_cmd(f"time_settings {ts.maintime} {ts.byomi_time} {ts.byomi_stones}", False)
 
-    def handle_result(self, cmd, res):
-        if cmd.startswith("genmove"):
-            coords = res.split("=")[-1].strip()
-            self.play(*self._game.array_indexes(coords))
+    def do_cmd(self, cmd, handle_output=True):
+        logging.info("gtpcmd" + cmd)
+        GTPComm(self, cmd, handle_output=handle_output).join()
 
-    def set_turn(self, has_turn, result):
-        if has_turn:
-            if result:
-                coords = self._game.sgf_coords(result.x, result.y)
+    def end(self):
+        self.do_cmd("quit", False)
+        #time.sleep(0.1)
+        # self.process.terminate()
+        self.process.wait()
+        # self.process.kill()
+        print("stopped", self, self.process, self.process.pid)
+        #self.process.pid = None
+
+    def _get_move(self):
+        # self.controller.handle_move(self.color, "pass")
+        self.do_cmd("genmove " + self.color.strval.lower())
+
+    def set_turn(self, result):
+        if result:
+            if result.extra:
+                pass  # self.do_cmd("undo", False)
+            else:
+                coords = self.controller.game.sgf_coords(result.x, result.y)
                 self.do_cmd("play %s %s" % (
-                    ("white" if self.col_id==BLACK else "black"),
-                    coords))
-
-            self.do_cmd("genmove %s" % ("white" if self.col_id==WHITE else "black"))
-            self.do_cmd("showboard")
+                    result.color.strval.lower(),
+                    coords), False)
+                self.do_cmd("showboard", False)
+        self._get_move()

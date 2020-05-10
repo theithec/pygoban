@@ -6,7 +6,7 @@ from lib.rulesets import RuleViolation
 
 class MoveTreeTest(unittest.TestCase):
     def setUp(self):
-        self.tree = MoveTree(boardsize=9)
+        self.tree = MoveTree(SZ=9)
 
     def play(self, moves):
         prisoners = moves.pop(0)
@@ -33,7 +33,6 @@ class MoveTreeMovesTest(MoveTreeTest):
         self.play(moves)
 
     def test_ko(self):
-
 
         moves = [
             (0, 1),

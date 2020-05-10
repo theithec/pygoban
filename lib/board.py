@@ -1,15 +1,33 @@
 '''Boards'''
 
 from copy import deepcopy
-from collections import  namedtuple
 
-from . import (
-        EMPTY, BLACK, WHITE, KO, DEAD_BLACK, DEAD_WHITE)
+from typing import Optional, Set
+from dataclasses import dataclass, field
+
+from .status import STATUS, EMPTY, Status
 
 
-Result2 = namedtuple('Result', ['x', 'y', 'col_id', 'libs', 'killed', 'group', 'extra'])
+def letter_coord_from_int(pos, boardsize):
+    assert pos < boardsize
+    return chr((66 if pos > 7 else 65) + pos)
 
-default_result = Result2(-1, -1, None, None, None, None, None)
+
+@dataclass
+class MoveResult:
+    x: int
+    y: int
+    color: Status
+    libs: Set[int] = field(default_factory=set)
+    killed: Set[int] = field(default_factory=set)
+    group: Set[int] = field(default_factory=set)
+    extra: str = ""
+
+
+class StonelessResult(MoveResult):
+    def __init__(self, color, extra):
+        super().__init__(-1, -1, color, extra=extra)
+
 
 class Board(list):
     """
@@ -18,10 +36,9 @@ class Board(list):
 
     def __init__(self, boardsize, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         for x in range(boardsize):
             self.append([])
-            for y in range(boardsize):
+            for _ in range(boardsize):
                 self[x].append(EMPTY)
         self.boardsize = boardsize
 
@@ -59,12 +76,12 @@ class Board(list):
                 continue
 
             # a liberty
-            if acol < 1:
+            if int(acol) < 1:
                 started.add(axy)
                 libs += 1
 
             # friend
-            elif acol == col:
+            elif acol.intval == col.intval:
                 started, group, killed, libs = self.analyze(
                     axy[0], axy[1], started=started, group=group, killed=killed,
                     libs=libs, findkilled=False)[:4]
@@ -72,28 +89,28 @@ class Board(list):
             # enemy!
             elif findkilled:
                 result = self.analyze(axy[0], axy[1], findkilled=False)
-                ogroup = result[1]
-                olibs = result[3]
-                if olibs == 0:
-                    killed |= ogroup
-                    started |= ogroup
-                    killed_adjacents = ogroup & set(adjacents)
+                enemylibs = result[3]
+                if enemylibs == 0:
+                    enemygroup = result[1]
+                    killed |= enemygroup
+                    started |= enemygroup
+                    killed_adjacents = enemygroup & set(adjacents)
                     libs += len(killed_adjacents)
 
         return started, group, killed, libs, findkilled
 
-    def result(self, col_id, x, y, do_apply=True):
+    def result(self, color: Status, x, y, do_apply=True):
         '''Result of a move (may be invalid)'''
         cpy = deepcopy(self)
-        cpy[x][y] = col_id
+        cpy[x][y] = color
         raw = cpy.analyze(x, y)
-        result = default_result._replace(
-            col_id=col_id,
+        result = MoveResult(
             x=x,
             y=y,
-            group=raw[1],
+            color=color,
+            libs=raw[3],
             killed=raw[2],
-            libs=raw[3]
+            group=raw[1]
         )
         if do_apply:
             self.apply_result(result)
@@ -102,26 +119,19 @@ class Board(list):
 
     def apply_result(self, result):
         r = result
-        self[r.x][r.y] = r.col_id
+        self[r.x][r.y] = r.color
         for x, y in r.killed:
             self[x][y] = EMPTY
 
     def __str__(self):
-        legend = {
-            BLACK: "B",
-            WHITE: "W",
-            DEAD_BLACK: "b",
-            DEAD_WHITE: "w",
-            KO: "?",
-            EMPTY: "+",
-        }
         txt = "\n    "
-        txt += " ".join([chr(65 + i) for i in range(self.boardsize)])
+        txt += " ".join([letter_coord_from_int(i, self.boardsize) for i in range(self.boardsize)])
         txt += "\n\n"
-        for i, x in enumerate(range(self.boardsize)):
-            txt += "%2s  " % (i+1)
+        for i, xorg in enumerate(range(self.boardsize)):
+            x = self.boardsize - xorg - 1
+            txt += "%2s  " % (x)
             txt += " ".join(
-                ["%s" % legend[self[x][y]]
+                ["%s" % (self[x][y]).short()
                     for y in range(self.boardsize)])
 
             txt += "\n"

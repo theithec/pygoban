@@ -1,23 +1,21 @@
 import unittest
-from lib import BLACK, WHITE, EMPTY
+from lib.status import BLACK, WHITE, EMPTY
 from lib.game import Game
+from lib.controller import Controller
 from lib.player import Player
 from lib.rulesets import BaseRuleset, RuleViolation, KoViolation, OccupiedViolation
 
 
 class BaseGameTest(unittest.TestCase):
-    ruleset_cls = None
+    ruleset_cls = BaseRuleset
 
     def setUp(self):
-        black = Player(BLACK)
-        white = Player(WHITE)
-        self.game = Game(9, black, white, ruleset_cls=self.ruleset_cls)
+        self.game = Game(9, ruleset_cls=self.ruleset_cls)
 
     def play(self, moves):
         for index, move in enumerate(moves):
             x, y = move
-            player = self.game.player()
-            self.game.play(player.col_id, x, y)
+            self.game.play(self.game.currentcolor, x, y)
 
 
 class GameTest(BaseGameTest):
@@ -84,8 +82,10 @@ class GameTest(BaseGameTest):
         )
         self.play(moves)
         self.assertEqual(2, self.game.movetree.prisoners[BLACK])
+
+        self.assertEqual(WHITE, self.game.currentcolor)
         self.game.undo()
-        self.assertEqual(BLACK, self.game.currentcolor)
+        self.assertEqual(WHITE, self.game.currentcolor)
         self.assertEqual(0, self.game.movetree.prisoners[BLACK])
         self.game.undo()
         self.assertEqual(EMPTY, self.game.movetree.board[3][3])
