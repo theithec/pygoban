@@ -10,15 +10,14 @@ class BoardTest(unittest.TestCase):
     def play(self, moves):
         for index, move in enumerate(moves):
             x, y, col_id, killed = move
-            # if index == 5:
-            #    import pdb; pdb.set_trace()
             result = self.board.result(col_id, x, y)
+            self.board.apply_result(result)
             self.assertEqual(
                 len(result.killed),
                 killed,
                 "Move %s [%s][%s] %s != %s" % (index, x, y, len(result.killed), killed))
 
-        print(self.board)
+            print(self.board)
         return result
 
     def test_kill1(self):
@@ -26,7 +25,7 @@ class BoardTest(unittest.TestCase):
             (0, 1, BLACK, 0),
             (0, 0, WHITE, 0),
             (1, 0, BLACK, 1),
-            )
+        )
 
         self.play(moves)
 
@@ -42,6 +41,7 @@ class BoardTest(unittest.TestCase):
         )
 
         self.play(moves)
+
 
 if __name__ == '__main__':
     unittest.main()

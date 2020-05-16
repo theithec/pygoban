@@ -1,8 +1,8 @@
-'''Boards'''
+"""Boards"""
 
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Optional, Set
+from typing import Set
 
 from .status import EMPTY, STATUS, Status
 
@@ -98,7 +98,7 @@ class Board(list):
 
         return started, group, killed, libs, findkilled
 
-    def result(self, color: Status, x, y, do_apply=True):
+    def result(self, color: Status, x, y):
         '''Result of a move (may be invalid)'''
         cpy = deepcopy(self)
         try:
@@ -114,9 +114,6 @@ class Board(list):
             killed=raw[2],
             group=raw[1]
         )
-        if do_apply:
-            self.apply_result(result)
-
         return result
 
     def apply_result(self, result):
@@ -129,9 +126,9 @@ class Board(list):
         txt = "\n    "
         txt += " ".join([letter_coord_from_int(i, self.boardsize) for i in range(self.boardsize)])
         txt += "\n\n"
-        for i, xorg in enumerate(range(self.boardsize)):
+        for xorg in range(self.boardsize):
             x = self.boardsize - xorg - 1
-            txt += "%2s  " % (x)
+            txt += "%2s  " % (x + 1)
             txt += " ".join(
                 ["%s" % (self[x][y]).short()
                     for y in range(self.boardsize)])

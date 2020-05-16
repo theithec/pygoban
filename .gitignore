@@ -67,3 +67,4 @@ tests/.hitch
 mailhog
 .django-setup
 .ropeproject
+.mypy_cache

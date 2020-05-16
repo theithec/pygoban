@@ -70,7 +70,6 @@ class GTPComm(Thread):
             self.player.process.stdin.write(("%s\r\n" % self.cmd).encode())
             self.player.process.stdin.flush()
         except BrokenPipeError:
-            raise
             return
         res = ""
         while self.player.process.pid:
@@ -79,11 +78,10 @@ class GTPComm(Thread):
                 if not nextline.strip():
                     break
             except BrokenPipeError:
-                raise
                 break
             res += nextline
 
-        print(self.cmd, "->", res)
+        logging.info("gtpcmd %s -> %s", self.cmd, res)
         if self.handle_output:
             res = res.lower()
             move = res.split("=")[-1].strip()
@@ -114,17 +112,11 @@ class GTPPlayer(Player):
         self.do_cmd(f"time_settings {ts.maintime} {ts.byomi_time} {ts.byomi_stones}", False)
 
     def do_cmd(self, cmd, handle_output=True):
-        logging.info("gtpcmd" + cmd)
         GTPComm(self, cmd, handle_output=handle_output).join()
 
     def end(self):
         self.do_cmd("quit", False)
-        #time.sleep(0.1)
-        # self.process.terminate()
         self.process.wait()
-        # self.process.kill()
-        print("stopped", self, self.process, self.process.pid)
-        #self.process.pid = None
 
     def _get_move(self):
         # self.controller.handle_move(self.color, "pass")
@@ -132,9 +124,7 @@ class GTPPlayer(Player):
 
     def set_turn(self, result):
         if result:
-            if result.extra:
-                pass  # self.do_cmd("undo", False)
-            else:
+            if not result.extra:
                 coords = self.controller.game.sgf_coords(result.x, result.y)
                 self.do_cmd("play %s %s" % (
                     result.color.strval.lower(),

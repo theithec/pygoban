@@ -39,7 +39,7 @@ class MoveTree:
         self.set_cursor(self.root)
 
     def test_move(self, color, x, y, apply_result=False):
-        result = self.board.result(color, x, y, do_apply=apply_result)
+        result = self.board.result(color, x, y)
         if apply_result:
             self.apply_result(result)
 
@@ -50,7 +50,6 @@ class MoveTree:
         color = result.color
         self.prisoners[color] += len(result.killed)
         self.cursor = Move(color, result.x, result.y, parent=self.cursor)
-        self.get_path()
 
     def _pass(self, color):
         self.cursor = Move(color, -1, -1, self.cursor)
@@ -63,7 +62,7 @@ class MoveTree:
             curr = curr.parent
 
         path.reverse()
-        return path
+        return path[1:]
 
     def set_cursor(self, move):
         self.cursor = move
@@ -73,5 +72,4 @@ class MoveTree:
         self.cursor = self.root
 
         for move in path:
-            if not move.is_pass:
-                self.test_move(move.color, move.x, move.y, apply_result=True)
+            self.test_move(move.color, move.x, move.y, apply_result=True)
