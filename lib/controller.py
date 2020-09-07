@@ -1,15 +1,18 @@
+import sys
+import time
 import datetime
 from . import logging
-from .status import BLACK, WHITE
+from .status import Status, BLACK, WHITE
 from .rulesets import RuleViolation
-from .board import StonelessResult
-from .timesettings import TimeSettings
+from .board import StonelessResult, StonelessReason
+from .timesettings import PlayerTime
+from .game import ThreeTimesPassed, End
 
 
 class Controller:
     def __init__(
             self, black, white, game,
-            maintime=10, byomi_time=5, byomi_num=3, byomi_stones=1):
+            timedata):
         self.game = game
         self.players = {
             BLACK: black,
@@ -17,14 +20,10 @@ class Controller:
         }
         for player in self.players.values():
             player.set_controller(self)
-            player.set_timesettings(TimeSettings(
-                player,
-                maintime=maintime, byomi_time=byomi_time,
-                byomi_num=byomi_num, byomi_stones=byomi_stones))
+            player.set_timesettings(PlayerTime(player, timedata))
 
         self.timeout = False
         self.move_start = None
-        self.pass_cnt = 0
 
     def player_lost_by_overtime(self, player):
         raise Exception("TIMEOUT %s" % player.color)
@@ -37,61 +36,57 @@ class Controller:
         self.move_start = datetime.datetime.now()
         self.players[color].set_turn(result)
 
-
-    def handle_exception(self, exception):
+    def handle_rule_exception(self, exception):
         logging.info(str(exception))
-        raise exception
+        # raise exception
+
+    def update_time(self, color, restart=True):
+        self.players[color].timesettings.cancel()
+        if restart:
+            time.sleep(0.2)
+            self.players[color].timesettings.nexttime(
+                (datetime.datetime.now() - self.move_start).seconds)
 
     def handle_move(self, color, move):
         if self.timeout:
             return
-        if self.pass_cnt > 2:
-            print("#3 x PASSED")
-            self.exit()
-            return
-        if not self.game.currentcolor == color:
-            self.handle_exception(RuleViolation(
-                "Wrong player %s %s", str(color), str(self.game.currentcolor)))
-            return
-
-        self.players[color].timesettings.cancel()
 
         if move == "resign":
-            self.exit()
-            return
-        if move == "pass":
-            self.game._pass(color)
-            self.pass_cnt += 1
+            self.update_time(color, restart=False)
+            self.end(End.RESIGN, color)
+        elif move == "pass":
+            try:
+                self.game.pass_(color)
+            except ThreeTimesPassed as err:
+                self.end(End.PASSED, err.color)
+            self.update_time(color)
             self.set_turn(
                 self.game.get_othercolor(color),
-                StonelessResult(color, "pass")
+                StonelessResult(color, StonelessReason.PASS)
             )
-            return
-        else:
-            self.pass_cnt = 0
-
-        self.players[color].timesettings.cancel()
-        self.players[color].timesettings.nexttime(
-            (datetime.datetime.now() - self.move_start).seconds)
-        if move == "undo":
+        elif move == "undo":
             self.game.undo(color)
             self.set_turn(
                 self.game.get_othercolor(color),
-                StonelessResult(color, "undo")
+                StonelessResult(color, StonelessReason.UNDO)
             )
-            self.players[color].timesettings.cancel()
         elif move:
             try:
                 x, y = self.game.array_indexes(move)
                 result = self.game.play(color, x, y)
             except RuleViolation as err:
-                self.handle_exception(err)
+                self.handle_rule_exception(err)
+                return
 
+            self.update_time(color)
             self.set_turn(self.game.get_othercolor(color), result)
 
-    def exit(self):
+    def end(self, reason: End, color: Status):
         for player in self.players.values():
             player.end()
+
+    def exit(self):
+        sys.exit()
 
 
 class ConsoleController(Controller):

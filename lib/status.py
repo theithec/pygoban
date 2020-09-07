@@ -1,7 +1,3 @@
-from copy import deepcopy
-from typing import Dict
-
-
 class Status:
 
     def __init__(self, intval, strval, shortval=None):
@@ -17,8 +13,10 @@ class Status:
 
     def __repr__(self):
         return self.strval
+
     def short(self):
         return self.shortval
+
 
 KO = Status(-1, "Ko", "?")
 EMPTY = Status(0, "Empty", "+")

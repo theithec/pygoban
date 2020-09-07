@@ -1,10 +1,10 @@
 from lib.status import BLACK
 from lib.player import Player
-from lib.timesettings import TimeSettings
+from lib.timesettings import TimeSettings, PlayerTime
 
 
 def test_ts1():
-    tst = TimeSettings(Player(BLACK), maintime=60, byomi_time=30, byomi_num=3)
+    tst = PlayerTime(Player(BLACK), TimeSettings(maintime=60, byomi_time=30, byomi_num=3))
     assert tst.nexttime() == 60
     assert tst.nexttime(25) == 35
     assert tst.byomi_num == 3

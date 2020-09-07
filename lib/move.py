@@ -31,12 +31,13 @@ class Move:
 
     def __str__(self):
         if self.is_root:
-            return "ROOT"
-        txt = "{color_char}[{val}]"
+            return ""
+        txt = ";{color_char}[{val}]"
         if self.is_pass:
             val = ""
         else:
-            val = "%s,%s" % (self.x, self.y)
+            x =  chr(65 + self.x)
+            val = f"{x}{self.y}"
         return txt.format(color_char=self.color.shortval, val=val)
 
     def get_decorated_variations(self, tree=None):
@@ -51,3 +52,8 @@ class Move:
                 tree.append(child.get_variations())
 
         return tree
+
+    @classmethod
+    def pass_(cls, color: Status, parent: "Move"):
+        return cls(color, -1, -1, parent)
+

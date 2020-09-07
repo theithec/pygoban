@@ -1,25 +1,34 @@
-import sys
+from dataclasses import dataclass
 from threading import Timer
+import lib.player
 
 from . import logging
 
 
-class GameClock(Timer):
+class _PlayerTimer(Timer):
     def __init__(self, nexttime, overtime):
         logging.info("START CLOCK %s", nexttime)
         super().__init__(nexttime, overtime)
         self.start()
 
 
+@dataclass
 class TimeSettings:
-    def __init__(self, player, maintime, byomi_time, byomi_num, byomi_stones=1):
+    maintime: int = 100000
+    byomi_time: int = 5
+    byomi_num: int = 3
+    byomi_stones: int = 1
+
+
+class PlayerTime:
+    def __init__(self, player: lib.player.Player, settings: TimeSettings):
         self.player = player
-        self.maintime = maintime
-        self.byomi_time = byomi_time
-        self.byomi_time_org = byomi_time
-        self.byomi_num = byomi_num
-        self.byomi_stones = byomi_stones
-        self.byomi_stones_org = byomi_stones
+        self.maintime = settings.maintime
+        self.byomi_time = settings.byomi_time
+        self.byomi_time_org = settings.byomi_time
+        self.byomi_num = settings.byomi_num
+        self.byomi_stones = settings.byomi_stones
+        self.byomi_stones_org = settings.byomi_stones
         self.timer = None
 
     def cancel(self):
@@ -37,7 +46,7 @@ class TimeSettings:
 
         if self.byomi_num > 0:
             self.byomi_time = self.byomi_time_org
-            return self.nexttime(start_timer=True)
+            self.nexttime(start_timer=True)
         else:
             self.player.lost_by_overtime()
 
@@ -56,9 +65,8 @@ class TimeSettings:
 
         if start_timer:
             assert not self.timer or self.timer.finished.is_set(), "T " + str(self.timer)
-            self.timer = GameClock(_next, self.overtime)
+            self.timer = _PlayerTimer(_next, self.overtime)
         return _next
 
     def __str__(self):
         return "{maintime}:{byomi_num}x{byomi_time}".format(**vars(self))
-

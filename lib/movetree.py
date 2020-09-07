@@ -1,6 +1,6 @@
-from .status import BLACK, WHITE
-from .move import Move, MoveList
 from .board import Board
+from .move import Move, MoveList
+from .status import BLACK, WHITE
 
 
 class MoveTree:
@@ -29,7 +29,7 @@ class MoveTree:
         "SO",  # Source
         "TM",  # Time limits
         "US",  # user (file creator)
-         # "GC" "ST", "CA",
+        # "GC" "ST", "CA",
     )
 
     def __init__(self, **infos):
@@ -51,7 +51,7 @@ class MoveTree:
         self.prisoners[color] += len(result.killed)
         self.cursor = Move(color, result.x, result.y, parent=self.cursor)
 
-    def _pass(self, color):
+    def pass_(self, color):
         self.cursor = Move(color, -1, -1, self.cursor)
 
     def get_path(self):
@@ -60,7 +60,6 @@ class MoveTree:
         while curr:
             path.append(curr)
             curr = curr.parent
-
         path.reverse()
         return path[1:]
 
@@ -70,6 +69,24 @@ class MoveTree:
         path = self.get_path()
         self.board = Board(self.board.boardsize)
         self.cursor = self.root
-
         for move in path:
             self.test_move(move.color, move.x, move.y, apply_result=True)
+
+    def to_sgf(self):
+        txt = "(" + "".join([f"{k}[{v}]" for k, v in self.infos.items()])
+
+        def variations(move):
+            nonlocal txt
+            txt += str(move)
+            lenchildren = len(move.children)
+            if lenchildren > 1:
+                txt += "("
+            elif not lenchildren:
+                txt += ")"
+
+            for child in move.children:
+                variations(child)
+
+        variations(self.root)
+        txt += ")"
+        return txt

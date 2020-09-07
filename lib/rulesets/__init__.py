@@ -1,4 +1,4 @@
-from lib.status import EMPTY
+from lib.status import EMPTY, KO
 
 
 class RuleViolation(Exception):
@@ -19,16 +19,21 @@ class BaseRuleset:
         self.game = game
 
     def validate(self, result):
+
+        if not self.game.currentcolor == result.color:
+            raise RuleViolation(
+                "Wrong player %s %s", str(result.color), str(self.game.currentcolor))
+
         if result.extra == "pass":
             self.ko = None
-        if self.game.movetree.board[result.x][result.y] != EMPTY:
-            raise OccupiedViolation(
-                    "Not empty: %s BUT %s" % (
-                    result, self.game.movetree.board[result.x][result.y]))
+
+        bxy = self.game.movetree.board[result.x][result.y]
+        if bxy != EMPTY:
+            raise OccupiedViolation(f"Not empty: {result} BUT {bxy}")
         elif (result.x, result.y) == self.ko:
-            raise KoViolation
+            raise KoViolation(f"Invalid Ko: {result}")
         elif result.libs == 1 and len(result.killed) == 1:
-            for ko in result.killed:
-                self.ko = ko
+            self.ko = list(result.killed)[0]
+            bxy = KO
         else:
             self.ko = None

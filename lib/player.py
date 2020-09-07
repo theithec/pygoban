@@ -8,7 +8,7 @@ from . import status
 
 
 class Player():
-    def __init__(self, color: Type["status.Status"], name=None):
+    def __init__(self, color: status.Status, name=None):
         self.color = color
         self.name = name or str(color)
 

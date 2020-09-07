@@ -1,8 +1,8 @@
 """Boards"""
-
+from enum import Enum
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Set
+from typing import Set, Optional
 
 from .status import EMPTY, STATUS, Status
 
@@ -10,6 +10,11 @@ from .status import EMPTY, STATUS, Status
 def letter_coord_from_int(pos, boardsize):
     assert pos < boardsize
     return chr((66 if pos > 7 else 65) + pos)
+
+
+class StonelessReason(Enum):
+    UNDO = "undo"
+    PASS = "pas"
 
 
 @dataclass
@@ -20,7 +25,7 @@ class MoveResult:
     libs: Set[int] = field(default_factory=set)
     killed: Set[int] = field(default_factory=set)
     group: Set[int] = field(default_factory=set)
-    extra: str = ""
+    extra: Optional[StonelessReason] = None
 
 
 class StonelessResult(MoveResult):
