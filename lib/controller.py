@@ -1,33 +1,36 @@
+import datetime
 import sys
 import time
-import datetime
+
+from lib.player import Player
 from . import logging
-from .status import Status, BLACK, WHITE
+from .board import StonelessReason, StonelessResult
+from .game import End, Game, ThreeTimesPassed
 from .rulesets import RuleViolation
-from .board import StonelessResult, StonelessReason
-from .timesettings import PlayerTime
-from .game import ThreeTimesPassed, End
+from .status import BLACK, WHITE, Status
+from .timesettings import PlayerTime, TimeSettings
+from .coords import array_indexes, sgf_coords
 
 
 class Controller:
     def __init__(
-            self, black, white, game,
-            timedata):
+            self, black: Player, white: Player, game: Game,
+            timesettings: TimeSettings = None):
         self.game = game
         self.players = {
             BLACK: black,
             WHITE: white
         }
+        timesettings = timesettings or TimeSettings()
         for player in self.players.values():
             player.set_controller(self)
-            player.set_timesettings(PlayerTime(player, timedata))
+            player.set_timesettings(PlayerTime(player, timesettings))
 
         self.timeout = False
         self.move_start = None
 
     def player_lost_by_overtime(self, player):
         raise Exception("TIMEOUT %s" % player.color)
-        self.exit()
 
     def set_turn(self, color, result):
         logging.info("SET TURN %s", color)
@@ -38,7 +41,6 @@ class Controller:
 
     def handle_rule_exception(self, exception):
         logging.info(str(exception))
-        # raise exception
 
     def update_time(self, color, restart=True):
         self.players[color].timesettings.cancel()
@@ -72,7 +74,7 @@ class Controller:
             )
         elif move:
             try:
-                x, y = self.game.array_indexes(move)
+                x, y = array_indexes(move, self.game.movetree.board.boardsize)
                 result = self.game.play(color, x, y)
             except RuleViolation as err:
                 self.handle_rule_exception(err)
@@ -95,9 +97,9 @@ class ConsoleController(Controller):
         print(self.game.movetree.board)
         print("\n".join([
             f"{key} caught\t{val}" for key, val in self.game.movetree.prisoners.items()]))
-        print("Has turn", color),
+        print("Has turn", color)
         if result:
-            print("Last:", result, self.game.sgf_coords(result.x, result.y))
+            print("Last:", result, sgf_coords(result.x, result.y, self.game.boardsize))
         print("Time Black", self.players[BLACK].timesettings)
         print("Time White", self.players[WHITE].timesettings)
         super().set_turn(color, result)

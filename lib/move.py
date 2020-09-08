@@ -1,9 +1,11 @@
-from typing import List, Dict, Any
-from .status import STATUS, Status
+from typing import Any, Dict, List
+
+from .status import Status
 
 
 class MoveList(list):
     '''sgf-like output'''
+
     def __str__(self):
         items = [str(item) for item in self]
         return "(%s)" % " ".join(items)
@@ -19,7 +21,6 @@ class Move:
             parent.children.append(self)
 
         self.parent = parent
-
         self.is_pass = self.x == -1
         self.is_root = self.color is None
         self.comments: List[str] = []
@@ -36,7 +37,7 @@ class Move:
         if self.is_pass:
             val = ""
         else:
-            x =  chr(65 + self.x)
+            x = chr(65 + self.x)
             val = f"{x}{self.y}"
         return txt.format(color_char=self.color.shortval, val=val)
 
@@ -56,4 +57,3 @@ class Move:
     @classmethod
     def pass_(cls, color: Status, parent: "Move"):
         return cls(color, -1, -1, parent)
-

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from threading import Timer
-import lib.player
+from lib.player import Player
 
 from . import logging
 
@@ -21,12 +21,12 @@ class TimeSettings:
 
 
 class PlayerTime:
-    def __init__(self, player: lib.player.Player, settings: TimeSettings):
+    def __init__(self, player: Player, settings: TimeSettings):
         self.player = player
         self.maintime = settings.maintime
         self.byomi_time = settings.byomi_time
         self.byomi_time_org = settings.byomi_time
-        self.byomi_num = settings.byomi_num
+        self.byomi_left = settings.byomi_num
         self.byomi_stones = settings.byomi_stones
         self.byomi_stones_org = settings.byomi_stones
         self.timer = None
@@ -36,15 +36,15 @@ class PlayerTime:
         if self.timer:
             self.timer.cancel()
 
-    def overtime(self, used=0):
+    def overtime(self):
         logging.info("OVERTIME %s", self)
         self.cancel()
         if self.maintime > 0:
             self.maintime = 0
         else:
-            self.byomi_num -= 1
+            self.byomi_left -= 1
 
-        if self.byomi_num > 0:
+        if self.byomi_left > 0:
             self.byomi_time = self.byomi_time_org
             self.nexttime(start_timer=True)
         else:
@@ -69,4 +69,4 @@ class PlayerTime:
         return _next
 
     def __str__(self):
-        return "{maintime}:{byomi_num}x{byomi_time}".format(**vars(self))
+        return "{maintime}:{byomi_left}x{byomi_time}".format(**vars(self))

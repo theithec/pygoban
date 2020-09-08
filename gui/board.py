@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QWidget
 
 from lib.controller import Controller
 from lib.status import BLACK, EMPTY
-from lib.board import letter_coord_from_int
+from lib.coords import letter_coord_from_int
 from lib.timesettings import TimeSettings
 
 from .player import GuiPlayer
@@ -33,28 +33,35 @@ HOSHIS = {
 
 class GuiBoard(QWidget):
     def __init__(self, black, white, game, *args, **kwargs):
-        super().__init__(*args, **kwargs,
-            black=black, white=white, game=game, timedata=TimeSettings())
+        super().__init__(*args, **kwargs, black=black, white=white, game=game)
         self.bgimage = QImage(os.path.join(BASE_DIR, "gui/imgs/shinkaya.jpg"))
         board = game.movetree.board
         self.boardsize = board.boardsize
         self.intersections = []
-        hoshis = HOSHIS.get(self.boardsize, [])
-        for x in range(self.boardsize):
-            self.intersections.append([])
-            for y in range(self.boardsize):
-                is_hoshi = (x, y) in hoshis
-                status = board[x][y]
-                inter = Intersection(self, x, y, status, is_hoshi)
-                self.intersections[x].append(inter)
+        self.boardrange = range(self.boardsize)
+        for x in self.boardrange:
+            self.intersections.append([None for _ in self.boardrange])
+
+        self.update_intersections(board, create=True)
+
         Timer(1, lambda: self.set_turn(BLACK, None)).start()
 
-    def inter_clicked(self, inter):
-        if not isinstance(self.players[self.game.currentcolor], GuiPlayer):
-            return
-        x = letter_coord_from_int(inter.x, self.boardsize)
-        y = 18 - inter.y + 1
-        self.handle_move(self.game.currentcolor, f"{x}{y}")
+    def update_intersections(self, board, create=False):
+        hoshis = HOSHIS.get(self.boardsize, [])
+        for x in self.boardrange:
+            for y in self.boardrange:
+                cx = y
+                cy = x
+                status = board[cx][cy]
+                if create:
+                    is_hoshi = (x, y) in hoshis
+                    inter = Intersection(self, cx, cy, status, is_hoshi)
+                    inter.marker = f"({inter.x},{inter.y})"
+                    self.intersections[x][y] = inter
+                else:
+                    inter = self.intersections[x][y]
+                    inter.status = status
+
 
     def get_bordersize(self):
         '''Todo'''
@@ -123,6 +130,13 @@ class GuiBoard(QWidget):
 
 class GuiController(GuiBoard, Controller):
 
+    def inter_clicked(self, inter):
+        if not isinstance(self.players[self.game.currentcolor], GuiPlayer):
+            return
+        x = letter_coord_from_int(inter.y, self.boardsize)
+        y = self.boardsize - inter.x
+        self.handle_move(self.game.currentcolor, f"{x}{y}")
+
     def set_turn(self, color, result):
         print(self.game.movetree.board)
         print(self.game.movetree.to_sgf())
@@ -136,9 +150,9 @@ class GuiController(GuiBoard, Controller):
                         inter.is_current = False
                         break
 
-            inter = self.intersections[result.y][self.boardsize - 1 - result.x]
+            inter = self.intersections[result.y][result.x]
             inter.status = result.color
             inter.is_current = True
             for killed in result.killed:
-                self.intersections[killed[1]][self.boardsize - 1 - killed[0]].status = EMPTY
+                self.intersections[killed[1]][killed[0]].status = EMPTY
         super().set_turn(color, result)

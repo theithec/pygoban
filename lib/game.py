@@ -1,13 +1,22 @@
+from typing import Tuple, Dict
+
 from enum import Enum
-from .status import BLACK, WHITE
+
 from .movetree import MoveTree
-from .board import letter_coord_from_int
+from .status import BLACK, WHITE, Status
 
 
 class End(Enum):
     RESIGN = "resign"
     BY_TIME = "by time"
     PASSED = "passed"
+
+
+HANDICAPS: Dict[int, Tuple] = {
+    1: ((3, 4),)
+}
+
+HANDICAPS[2] = HANDICAPS[1] + ((14, 14),)
 
 
 class ThreeTimesPassed(Exception):
@@ -17,13 +26,22 @@ class ThreeTimesPassed(Exception):
 
 class Game:
 
-    def __init__(self, boardsize, ruleset_cls=None):
+    def __init__(self, boardsize, ruleset_cls=None, handicap=0):
         self.movetree = MoveTree(SZ=boardsize)
         self.currentcolor = BLACK
         self.ruleset = ruleset_cls(self)
+        self.handicap = handicap
         self.pass_cnt = 0
+        if self.handicap:
+            positions = HANDICAPS[handicap]
+            for pos in positions:
+                self.movetree.board[pos[0]][pos[1]] = BLACK
 
-    def get_othercolor(self, color=None):
+    @property
+    def boardsize(self):
+        return self.movetree.board.boardsize
+
+    def get_othercolor(self, color: Status=None):
         color = color or self.currentcolor
         return BLACK if color == WHITE else WHITE
 
@@ -47,17 +65,3 @@ class Game:
         parent = self.movetree.cursor.parent
         self.movetree.set_cursor(parent)
         self.pass_cnt = 0
-
-    def sgf_coords(self, x, y):
-        return "%s%s" % (
-            letter_coord_from_int(y, self.movetree.board.boardsize),
-            x + 1)
-
-    def array_indexes(self, coords):
-        xcoord = int(coords[1:]) - 1
-        yord = ord(coords[0].upper())
-        ycoord = yord - (66 if yord > 72 else 65)
-        assert 0 <= xcoord < self.movetree.board.boardsize, f"{xcoord}, {coords}"
-        assert 0 <= ycoord < self.movetree.board.boardsize, f"{ycoord}, {coords}"
-        res = xcoord, ycoord
-        return res

@@ -1,15 +1,12 @@
 """Boards"""
-from enum import Enum
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Set, Optional
+from enum import Enum
+from typing import Optional, Set
 
-from .status import EMPTY, STATUS, Status
+from .status import EMPTY, Status
+from .coords import letter_coord_from_int
 
-
-def letter_coord_from_int(pos, boardsize):
-    assert pos < boardsize
-    return chr((66 if pos > 7 else 65) + pos)
 
 
 class StonelessReason(Enum):
@@ -38,16 +35,13 @@ class Board(list):
         A situation in a go game/movetree
     """
 
-    def __init__(self, boardsize, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for x in range(boardsize):
-            self.append([])
-            for _ in range(boardsize):
-                self[x].append(EMPTY)
+    def __init__(self, boardsize):
+        super().__init__()
+        boardrange = range(boardsize)
+        self.extend([[EMPTY for x in boardrange] for y in boardrange])
         self.boardsize = boardsize
 
     def _adjacent_ins(self, index):
-
         adjacents = {}
         x, y = index
         if x > 0:
@@ -106,10 +100,7 @@ class Board(list):
     def result(self, color: Status, x, y):
         '''Result of a move (may be invalid)'''
         cpy = deepcopy(self)
-        try:
-            cpy[x][y] = color
-        except IndexError:
-            raise  # import pudb; pudb.set_trace()
+        cpy[x][y] = color
         raw = cpy.analyze(x, y)
         result = MoveResult(
             x=x,
@@ -122,21 +113,44 @@ class Board(list):
         return result
 
     def apply_result(self, result):
-        r = result
-        self[r.x][r.y] = r.color
-        for x, y in r.killed:
+        self[result.x][result.y] = result.color
+        for x, y in result.killed:
             self[x][y] = EMPTY
 
+    def rotated(self, switch_axis=False, switch_x=False, switch_y=False):
+        if not any((switch_axis, switch_x, switch_y)):
+            return self
+
+        cpy = deepcopy(self)
+        boardrange = range(self.boardsize)
+        if switch_axis:
+            for x in boardrange:
+                for y in boardrange:
+                    cpy[x][y] = self[y][x]
+
+        if switch_x:
+            cpy.reverse()
+
+        if switch_y:
+            for x in boardrange:
+                cpy[x].reverse()
+
+        return cpy
+
     def __str__(self):
+        cpy = self.rotated(switch_axis=False, switch_y=False)
         txt = "\n    "
-        txt += " ".join([letter_coord_from_int(i, self.boardsize) for i in range(self.boardsize)])
+        txt += " ".join([letter_coord_from_int(i, cpy.boardsize) for i in range(cpy.boardsize)])
         txt += "\n\n"
-        for xorg in range(self.boardsize):
-            x = self.boardsize - xorg - 1
+        for xorg in range(cpy.boardsize):
+            x = cpy.boardsize - xorg - 1
             txt += "%2s  " % (x + 1)
-            txt += " ".join(
-                ["%s" % (self[x][y]).short()
-                    for y in range(self.boardsize)])
+            txt += " ".join([
+                "%s" % (cpy[xorg][y]).short()
+                for y in range(cpy.boardsize)])
             txt += "\n"
 
         return txt
+
+
+

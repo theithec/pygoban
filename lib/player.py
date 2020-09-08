@@ -5,6 +5,7 @@ import datetime
 from threading import Thread
 import subprocess
 from . import status
+from .coords import sgf_coords
 
 
 class Player():
@@ -31,6 +32,9 @@ class Player():
     def set_turn(self, result):
         raise NotImplementedError()
 
+    def __str__(self):
+        return f"{self.color}"
+
 
 class ConsolePlayer(Player):
     def _get_move(self):
@@ -49,6 +53,7 @@ class ConsolePlayer(Player):
     def set_turn(self, result):
         try:
             move = self._get_move()
+            print("M", self, move)
             self.controller.handle_move(self.color, move)
         except AssertionError:
             self.set_turn(result)
@@ -63,6 +68,7 @@ class GTPComm(Thread):
         self.start()
 
     def run(self):
+        print("PC", self.player, self.cmd)
         if not self.player.process.pid:
             return
 
@@ -105,6 +111,7 @@ class GTPPlayer(Player):
         )
         time.sleep(1)
         self.do_cmd("boardsize %s" % self.controller.game.movetree.board.boardsize, False)
+        #self.do_cmd("fixed_handicap %s" % self.controller.game.handicap,  False)
 
     def set_timesettings(self, timesettings):
         self.timesettings = timesettings
@@ -125,7 +132,7 @@ class GTPPlayer(Player):
     def set_turn(self, result):
         if result:
             if not result.extra:
-                coords = self.controller.game.sgf_coords(result.x, result.y)
+                coords = sgf_coords(result.x, result.y, self.controller.game.boardsize)
                 self.do_cmd("play %s %s" % (
                     result.color.strval.lower(),
                     coords), False)

@@ -1,11 +1,12 @@
 # pylint: disable=invalid-name, comparison-with-callable, using-constant-test
 import os
 
-from PyQt5.QtCore import QRect, Qt, pyqtProperty  # ,QEvent
+from PyQt5.QtCore import QRect, Qt, pyqtProperty, QEvent
 from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap
 from PyQt5.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
-from lib.status import BLACK, WHITE, DEAD_BLACK, DEAD_WHITE
+from lib.status import Status, STATUS,  BLACK, WHITE, DEAD_BLACK, DEAD_WHITE, EMPTY
+
 from . import BASE_DIR
 
 
@@ -21,6 +22,7 @@ class Intersection(QWidget):
 
     def __init__(self, parent, x, y, status, is_hoshi):
         super().__init__(parent)
+        self.controller = parent
         self.x = x
         self.y = y
         self._status = status
@@ -32,31 +34,26 @@ class Intersection(QWidget):
 
     @pyqtProperty(bool)
     def is_current(self):
-        '''Getter'''
         return self._is_current
 
     @is_current.setter
     def is_current(self, _is_current):
-        """Setter"""
         if self._is_current != _is_current:
             self._is_current = _is_current
             self.update()
 
     @pyqtProperty(int)
     def status(self):
-        '''Getter'''
         return self._status
 
     @status.setter
     def status(self, status):
-        '''Setter'''
         if status != self._status:
             self._status = status
             self.update()
 
     @pyqtProperty(str)
     def marker(self):
-        '''Getter'''
         return self._marker
 
     @marker.setter
@@ -67,11 +64,10 @@ class Intersection(QWidget):
 
     def mousePressEvent(self, event):
         """Clck"""
-        print("CL", event)
         self.parent().inter_clicked(self)
 
     def paintEvent(self, _):
-        '''Draw'''
+        """Draw"""
 
         painter = QPainter()
         painter.begin(self)
@@ -91,7 +87,12 @@ class Intersection(QWidget):
             painter.setBrush(QColor("black"))
             painter.drawEllipse(hosp, hosp, hosz, hosz)
 
-        if stone_img := self.stone_by_status.get(self.status):
+        stone_img = self.stone_by_status.get(self.status)
+        if self._hover and not stone_img:
+            stone_img = self.stone_by_status.get(
+                STATUS[self.controller.game.currentcolor.intval + 2])
+
+        if stone_img:
             pixmap = QPixmap(stone_img)
             painter.drawPixmap(
                 QRect(
@@ -103,7 +104,7 @@ class Intersection(QWidget):
 
         if self.marker:
             font = painter.font()
-            font.setPixelSize(cls.curr_font_height)
+            font.setPixelSize(cls.curr_font_height / 2)
             painter.setFont(font)
             painter.setPen(QColor("green"))
             painter.drawText(
@@ -139,3 +140,18 @@ class Intersection(QWidget):
 
         cls.curr_curr_height = cls.curr_hoshi_size * 2
         cls.curr_curr_pos = (width - cls.curr_curr_height) / 2
+
+    def eventFilter(self, object_, event):
+        type_ = event.type()
+
+        if type_ == QEvent.Enter:
+            if self.status == EMPTY:
+                self._hover = True
+                self.repaint()
+            return True
+        elif type_ == QEvent.Leave:
+            self._hover = False
+            self.repaint()
+            return True
+
+        return False
