@@ -22,7 +22,7 @@ class Intersection(QWidget):
 
     def __init__(self, parent, x, y, status, is_hoshi):
         super().__init__(parent)
-        self.controller = parent
+        self.controller = parent.parent()
         self.x = x
         self.y = y
         self._status = status
@@ -64,7 +64,7 @@ class Intersection(QWidget):
 
     def mousePressEvent(self, event):
         """Clck"""
-        self.parent().inter_clicked(self)
+        self.controller.inter_clicked(self)
 
     def paintEvent(self, _):
         """Draw"""

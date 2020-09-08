@@ -15,7 +15,9 @@ from .coords import array_indexes, sgf_coords
 class Controller:
     def __init__(
             self, black: Player, white: Player, game: Game,
-            timesettings: TimeSettings = None):
+            timesettings: TimeSettings = None, *args, **kwargs):
+        print("AK", args, kwargs, "g", game)
+        super().__init__(*args, **kwargs)
         self.game = game
         self.players = {
             BLACK: black,
@@ -28,6 +30,9 @@ class Controller:
 
         self.timeout = False
         self.move_start = None
+
+    def overtime_happend(self, player):
+        pass
 
     def player_lost_by_overtime(self, player):
         raise Exception("TIMEOUT %s" % player.color)

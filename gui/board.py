@@ -1,21 +1,18 @@
 # pylint: disable=invalid-name
 import os
 from itertools import permutations
-from threading import Timer
 
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtGui import QColor, QImage, QPainter
 from PyQt5.QtWidgets import QWidget
 
 from lib.controller import Controller
-from lib.status import BLACK, EMPTY
 from lib.coords import letter_coord_from_int
+from lib.status import BLACK, EMPTY
 from lib.timesettings import TimeSettings
 
-from .player import GuiPlayer
 from . import BASE_DIR
 from .intersection import Intersection
-
 
 COORDS = [chr(i) for i in list(range(97, 117))]
 
@@ -32,19 +29,17 @@ HOSHIS = {
 
 
 class GuiBoard(QWidget):
-    def __init__(self, black, white, game, *args, **kwargs):
-        super().__init__(*args, **kwargs, black=black, white=white, game=game)
+    def __init__(self, parent, game, *args, **kwargs):
+        super().__init__(parent=parent, *args, **kwargs)
         self.bgimage = QImage(os.path.join(BASE_DIR, "gui/imgs/shinkaya.jpg"))
         board = game.movetree.board
         self.boardsize = board.boardsize
         self.intersections = []
         self.boardrange = range(self.boardsize)
-        for x in self.boardrange:
-            self.intersections.append([None for _ in self.boardrange])
+        for _x in self.boardrange:
+            self.intersections.append([None for _y in self.boardrange])
 
         self.update_intersections(board, create=True)
-
-        Timer(1, lambda: self.set_turn(BLACK, None)).start()
 
     def update_intersections(self, board, create=False):
         hoshis = HOSHIS.get(self.boardsize, [])
@@ -62,13 +57,12 @@ class GuiBoard(QWidget):
                     inter = self.intersections[x][y]
                     inter.status = status
 
-
     def get_bordersize(self):
         '''Todo'''
         bordersize = int(self.width() / self.boardsize)
         return bordersize
 
-    def resizeEvent(self, _):
+    def resizeEvent(self, event):
         borderspace = self.get_bordersize()
         width = (self.width() - 2 * borderspace) / self.boardsize
         for x in range(self.boardsize):
@@ -126,33 +120,3 @@ class GuiBoard(QWidget):
                 x + hdist + borderspace)
 
         painter.end()
-
-
-class GuiController(GuiBoard, Controller):
-
-    def inter_clicked(self, inter):
-        if not isinstance(self.players[self.game.currentcolor], GuiPlayer):
-            return
-        x = letter_coord_from_int(inter.y, self.boardsize)
-        y = self.boardsize - inter.x
-        self.handle_move(self.game.currentcolor, f"{x}{y}")
-
-    def set_turn(self, color, result):
-        print(self.game.movetree.board)
-        print(self.game.movetree.to_sgf())
-        if result:
-            if result.extra:
-                return
-
-            for row in self.intersections:
-                for inter in row:
-                    if inter.is_current:
-                        inter.is_current = False
-                        break
-
-            inter = self.intersections[result.y][result.x]
-            inter.status = result.color
-            inter.is_current = True
-            for killed in result.killed:
-                self.intersections[killed[1]][killed[0]].status = EMPTY
-        super().set_turn(color, result)

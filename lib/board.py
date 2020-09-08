@@ -8,7 +8,6 @@ from .status import EMPTY, Status
 from .coords import letter_coord_from_int
 
 
-
 class StonelessReason(Enum):
     UNDO = "undo"
     PASS = "pas"

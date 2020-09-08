@@ -14,7 +14,7 @@ class _PlayerTimer(Timer):
 
 @dataclass
 class TimeSettings:
-    maintime: int = 100000
+    maintime: int = 10
     byomi_time: int = 5
     byomi_num: int = 3
     byomi_stones: int = 1
@@ -49,6 +49,7 @@ class PlayerTime:
             self.nexttime(start_timer=True)
         else:
             self.player.lost_by_overtime()
+        self.player.controller.overtime_happend(self.player)
 
     def nexttime(self, used=0, start_timer=False):
         _next = 0

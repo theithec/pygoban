@@ -14,6 +14,7 @@ class OccupiedViolation(RuleViolation):
 
 
 class BaseRuleset:
+    name = "Basic Rules"
     def __init__(self, game):
         self.ko = None
         self.game = game
