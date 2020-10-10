@@ -48,7 +48,6 @@ class Parser:
         self.tree = None
 
     def parse_part(self, part):
-        org = part
         while part := part.strip():
             match = self.pattern.match(part)
             if match:
@@ -80,8 +79,6 @@ class Parser:
         sgfparts = sgftxt.split(";")
         for part in sgfparts:
             self.parse_part(part)
-            # if self.tree:
-            #     print(self.tree.board)
 
     def notsupported(self, name):
         def named(*args, **kwargs):

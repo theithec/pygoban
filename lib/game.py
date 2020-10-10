@@ -59,7 +59,6 @@ class Game:
         if self.pass_cnt == 3:
             raise ThreeTimesPassed(color)
         self.currentcolor = self.get_othercolor(color)
-        self.pass_cnt = 0
 
     def undo(self):
         parent = self.movetree.cursor.parent

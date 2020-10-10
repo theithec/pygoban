@@ -13,7 +13,8 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)  # kill with <Ctrl-C>
 
 
 def writeconfig(config):
-    with open(os.path.sep.join((sysconfig.get_config_var("userbase"), ".pygoban.ini")), "w") as configfile:
+    configpath = os.path.sep.join((sysconfig.get_config_var("userbase"), ".pygoban.ini"))
+    with open(configpath, "w") as configfile:
         config.write(configfile)
 
 
@@ -43,8 +44,8 @@ def main():
         from lib.controller import ConsoleController as Controller
         from lib.player import ConsolePlayer as HumanPlayer
     else:
-        from gui.board import GuiController as Controller
-        from PyQt5.QtWidgets import QApplication, QWidget
+        from gui.gamewindow import GameWindow as Controller
+        from PyQt5.QtWidgets import QApplication
         from gui.player import GuiPlayer as HumanPlayer
         app = QApplication(sys.argv)
 
@@ -55,7 +56,7 @@ def main():
             players[col] = GTPPlayer(col, cmd=config["GTP"][cmd])
 
     boardsize = args.boardsize or config["PYGOBAN"]["boardsize"]
-    game=Game(boardsize=boardsize, ruleset_cls=BaseRuleset, handicap=args.handicap)
+    game = Game(boardsize=boardsize, ruleset_cls=BaseRuleset, handicap=args.handicap)
     controller = Controller(
         black=players[BLACK],
         white=players[WHITE],
@@ -64,7 +65,7 @@ def main():
     if args.nogui:
         controller.set_turn(BLACK)
     else:
-        controller.setGeometry(0,0,800,800)
+        controller.setGeometry(0, 0, 800, 800)
         controller.setWindowTitle('pygoban')
         controller.show()
         sys.exit(app.exec_())

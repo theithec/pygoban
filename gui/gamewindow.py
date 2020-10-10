@@ -1,14 +1,16 @@
-from threading import Timer
 import os
-from PyQt5.QtWidgets import (QMainWindow, QMessageBox)
-from PyQt5.QtGui import QColor, QImage, QPainter
+from threading import Timer
+
 from lib.controller import Controller
 from lib.coords import letter_coord_from_int
-from .player import GuiPlayer
-from . import BASE_DIR
-from lib.status import BLACK, EMPTY
-from .board import GuiBoard
+from lib.game import End, Game
+from lib.status import BLACK, EMPTY, Status
+from PyQt5.QtGui import QColor, QImage, QPainter
+from PyQt5.QtWidgets import QMainWindow, QMessageBox
 
+from . import BASE_DIR
+from .board import GuiBoard
+from .player import GuiPlayer
 from .sidebar import Sidebar
 
 
@@ -23,10 +25,7 @@ class GameWindow(QMainWindow, Controller):
     def set_turn(self, color, result):
         print(self.game.movetree.board)
         print(self.game.movetree.to_sgf())
-        if result:
-            if result.extra:
-                return
-
+        if result and not result.extra:
             for row in self.board.intersections:
                 for inter in row:
                     if inter.is_current:
@@ -40,9 +39,10 @@ class GameWindow(QMainWindow, Controller):
                 self.board.intersections[killed[1]][killed[0]].status = EMPTY
 
         self.sidebar.timeupdate_signal.emit()
+        self.sidebar.update_controlls()
         super().set_turn(color, result)
 
-    def overtime_happend(self, player):
+    def period_ended(self, player):
         self.sidebar.timeupdate_signal.emit()
 
     def player_lost_by_overtime(self, player):
@@ -55,7 +55,10 @@ class GameWindow(QMainWindow, Controller):
         x = letter_coord_from_int(inter.y, self.board.boardsize)
         y = self.board.boardsize - inter.x
         self.handle_move(self.game.currentcolor, f"{x}{y}")
-        self.sidebar.update_controlls()
+
+    def end(self, reason: End, color: Status):
+        self.sidebar.timeended_signal.emit()
+        super().end(reason, color)
 
     def resizeEvent(self, event):
         '''Overriden'''

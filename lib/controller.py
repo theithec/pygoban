@@ -16,8 +16,7 @@ class Controller:
     def __init__(
             self, black: Player, white: Player, game: Game,
             timesettings: TimeSettings = None, *args, **kwargs):
-        print("AK", args, kwargs, "g", game)
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)  # Maybe used as a mixin
         self.game = game
         self.players = {
             BLACK: black,
@@ -32,6 +31,7 @@ class Controller:
         self.move_start = None
 
     def overtime_happend(self, player):
+        print("Next time unit")
         pass
 
     def player_lost_by_overtime(self, player):
@@ -67,6 +67,7 @@ class Controller:
             except ThreeTimesPassed as err:
                 self.end(End.PASSED, err.color)
             self.update_time(color)
+
             self.set_turn(
                 self.game.get_othercolor(color),
                 StonelessResult(color, StonelessReason.PASS)
@@ -89,6 +90,7 @@ class Controller:
             self.set_turn(self.game.get_othercolor(color), result)
 
     def end(self, reason: End, color: Status):
+        print("END", reason)
         for player in self.players.values():
             player.end()
 

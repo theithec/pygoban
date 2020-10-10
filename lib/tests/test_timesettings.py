@@ -8,16 +8,16 @@ def test_ts1():
     assert tst.nexttime() == 60
     assert tst.nexttime(25) == 35
     assert tst.byomi_left == 3
-    tst.overtime()
+    tst.period_ended()
     assert tst.maintime == 0
     assert tst.byomi_left == 3
     assert tst.nexttime() == 30
     assert tst.nexttime(20) == 30
     assert tst.byomi_left == 3
-    tst.overtime()
+    tst.period_ended()
     assert tst.byomi_left == 2
     assert tst.nexttime(20) == 30
     assert tst.byomi_left == 2
-    tst.overtime()
+    tst.period_ended()
     assert tst.byomi_left == 1
     tst.cancel()

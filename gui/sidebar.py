@@ -1,10 +1,10 @@
-from PyQt5.QtCore import Qt, QCoreApplication, QTimer, QTime, QThread, pyqtSignal
-from PyQt5.QtWidgets import (
-    QHBoxLayout, QFormLayout, QFrame, QLabel, QFileDialog, QPushButton,
-    QTextEdit, QGroupBox, QMenu, QAction, QStackedLayout, QGridLayout,
-    QRadioButton, QSizePolicy, QLCDNumber)
-
 from lib.status import BLACK, WHITE
+from PyQt5.QtCore import (Qt,  QTimer,
+                          pyqtSignal)
+from PyQt5.QtWidgets import (QAction, QFileDialog, QFormLayout, QFrame,
+                             QGridLayout, QGroupBox, QHBoxLayout, QLabel,
+                             QLCDNumber, QMenu, QPushButton, QRadioButton,
+                             QSizePolicy, QStackedLayout, QTextEdit)
 
 
 class Sidebar(QFrame):
@@ -83,9 +83,7 @@ class Sidebar(QFrame):
     def save_as_file(self):
         pass
 
-
     def update_controlls(self):
         for color in (BLACK, WHITE):
             curr = self.player_controlls[color]
             curr['prisoners_label'].setText(str(self.controller.game.movetree.prisoners[color]))
-

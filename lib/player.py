@@ -21,7 +21,7 @@ class Player():
         self.controller = controller
 
     def end(self):
-        pass
+        self.timesettings.timer.cancel()
 
     def set_timesettings(self, timesettings):
         self.timesettings = timesettings
@@ -53,7 +53,6 @@ class ConsolePlayer(Player):
     def set_turn(self, result):
         try:
             move = self._get_move()
-            print("M", self, move)
             self.controller.handle_move(self.color, move)
         except AssertionError:
             self.set_turn(result)
@@ -68,9 +67,10 @@ class GTPComm(Thread):
         self.start()
 
     def run(self):
-        print("PC", self.player, self.cmd)
         if not self.player.process.pid:
             return
+
+        time.sleep(0.3)
 
         try:
             self.player.process.stdin.write(("%s\r\n" % self.cmd).encode())
@@ -124,17 +124,20 @@ class GTPPlayer(Player):
     def end(self):
         self.do_cmd("quit", False)
         self.process.wait()
+        super().end()
 
     def _get_move(self):
         # self.controller.handle_move(self.color, "pass")
         self.do_cmd("genmove " + self.color.strval.lower())
 
     def set_turn(self, result):
+        print("SET TURN", result)
         if result:
             if not result.extra:
                 coords = sgf_coords(result.x, result.y, self.controller.game.boardsize)
                 self.do_cmd("play %s %s" % (
                     result.color.strval.lower(),
                     coords), False)
-                self.do_cmd("showboard", False)
+            self.do_cmd("showboard", False)
+
         self._get_move()

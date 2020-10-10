@@ -36,8 +36,8 @@ class PlayerTime:
         if self.timer:
             self.timer.cancel()
 
-    def overtime(self):
-        logging.info("OVERTIME %s", self)
+    def period_ended(self):
+        logging.info("Timeperiod ended %s", self)
         self.cancel()
         if self.maintime > 0:
             self.maintime = 0
@@ -49,7 +49,7 @@ class PlayerTime:
             self.nexttime(start_timer=True)
         else:
             self.player.lost_by_overtime()
-        self.player.controller.overtime_happend(self.player)
+        self.player.controller.period_ended(self.player)
 
     def nexttime(self, used=0, start_timer=False):
         _next = 0
@@ -62,11 +62,11 @@ class PlayerTime:
                 self.byomi_time -= used
             else:
                 self.byomi_time = self.byomi_time_org
-            _next = self.byomi_time
-
+            if self.byomi_left > 0:
+                _next = self.byomi_time
         if start_timer:
             assert not self.timer or self.timer.finished.is_set(), "T " + str(self.timer)
-            self.timer = _PlayerTimer(_next, self.overtime)
+            self.timer = _PlayerTimer(_next, self.period_ended)
         return _next
 
     def __str__(self):

@@ -10,7 +10,7 @@ from .coords import letter_coord_from_int
 
 class StonelessReason(Enum):
     UNDO = "undo"
-    PASS = "pas"
+    PASS = "pass"
 
 
 @dataclass
@@ -150,6 +150,3 @@ class Board(list):
             txt += "\n"
 
         return txt
-
-
-
