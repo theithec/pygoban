@@ -50,7 +50,7 @@ class GameWindow(QMainWindow, Controller):
         super().player_lost_by_overtime(player)
 
     def inter_clicked(self, inter):
-        if not isinstance(self.players[self.game.currentcolor], GuiPlayer):
+        if not self.game.currentcolor or not isinstance(self.players[self.game.currentcolor], GuiPlayer):
             return
         x = letter_coord_from_int(inter.y, self.board.boardsize)
         y = self.board.boardsize - inter.x

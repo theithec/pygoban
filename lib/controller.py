@@ -35,6 +35,7 @@ class Controller:
         pass
 
     def player_lost_by_overtime(self, player):
+        self.game.currentcolor = None
         raise Exception("TIMEOUT %s" % player.color)
 
     def set_turn(self, color, result):

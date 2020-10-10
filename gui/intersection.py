@@ -88,7 +88,7 @@ class Intersection(QWidget):
             painter.drawEllipse(hosp, hosp, hosz, hosz)
 
         stone_img = self.stone_by_status.get(self.status)
-        if self._hover and not stone_img:
+        if self.controller.game.currentcolor and self._hover and not stone_img:
             stone_img = self.stone_by_status.get(
                 STATUS[self.controller.game.currentcolor.intval + 2])
 
