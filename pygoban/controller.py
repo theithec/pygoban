@@ -2,7 +2,7 @@ import datetime
 import sys
 import time
 
-from lib.player import Player
+from .player import Player
 from . import logging
 from .board import StonelessReason, StonelessResult
 from .game import End, Game, ThreeTimesPassed
@@ -22,26 +22,24 @@ class Controller:
             BLACK: black,
             WHITE: white
         }
-        timesettings = timesettings or TimeSettings()
+        self.timesettings = timesettings
         for player in self.players.values():
             player.set_controller(self)
-            player.set_timesettings(PlayerTime(player, timesettings))
+            if self.timesettings:
+                player.set_timesettings(PlayerTime(player, self.timesettings))
 
         self.timeout = False
         self.move_start = None
 
-    def overtime_happend(self, player):
-        print("Next time unit")
-        pass
-
     def player_lost_by_overtime(self, player):
         self.game.currentcolor = None
-        raise Exception("TIMEOUT %s" % player.color)
+        self.end(End.BY_TIME, player.color)
 
     def set_turn(self, color, result):
         logging.info("SET TURN %s", color)
-        nexttime = self.players[color].timesettings.nexttime(start_timer=True)
-        logging.info("TIME %s", nexttime)
+        if self.players[color].timesettings:
+            nexttime = self.players[color].timesettings.nexttime(start_timer=True)
+            logging.info("TIME %s", nexttime)
         self.move_start = datetime.datetime.now()
         self.players[color].set_turn(result)
 
@@ -67,16 +65,17 @@ class Controller:
                 self.game.pass_(color)
             except ThreeTimesPassed as err:
                 self.end(End.PASSED, err.color)
-            self.update_time(color)
+            if self.timesettings:
+                self.update_time(color)
 
             self.set_turn(
                 self.game.get_othercolor(color),
                 StonelessResult(color, StonelessReason.PASS)
             )
         elif move == "undo":
-            self.game.undo(color)
+            self.game.undo()
             self.set_turn(
-                self.game.get_othercolor(color),
+                color,
                 StonelessResult(color, StonelessReason.UNDO)
             )
         elif move:
@@ -87,7 +86,8 @@ class Controller:
                 self.handle_rule_exception(err)
                 return
 
-            self.update_time(color)
+            if self.timesettings:
+                self.update_time(color)
             self.set_turn(self.game.get_othercolor(color), result)
 
     def end(self, reason: End, color: Status):

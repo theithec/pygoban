@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from threading import Timer
-from lib.player import Player
+from .player import Player
 
 from . import logging
 

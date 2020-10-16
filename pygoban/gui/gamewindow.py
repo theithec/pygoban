@@ -1,26 +1,28 @@
 import os
 from threading import Timer
 
-from lib.controller import Controller
-from lib.coords import letter_coord_from_int
-from lib.game import End, Game
-from lib.status import BLACK, EMPTY, Status
-from PyQt5.QtGui import QColor, QImage, QPainter
+from pygoban.controller import Controller
+from pygoban.coords import letter_coord_from_int
+from pygoban.game import End, Game
+from pygoban.status import BLACK, EMPTY, Status
+from PyQt5.QtGui import QColor, QImage, QPainter, QIcon
 from PyQt5.QtWidgets import QMainWindow, QMessageBox
 
-from . import BASE_DIR
+from . import BASE_DIR, CenteredMixin
 from .board import GuiBoard
 from .player import GuiPlayer
 from .sidebar import Sidebar
 
 
-class GameWindow(QMainWindow, Controller):
+class GameWindow(QMainWindow, Controller, CenteredMixin):
     def __init__(self, black, white, game, *args, **kwargs):
         super().__init__(black=black, white=white, game=game, *args, **kwargs)
         self.board = GuiBoard(self, game)
         self.sidebar = Sidebar(self)
+
+        self.setWindowIcon(QIcon('gui/imgs/icon.png'))
         # self.setStyleSheet("background-color:black;")
-        Timer(1, lambda: self.set_turn(BLACK, None)).start()
+        Timer(1, lambda: self.set_turn(self.game.currentcolor, None)).start()
 
     def set_turn(self, color, result):
         print(self.game.movetree.board)
@@ -71,3 +73,4 @@ class GameWindow(QMainWindow, Controller):
         mindim = int(mindim / sizeborder) * sizeborder
         self.sidebar.setGeometry(mindim, 0, bwidth + cmin - mindim, height)
         self.board.resize(mindim, mindim)
+        self.center()

@@ -1,6 +1,6 @@
-from lib.status import BLACK
-from lib.player import Player
-from lib.timesettings import TimeSettings, PlayerTime
+from pygoban.status import BLACK
+from pygoban.player import Player
+from pygoban.timesettings import TimeSettings, PlayerTime
 
 
 def test_ts1():

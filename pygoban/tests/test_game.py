@@ -1,9 +1,9 @@
 import unittest
-from lib.status import BLACK, WHITE, EMPTY
-from lib.game import Game
-from lib.controller import Controller
-from lib.player import Player
-from lib.rulesets import BaseRuleset, RuleViolation, KoViolation, OccupiedViolation
+from pygoban.status import BLACK, WHITE, EMPTY
+from pygoban.game import Game
+from pygoban.controller import Controller
+from pygoban.player import Player
+from pygoban.rulesets import BaseRuleset, RuleViolation, KoViolation, OccupiedViolation
 
 
 class BaseGameTest(unittest.TestCase):

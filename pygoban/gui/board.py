@@ -6,10 +6,10 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtGui import QColor, QImage, QPainter
 from PyQt5.QtWidgets import QWidget
 
-from lib.controller import Controller
-from lib.coords import letter_coord_from_int
-from lib.status import BLACK, EMPTY
-from lib.timesettings import TimeSettings
+from pygoban.controller import Controller
+from pygoban.coords import letter_coord_from_int
+from pygoban.status import BLACK, EMPTY
+from pygoban.timesettings import TimeSettings
 
 from . import BASE_DIR
 from .intersection import Intersection
@@ -51,7 +51,7 @@ class GuiBoard(QWidget):
                 if create:
                     is_hoshi = (x, y) in hoshis
                     inter = Intersection(self, cx, cy, status, is_hoshi)
-                    inter.marker = f"({inter.x},{inter.y})"
+                    # inter.marker = f"({inter.x},{inter.y})"
                     self.intersections[x][y] = inter
                 else:
                     inter = self.intersections[x][y]

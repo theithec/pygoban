@@ -1,6 +1,6 @@
 import unittest
-from lib.board import Board
-from lib.status import BLACK, WHITE
+from pygoban.board import Board
+from pygoban.status import BLACK, WHITE
 
 
 class BoardTest(unittest.TestCase):

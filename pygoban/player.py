@@ -12,6 +12,7 @@ class Player():
     def __init__(self, color: status.Status, name=None):
         self.color = color
         self.name = name or str(color)
+        self.timesettings = None
 
     def lost_by_overtime(self):
         self.end()
@@ -21,7 +22,8 @@ class Player():
         self.controller = controller
 
     def end(self):
-        self.timesettings.timer.cancel()
+        if self.timesettings and self.timesettings.timer:
+            self.timesettings.timer.cancel()
 
     def set_timesettings(self, timesettings):
         self.timesettings = timesettings

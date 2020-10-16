@@ -1,4 +1,4 @@
-from lib.status import EMPTY, KO
+from pygoban.status import EMPTY, KO
 
 
 class RuleViolation(Exception):

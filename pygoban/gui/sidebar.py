@@ -1,4 +1,4 @@
-from lib.status import BLACK, WHITE
+from pygoban.status import BLACK, WHITE
 from PyQt5.QtCore import (Qt,  QTimer,
                           pyqtSignal)
 from PyQt5.QtWidgets import (QAction, QFileDialog, QFormLayout, QFrame,
@@ -48,8 +48,10 @@ class Sidebar(QFrame):
         self.setLayout(layout)
 
     def update_clock(self):
-        curr_player = self.controller.players[self.controller.game.currentcolor]
-        self.set_clock(curr_player.color, curr_player.timesettings.nexttime())
+        if self.controller.game.currentcolor:
+            curr_player = self.controller.players[self.controller.game.currentcolor]
+            if self.controller.players[self.controller.game.currentcolor].timesettings:
+                self.set_clock(curr_player.color, curr_player.timesettings.nexttime())
 
     def clock_tick(self):
         seconds = self.player_controlls[self.controller.game.currentcolor]["time"].intValue() - 1

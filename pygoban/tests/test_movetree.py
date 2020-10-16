@@ -1,7 +1,7 @@
 
 import unittest
-from lib.movetree import MoveTree, BLACK, WHITE
-from lib.rulesets import RuleViolation
+from pygoban.movetree import MoveTree, BLACK, WHITE
+from pygoban.rulesets import RuleViolation
 
 
 class MoveTreeTest(unittest.TestCase):
@@ -20,6 +20,7 @@ class MoveTreeTest(unittest.TestCase):
         self.assertEqual(self.tree.prisoners[WHITE], prisoners[1])
 
         print(self.tree.board)
+
 
 class MoveTreeMovesTest(MoveTreeTest):
     def test_kill1(self):

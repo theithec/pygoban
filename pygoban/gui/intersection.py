@@ -5,7 +5,7 @@ from PyQt5.QtCore import QRect, Qt, pyqtProperty, QEvent
 from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap
 from PyQt5.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
-from lib.status import Status, STATUS,  BLACK, WHITE, DEAD_BLACK, DEAD_WHITE, EMPTY
+from pygoban.status import Status, STATUS,  BLACK, WHITE, DEAD_BLACK, DEAD_WHITE, EMPTY
 
 from . import BASE_DIR
 

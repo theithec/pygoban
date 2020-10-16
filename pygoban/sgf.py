@@ -45,7 +45,7 @@ class Parser:
         self.pattern = re.compile(SGF_CMD_PATTERN, re.DOTALL)
         self.variations = []
         self.infos = {}
-        self.tree = None
+        self.tree: movetree.MoveTree = None
 
     def parse_part(self, part):
         while part := part.strip():

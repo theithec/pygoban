@@ -1,4 +1,4 @@
-from lib.player import Player
+from pygoban.player import Player
 
 class GuiPlayer(Player):
 
