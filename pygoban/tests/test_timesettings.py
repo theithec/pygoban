@@ -1,10 +1,14 @@
+from unittest.mock import Mock
 from pygoban.status import BLACK
 from pygoban.player import Player
+from pygoban.controller import Controller
 from pygoban.timesettings import TimeSettings, PlayerTime
 
 
 def test_ts1():
-    tst = PlayerTime(Player(BLACK), TimeSettings(maintime=60, byomi_time=30, byomi_num=3))
+    player = Player(BLACK)
+    player.controller = Mock()
+    tst = PlayerTime(player, TimeSettings(maintime=60, byomi_time=30, byomi_num=3))
     assert tst.nexttime() == 60
     assert tst.nexttime(25) == 35
     assert tst.byomi_left == 3

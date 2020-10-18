@@ -1,6 +1,6 @@
-def letter_coord_from_int(pos, boardsize):
-    assert pos < boardsize
-    i = (66 if pos > 7 else 65) + pos
+def letter_coord_from_int(pos_, boardsize):
+    assert pos_ < boardsize
+    i = (66 if pos_ > 7 else 65) + pos_
     return chr(i)
 
 
@@ -11,12 +11,33 @@ def array_indexes(coords, boardsize):
     assert 0 <= xcoord < boardsize, f"{xcoord}, {coords}"
     assert 0 <= ycoord < boardsize, f"{ycoord}, {coords}"
     res = xcoord, ycoord
-    print("to array", coords, "->", res)
     return res
 
 
-def sgf_coords(x, y, boardsize):
-    res = "%s%s" % (
+def gtp_coords(x, y, boardsize):
+    return "%s%s" % (
         letter_coord_from_int(y, boardsize), boardsize - x)
-    print("to coord", x, y, "->", res)
-    return res
+
+
+def sgf_coord_to_gtp(pos, boardsize):
+    xchar, ychar = pos #.lower()
+    yord = ord(xchar)
+    if yord >= 105:
+        yord += 1
+    xchar = chr(yord)
+    x = 96 - ord(ychar) + boardsize + 1
+    coord = f"{xchar}{x}"
+    return coord
+
+
+def gtp_coord_to_sgf(pos):
+
+    xnum = ord(pos[0].lower())
+    ynum = 96 + int(pos[1:])
+    if xnum > 105:
+        xnum -= 1
+    print("pos", pos, xnum)
+    # xval= "i" if xnum == 105 else chr(ynum)
+    xval= chr(ynum)
+    #if xval
+    return chr(xnum) + xval

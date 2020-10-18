@@ -1,7 +1,7 @@
-
 import unittest
-from pygoban.movetree import MoveTree, BLACK, WHITE
+from pygoban.movetree import MoveTree, Move, BLACK, WHITE
 from pygoban.rulesets import RuleViolation
+from pygoban.coords import gtp_coords
 
 
 class MoveTreeTest(unittest.TestCase):
@@ -11,10 +11,12 @@ class MoveTreeTest(unittest.TestCase):
     def play(self, moves):
         prisoners = moves.pop(0)
         for index, move in enumerate(moves):
+            print("I", index, move)
             x, y, col_id = move
             # if index == 5:
             #    import pdb; pdb.set_trace()
-            self.tree.test_move(col_id, x, y, apply_result=True)
+            coord = gtp_coords(x, y, 9)
+            self.tree.test_move(Move(col_id, coord), apply_result=True)
 
         self.assertEqual(self.tree.prisoners[BLACK], prisoners[0])
         self.assertEqual(self.tree.prisoners[WHITE], prisoners[1])

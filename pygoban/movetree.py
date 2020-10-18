@@ -1,6 +1,14 @@
+from typing import Tuple, Dict
 from .board import Board
 from .move import Move, MoveList
 from .status import BLACK, WHITE
+from .coords import array_indexes
+
+HANDICAPS: Dict[int, Tuple] = {
+    1: ((3, 3),)
+}
+
+HANDICAPS[2] = HANDICAPS[1] + ((15, 15),)
 
 
 class MoveTree:
@@ -35,24 +43,35 @@ class MoveTree:
     def __init__(self, **infos):
         self.board = Board(int(infos["SZ"]))
         self.infos = infos
-        self.root = Move(None)
+        self.root = Move(color=None, coord=None)
         self.set_cursor(self.root)
 
-    def test_move(self, color, x, y, apply_result=False):
-        result = self.board.result(color, x, y)
+    def set_handicap(self):
+        handicap = self.infos.get("HA")
+        if not handicap:
+            return
+        positions = HANDICAPS.get(handicap, tuple())
+        for pos in positions:
+            self.board[pos[0]][pos[1]] = BLACK
+
+    def test_move(self, move, apply_result=False):
+        print("S", self.board.boardsize)
+        result = self.board.result(move.color, *array_indexes(move.coord, self.board.boardsize))
         if apply_result:
-            self.apply_result(result)
+            self.apply_result(result, move)
 
         return result
 
-    def apply_result(self, result):
+    def apply_result(self, result, move=None):
         self.board.apply_result(result)
         color = result.color
         self.prisoners[color] += len(result.killed)
-        self.cursor = Move(color, result.x, result.y, parent=self.cursor)
+        old_cursor = self.cursor
+        self.cursor = move #or Move(color, result.x, result.yursor)
+        move.parent = old_cursor
 
     def pass_(self, color):
-        self.cursor = Move(color, -1, -1, self.cursor)
+        self.cursor = Move(color, coord=None, parent=self.cursor)
 
     def get_path(self):
         path = MoveList()
@@ -68,12 +87,14 @@ class MoveTree:
         self.prisoners = {BLACK: 0, WHITE: 0}
         path = self.get_path()
         self.board = Board(self.board.boardsize)
+        self.set_handicap()
         self.cursor = self.root
         for move in path:
-            self.test_move(move.color, move.x, move.y, apply_result=True)
+            self.test_move(move, apply_result=True)
+            #self.cursor.decorations = move.decorations
 
     def to_sgf(self):
-        txt = "(" + "".join([f"{k}[{v}]" for k, v in self.infos.items()])
+        txt = "(;" + "".join([f"{k}[{v}]" for k, v in self.infos.items()])
 
         def variations(move):
             nonlocal txt
@@ -84,9 +105,9 @@ class MoveTree:
             elif not lenchildren:
                 txt += ")"
 
-            for child in move.children:
+            for child in move.children.values():
                 variations(child)
 
         variations(self.root)
-        txt += ")"
+        #txt += ")"
         return txt

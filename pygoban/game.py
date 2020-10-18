@@ -2,21 +2,15 @@ from typing import Tuple, Dict
 
 from enum import Enum
 
-from .movetree import MoveTree
-from .status import BLACK, WHITE, Status
+from .movetree import MoveTree, Move
+from .status import BLACK, WHITE, Status, STATUS
+from .coords import gtp_coords
 
 
 class End(Enum):
     RESIGN = "resign"
     BY_TIME = "by time"
     PASSED = "passed"
-
-
-HANDICAPS: Dict[int, Tuple] = {
-    1: ((3, 4),)
-}
-
-HANDICAPS[2] = HANDICAPS[1] + ((14, 14),)
 
 
 class ThreeTimesPassed(Exception):
@@ -27,29 +21,34 @@ class ThreeTimesPassed(Exception):
 class Game:
 
     def __init__(self, boardsize, ruleset_cls=None, handicap=0):
-        self.movetree = MoveTree(SZ=boardsize)
-        self.currentcolor = BLACK
+        movetree_kwargs = dict(SZ=int(boardsize))
+        if handicap:
+            movetree_kwargs["HA"] = int(handicap)
+        self.movetree = MoveTree(**movetree_kwargs)
         self.ruleset = ruleset_cls(self)
-        self.handicap = handicap
         self.pass_cnt = 0
-        if self.handicap:
-            positions = HANDICAPS[handicap]
-            for pos in positions:
-                self.movetree.board[pos[0]][pos[1]] = BLACK
 
     @property
     def boardsize(self):
         return self.movetree.board.boardsize
 
-    def get_othercolor(self, color: Status=None):
-        color = color or self.currentcolor
-        return BLACK if color == WHITE else WHITE
+    @property
+    def cursor(self):
+        return self.movetree.cursor
 
-    def play(self, color, x, y):
-        result = self.movetree.test_move(color, x, y)
+    @property
+    def currentcolor(self):
+        return self.get_othercolor(self.movetree.cursor.color)
+
+    def get_othercolor(self, color: Status):
+        return BLACK if not color or color == WHITE else WHITE
+
+    def play(self, color, coord):
+        move = self.cursor.children.get(
+            coord, Move(color, coord))
+        result = self.movetree.test_move(move)
         self.ruleset.validate(result)
-        self.movetree.apply_result(result)
-        self.currentcolor = self.get_othercolor(color)
+        self.movetree.apply_result(result, move)
         self.pass_cnt = 0
         return result
 
@@ -58,7 +57,6 @@ class Game:
         self.pass_cnt += 1
         if self.pass_cnt == 3:
             raise ThreeTimesPassed(color)
-        self.currentcolor = self.get_othercolor(color)
 
     def undo(self):
         parent = self.movetree.cursor.parent

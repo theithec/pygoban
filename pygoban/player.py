@@ -5,7 +5,7 @@ import datetime
 from threading import Thread
 import subprocess
 from . import status
-from .coords import sgf_coords
+from .coords import gtp_coords
 
 
 class Player():
@@ -136,7 +136,7 @@ class GTPPlayer(Player):
         print("SET TURN", result)
         if result:
             if not result.extra:
-                coords = sgf_coords(result.x, result.y, self.controller.game.boardsize)
+                coords = gtp_coords(result.x, result.y, self.controller.game.boardsize)
                 self.do_cmd("play %s %s" % (
                     result.color.strval.lower(),
                     coords), False)

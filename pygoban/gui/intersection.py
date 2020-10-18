@@ -5,7 +5,7 @@ from PyQt5.QtCore import QRect, Qt, pyqtProperty, QEvent
 from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap
 from PyQt5.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
-from pygoban.status import Status, STATUS,  BLACK, WHITE, DEAD_BLACK, DEAD_WHITE, EMPTY
+from pygoban.status import STATUS, BLACK, WHITE, DEAD_BLACK, DEAD_WHITE, EMPTY
 
 from . import BASE_DIR
 
@@ -20,13 +20,13 @@ class Intersection(QWidget):
         DEAD_WHITE: QImage(os.path.join(BASE_DIR, "gui/imgs/white_trans.png")),
     }
 
-    def __init__(self, parent, x, y, status, is_hoshi):
+    current = None
+
+    def __init__(self, parent, coord, status, is_hoshi):
         super().__init__(parent)
         self.controller = parent.parent()
-        self.x = x
-        self.y = y
+        self.coord = coord
         self._status = status
-        self._marker = ""
         self.is_hoshi = is_hoshi
         self._is_current = None
         self._hover = False
@@ -40,6 +40,7 @@ class Intersection(QWidget):
     def is_current(self, _is_current):
         if self._is_current != _is_current:
             self._is_current = _is_current
+            self.__class__.current = self if _is_current else None
             self.update()
 
     @pyqtProperty(int)
@@ -52,18 +53,7 @@ class Intersection(QWidget):
             self._status = status
             self.update()
 
-    @pyqtProperty(str)
-    def marker(self):
-        return self._marker
-
-    @marker.setter
-    def marker(self, marker):
-        if marker != self._marker:
-            self._marker = marker
-            self.update()
-
     def mousePressEvent(self, event):
-        """Clck"""
         self.controller.inter_clicked(self)
 
     def paintEvent(self, _):
@@ -102,15 +92,27 @@ class Intersection(QWidget):
                     cls.curr_stone_size),
                 pixmap)
 
-        if self.marker:
+        deco = self.controller.game.cursor.decorations.get(self.coord)
+        if deco:
             font = painter.font()
-            font.setPixelSize(cls.curr_font_height / 2)
+            font.setPixelSize(cls.curr_font_height)
             painter.setFont(font)
             painter.setPen(QColor("green"))
             painter.drawText(
                 QRect(0, cls.curr_font_bottom, cls.curr_width,
                       cls.curr_width),
-                Qt.AlignCenter, self.marker)
+                Qt.AlignCenter, deco)
+        child = self.controller.game.cursor.children.get(self.coord)
+        if child:
+            font = painter.font()
+            font.setPixelSize(cls.curr_font_height)
+            painter.setFont(font)
+            painter.setPen(QColor("green"))
+            painter.drawText(
+                QRect(0, cls.curr_font_bottom, cls.curr_width,
+                      cls.curr_width),
+                Qt.AlignCenter,
+                str(tuple(self.controller.game.cursor.children.keys()).index(self.coord) + 1))
 
         if self.is_current:
             painter.setBrush(QColor("red"))
@@ -149,7 +151,7 @@ class Intersection(QWidget):
                 self._hover = True
                 self.repaint()
             return True
-        elif type_ == QEvent.Leave:
+        if type_ == QEvent.Leave:
             self._hover = False
             self.repaint()
             return True

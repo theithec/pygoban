@@ -6,12 +6,9 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtGui import QColor, QImage, QPainter
 from PyQt5.QtWidgets import QWidget
 
-from pygoban.controller import Controller
-from pygoban.coords import letter_coord_from_int
-from pygoban.status import BLACK, EMPTY
-from pygoban.timesettings import TimeSettings
+from pygoban.coords import gtp_coords
 
-from . import BASE_DIR
+from . import BASE_DIR, rotate
 from .intersection import Intersection
 
 COORDS = [chr(i) for i in list(range(97, 117))]
@@ -34,27 +31,23 @@ class GuiBoard(QWidget):
         self.bgimage = QImage(os.path.join(BASE_DIR, "gui/imgs/shinkaya.jpg"))
         board = game.movetree.board
         self.boardsize = board.boardsize
-        self.intersections = []
+        self.intersections = {}
         self.boardrange = range(self.boardsize)
-        for _x in self.boardrange:
-            self.intersections.append([None for _y in self.boardrange])
-
         self.update_intersections(board, create=True)
 
     def update_intersections(self, board, create=False):
         hoshis = HOSHIS.get(self.boardsize, [])
         for x in self.boardrange:
             for y in self.boardrange:
-                cx = y
-                cy = x
+                cx, cy = rotate(x, y, self.boardsize)
+                coord = gtp_coords(cx, cy, self.boardsize)
                 status = board[cx][cy]
                 if create:
-                    is_hoshi = (x, y) in hoshis
-                    inter = Intersection(self, cx, cy, status, is_hoshi)
-                    # inter.marker = f"({inter.x},{inter.y})"
-                    self.intersections[x][y] = inter
+                    is_hoshi = (cx, cy) in hoshis
+                    inter = Intersection(self, coord, status, is_hoshi)
+                    self.intersections[coord] = inter
                 else:
-                    inter = self.intersections[x][y]
+                    inter = self.intersections[coord]
                     inter.status = status
 
     def get_bordersize(self):
@@ -67,12 +60,13 @@ class GuiBoard(QWidget):
         width = (self.width() - 2 * borderspace) / self.boardsize
         for x in range(self.boardsize):
             for y in range(self.boardsize):
-                inter = self.intersections[x][y]
+                coord = gtp_coords(*rotate(x, y, self.boardsize), self.boardsize)
+                inter = self.intersections[coord]
                 inter.setGeometry(
                     x * width + borderspace,
                     y * width + borderspace,
                     width, width)
-        self.intersections[0][0].calc()
+        self.intersections["A1"].calc()
         self.repaint()
 
     def paintEvent(self, evt):  # pylint: disable=invalid-name, unused-argument

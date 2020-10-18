@@ -1,11 +1,8 @@
-
-import os
 import sys
-import sysconfig
-import configparser
 import argparse
 import signal
 
+from . import getconfig
 from .game import BLACK, WHITE, Game
 from .rulesets import BaseRuleset
 from .player import GTPPlayer
@@ -18,28 +15,10 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)  # kill with <Ctrl-C>
 QAPP = None
 
 
-def writeconfig(config):
-    configpath = os.path.sep.join((sysconfig.get_config_var("userbase"), ".pygoban.ini"))
-    with open(configpath, "w") as configfile:
-        config.write(configfile)
-
-
-def getconfig():
-    config = configparser.ConfigParser()
-    config.read(os.path.sep.join((sysconfig.get_config_var("userbase"), ".pygoban.ini")))
-    if not config.sections():
-        config['PYGOBAN'] = {
-            'boardsize': '19',
-        }
-        writeconfig(config)
-    return config
-
-
 def startgame(args: argparse.Namespace, init_gui: bool):
     config = getconfig()
     players = {}
 
-    print("Args", args)
     if args.nogui:
         from .controller import ConsoleController as Controller
         from .player import ConsolePlayer as HumanPlayer
@@ -67,7 +46,6 @@ def startgame(args: argparse.Namespace, init_gui: bool):
         game=game
     )
     if args.time:
-        maintime, byomi_time, byomi_num, byomi_stones = args.time.split(":")
         timekwargs = dict(zip(
             ("maintime", "byomi_time", "byomi_num", "byomi_stones"),
             [int(arg) for arg in args.time.split(":")]))
@@ -103,8 +81,9 @@ def main():
             win = StartWindow(parser, starter_callback=startgame)
             win.show()
             sys.exit(QAPP.exec_())
-    else:
         startgame(args, init_gui=True)
+    else:
+        startgame(args, init_gui=False)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,8 @@
 import re
 from .status import BLACK, WHITE
-from . import movetree
+from .move import Move
+from .movetree import MoveTree
+from .coords import sgf_coord_to_gtp
 
 
 SGF_CMD_PATTERN = r"([A-Z]{1,2})((?:\[.*?(?<!\\)\])+).*"
@@ -45,7 +47,7 @@ class Parser:
         self.pattern = re.compile(SGF_CMD_PATTERN, re.DOTALL)
         self.variations = []
         self.infos = {}
-        self.tree: movetree.MoveTree = None
+        self.tree: MoveTree = None
 
     def parse_part(self, part):
         while part := part.strip():
@@ -59,7 +61,7 @@ class Parser:
                         val = int(val)
                     self.infos[key] = val
                 else:
-                    self.tree = self.tree or movetree.MoveTree(**self.infos)
+                    self.tree = self.tree or MoveTree(**self.infos)
                     self[f"do_{key.lower()}"](val)
                 part = part[match.span(2)[1]:]
             else:
@@ -87,14 +89,8 @@ class Parser:
         return named
 
     def _play_move(self, color, pos):
-        if not pos:
-            x = y = -1
-        else:
-            ychar, xchar = pos
-            x = 96 - ord(xchar) + int(self.tree.infos["SZ"])
-            y = ord(ychar) - 97
-
-        self.tree.test_move(color, x, y, apply_result=True)
+        coord = sgf_coord_to_gtp(pos, int(self.infos["SZ"])) if pos else None
+        self.tree.test_move(Move(color, coord), apply_result=True)
 
     def do_b(self, pos):
         print("PB", pos)
@@ -104,6 +100,7 @@ class Parser:
         self._play_move(WHITE, pos)
 
     def do_c(self, cmd):
+        print("CMT", cmd)
         self.tree.cursor.comments.append(cmd)
 
     def __getitem__(self, name):
@@ -112,6 +109,8 @@ class Parser:
                 return self.__getattribute__(name)
             except AttributeError:
                 return self.notsupported(name)
+        return None
+
 
 def parse(sgftxt):
     parser = Parser(sgftxt)

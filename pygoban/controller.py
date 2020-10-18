@@ -9,13 +9,13 @@ from .game import End, Game, ThreeTimesPassed
 from .rulesets import RuleViolation
 from .status import BLACK, WHITE, Status
 from .timesettings import PlayerTime, TimeSettings
-from .coords import array_indexes, sgf_coords
+from .coords import array_indexes, gtp_coords
 
 
 class Controller:
     def __init__(
             self, black: Player, white: Player, game: Game,
-            timesettings: TimeSettings = None, *args, **kwargs):
+            *args, timesettings: TimeSettings = None, **kwargs):
         super().__init__(*args, **kwargs)  # Maybe used as a mixin
         self.game = game
         self.players = {
@@ -56,9 +56,9 @@ class Controller:
     def handle_move(self, color, move):
         if self.timeout:
             return
-
         if move == "resign":
-            self.update_time(color, restart=False)
+            if self.timesettings:
+                self.update_time(color, restart=False)
             self.end(End.RESIGN, color)
         elif move == "pass":
             try:
@@ -75,13 +75,12 @@ class Controller:
         elif move == "undo":
             self.game.undo()
             self.set_turn(
-                color,
+                self.game.get_othercolor(color),
                 StonelessResult(color, StonelessReason.UNDO)
             )
         elif move:
             try:
-                x, y = array_indexes(move, self.game.movetree.board.boardsize)
-                result = self.game.play(color, x, y)
+                result = self.game.play(color, move)
             except RuleViolation as err:
                 self.handle_rule_exception(err)
                 return
@@ -91,7 +90,8 @@ class Controller:
             self.set_turn(self.game.get_othercolor(color), result)
 
     def end(self, reason: End, color: Status):
-        print("END", reason)
+        print("END", reason, color)
+        self.timeout = True
         for player in self.players.values():
             player.end()
 
@@ -107,7 +107,7 @@ class ConsoleController(Controller):
             f"{key} caught\t{val}" for key, val in self.game.movetree.prisoners.items()]))
         print("Has turn", color)
         if result:
-            print("Last:", result, sgf_coords(result.x, result.y, self.game.boardsize))
+            print("Last:", result, gtp_coords(result.x, result.y, self.game.boardsize))
         print("Time Black", self.players[BLACK].timesettings)
         print("Time White", self.players[WHITE].timesettings)
         super().set_turn(color, result)

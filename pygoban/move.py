@@ -1,6 +1,9 @@
+from typing import Dict
+from collections import OrderedDict
 from typing import Any, Dict, List
 
 from .status import Status
+from .coords import gtp_coord_to_sgf
 
 
 class MoveList(list):
@@ -10,25 +13,33 @@ class MoveList(list):
         items = [str(item) for item in self]
         return "(%s)" % " ".join(items)
 
-
 class Move:
-    def __init__(self, color: Status, x=None, y=None, parent=None):
-        self.x = -1 if x is None else x
-        self.y = y
+    def __init__(self, color: Status, coord, parent=None):
+        self.coord = coord
         self.color = color
-        self.children: List[Move] = []
-        if parent:
-            parent.children.append(self)
+        self.children: Dict[str, "Move"] = OrderedDict()
 
-        self.parent = parent
-        self.is_pass = self.x == -1
+        self._parent = None
+        if parent:
+            self.parent = parent
+
+        self.is_pass = not self.coord
         self.is_root = self.color is None
         self.comments: List[str] = []
         self.decorations: Dict[Any, Any] = {}
 
+    @property
+    def parent(self):
+        return self._parent
+
+    @parent.setter
+    def parent(self, _parent):
+        self._parent = _parent
+        self._parent.children[self.coord] = self
+
     def __del__(self):
         if self.parent:
-            self.parent.children.pop(self.parent.children.index(self))
+            self.parent.children.pop(self.coord)
 
     def __str__(self):
         if self.is_root:
@@ -37,23 +48,27 @@ class Move:
         if self.is_pass:
             val = ""
         else:
-            x = chr(65 + self.x)
-            val = f"{x}{self.y}"
-        return txt.format(color_char=self.color.shortval, val=val)
+            val = gtp_coord_to_sgf(self.coord)
 
-    def get_decorated_variations(self, tree=None):
-        '''all variations'''
-        tree = MoveList() if tree is None else tree
-        tree.append(self)
+        txt = txt.format(color_char=self.color.shortval, val=val)
+        for comment in self.comments:
+            if comment:
+                txt += f"C[{comment}]"
+        return txt
 
-        if len(self.children) == 1:
-            self.children[0].get_variations(tree)
-        else:
-            for child in self.children:
-                tree.append(child.get_variations())
+    #def get_decorated_variations(self, tree=None):
+    #    '''all variations'''
+    #    tree = MoveList() if tree is None else tree
+    #    tree.append(self)
 
-        return tree
+    #    if len(self.children) == 1:
+    #        self.children[0].get_variations(tree)
+    #    else:
+    #        for child in self.children:
+    #            tree.append(child.get_variations())
 
-    @classmethod
-    def pass_(cls, color: Status, parent: "Move"):
-        return cls(color, -1, -1, parent)
+    #    return tree
+
+    #@classmethod
+    #def pass_(cls, color: Status, parent: "Move"):
+    #    return cls(color, -1, -1, parent)

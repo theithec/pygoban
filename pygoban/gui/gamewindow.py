@@ -1,15 +1,17 @@
 import os
 from threading import Timer
 
-from pygoban.controller import Controller
-from pygoban.coords import letter_coord_from_int
-from pygoban.game import End, Game
-from pygoban.status import BLACK, EMPTY, Status
-from PyQt5.QtGui import QColor, QImage, QPainter, QIcon
-from PyQt5.QtWidgets import QMainWindow, QMessageBox
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QMainWindow
 
-from . import BASE_DIR, CenteredMixin
+from pygoban.controller import Controller
+from pygoban.coords import gtp_coords
+from pygoban.game import End
+from pygoban.status import EMPTY, Status
+
+from . import BASE_DIR, CenteredMixin, InputMode, rotate
 from .board import GuiBoard
+from .intersection import Intersection
 from .player import GuiPlayer
 from .sidebar import Sidebar
 
@@ -20,28 +22,35 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self.board = GuiBoard(self, game)
         self.sidebar = Sidebar(self)
 
-        self.setWindowIcon(QIcon('gui/imgs/icon.png'))
-        # self.setStyleSheet("background-color:black;")
+        self.setWindowIcon(QIcon(f'{BASE_DIR}/gui/imgs/icon.png'))
+        self.input_mode = InputMode.PLAY
         Timer(1, lambda: self.set_turn(self.game.currentcolor, None)).start()
 
     def set_turn(self, color, result):
         print(self.game.movetree.board)
         print(self.game.movetree.to_sgf())
-        if result and not result.extra:
-            for row in self.board.intersections:
-                for inter in row:
-                    if inter.is_current:
-                        inter.is_current = False
-                        break
 
-            inter = self.board.intersections[result.y][result.x]
+        if result and not result.extra:
+            if self.game.cursor and self.game.cursor.parent:
+                comments = self.sidebar.comments.toPlainText().split(os.linesep)
+                self.game.cursor.parent.comments = comments
+        if self.game.cursor:
+            self.sidebar.game_signal.emit(os.linesep.join(self.game.cursor.comments))
+        if result and not result.extra:
+            if Intersection.current:
+                Intersection.current.is_current = False
+
+            inter = self.board.intersections[gtp_coords(result.x, result.y, self.game.boardsize)]
             inter.status = result.color
             inter.is_current = True
             for killed in result.killed:
-                self.board.intersections[killed[1]][killed[0]].status = EMPTY
+                self.board.intersections[gtp_coords(
+                    *rotate(killed[0],killed[1], self.game.boardsize), self.game.boardsize)].status = EMPTY
 
         self.sidebar.timeupdate_signal.emit()
         self.sidebar.update_controlls()
+        self.board.update_intersections(self.game.movetree.board)
+        self.update()
         super().set_turn(color, result)
 
     def period_ended(self, player):
@@ -51,12 +60,14 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self.sidebar.timeended_signal.emit()
         super().player_lost_by_overtime(player)
 
-    def inter_clicked(self, inter):
-        if not self.game.currentcolor or not isinstance(self.players[self.game.currentcolor], GuiPlayer):
-            return
-        x = letter_coord_from_int(inter.y, self.board.boardsize)
-        y = self.board.boardsize - inter.x
-        self.handle_move(self.game.currentcolor, f"{x}{y}")
+    def inter_clicked(self, inter: Intersection):
+        if self.input_mode == InputMode.PLAY:
+            if not self.game.currentcolor or not isinstance(
+                    self.players[self.game.currentcolor], GuiPlayer):
+                return
+            self.handle_move(self.game.currentcolor, inter.coord)
+        else:
+            self.game.cursor.decorations[inter.coord] = "A"
 
     def end(self, reason: End, color: Status):
         self.sidebar.timeended_signal.emit()

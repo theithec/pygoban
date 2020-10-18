@@ -1,20 +1,27 @@
-from pygoban.status import BLACK, WHITE
-from PyQt5.QtCore import (Qt,  QTimer,
-                          pyqtSignal)
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (QAction, QFileDialog, QFormLayout, QFrame,
-                             QGridLayout, QGroupBox, QHBoxLayout, QLabel,
-                             QLCDNumber, QMenu, QPushButton, QRadioButton,
-                             QSizePolicy, QStackedLayout, QTextEdit)
+                             QGroupBox, QHBoxLayout, QLabel,
+                             QLCDNumber, QMenu, QPushButton, QSizePolicy,
+                             QTextEdit)
+
+from pygoban.status import BLACK, WHITE
+from . import InputMode, btn_adder
+from .intersection import Intersection
+from .player import GuiPlayer
+from .filedialog import filename_from_savedialog
 
 
 class Sidebar(QFrame):
 
     timeupdate_signal = pyqtSignal()
     timeended_signal = pyqtSignal()
+    game_signal = pyqtSignal(str)
 
-    def __init__(self, parent):
+    def __init__(self, parent, is_game=True, can_edit=True):
         super().__init__(parent)
         self.controller = parent
+        self.is_game = is_game
+        self.can_edit = can_edit
 
         self.setGeometry(0, 0, 180, parent.height())
         self.setMinimumSize(80, 30)
@@ -26,29 +33,107 @@ class Sidebar(QFrame):
         settings_layout.addWidget(btn_settings, 0, Qt.AlignRight)
         layout.addRow(settings_layout)
         self.player_controlls = {}
+        self.controlls = {}
         self.timer = None
         self.timeupdate_signal.connect(self.update_clock)
         self.timeended_signal.connect(self.time_ended)
+        self.game_signal.connect(self.game_update)
 
         for color in (BLACK, WHITE):
             curr = {}
             self.player_controlls[color] = curr
             player_box = QGroupBox(str(color))
             player_layout = QFormLayout()
-            player_layout.addRow(QLabel(self.controller.players[color].name))
+            player_layout.addRow("Name:", QLabel(self.controller.players[color].name))
             curr['prisoners_label'] = QLabel(str(self.controller.game.movetree.prisoners[color]))
-            curr['time'] = QLCDNumber()
-            curr['time'].display("00:00")
-            player_layout.addRow(curr['prisoners_label'])
-            player_layout.addRow(curr['time'])
+            player_layout.addRow("Prisoners:", curr['prisoners_label'])
+            if self.controller.timesettings:
+                curr['time'] = QLCDNumber()
+                curr['time'].display("00:00")
+                player_layout.addRow(curr['time'])
             player_box.setLayout(player_layout)
             layout.addRow(player_box)
+
+        if is_game:
+            layout.addRow(self.get_game_box())
+
+        if can_edit:
+            layout.addRow(self.get_edit_box())
+
+        self.comments = QTextEdit()
+        self.comments.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
+        layout.addRow(self.comments)
 
         layout.addRow("Ruleset", QLabel(str(self.controller.game.ruleset.name)))
         self.setLayout(layout)
 
+    def get_game_box(self):
+        self.pass_btn = QPushButton("Pass")
+        self.pass_btn.clicked.connect(self.do_pass)
+        resign_btn = QPushButton("Resign")
+        resign_btn.clicked.connect(self.do_resign)
+        game_box = QGroupBox("Game")
+        game_layout = QHBoxLayout()
+        game_layout.addWidget(self.pass_btn)
+        game_layout.addWidget(resign_btn)
+        game_box.setLayout(game_layout)
+        return game_box
+
+    def get_edit_box(self):
+        btns_layout = QHBoxLayout()
+        add_dirbutton = btn_adder(btns_layout)
+        self.back_moves = add_dirbutton("<<", self.do_back)
+        self.prev_move = add_dirbutton("<", self.do_undo)
+        self.next_move = add_dirbutton(">", self.do_redo)
+        self.forward_moves = add_dirbutton(">>", self.do_next)
+        self.foo = add_dirbutton("mark", self.do_mark)
+        edit_box = QGroupBox()
+        edit_box.setLayout(btns_layout)
+        return edit_box
+
+    def do_mark(self):
+        self.controller.input_mode = (
+            InputMode.EDIT if self.controller.input_mode == InputMode.PLAY else InputMode.PLAY)
+
+    def do_pass(self):
+        game = self.controller.game
+        self.controller.handle_move(game.currentcolor, "pass")
+
+    def do_resign(self):
+        game = self.controller.game
+        if not self.controller.timeout or not isinstance(
+                self.controller.players[game.currentcolor], GuiPlayer):
+            return
+        self.controller.handle_move(game.currentcolor, "resign")
+
+    def do_back(self):
+        pass
+
+    def do_undo(self):
+        movetree = self.controller.game.movetree
+        if movetree.cursor.is_root:
+            return
+        self.controller.handle_move(self.controller.game.currentcolor, "undo")
+        self.controller.board.update_intersections(movetree.board)
+        if Intersection.current:
+            Intersection.current.is_current = False
+        curr = movetree.cursor
+        if not curr.is_pass:
+            self.controller.board.intersections[curr.coord].is_current = True
+
+    def do_redo(self):
+        pass
+
+    def do_next(self):
+        pass
+
+    def game_update(self, txt):
+        self.comments.setText(txt)
+        # self.update_controls()
+
     def update_clock(self):
-        if self.controller.game.currentcolor:
+        if not self.controller.timeout:
             curr_player = self.controller.players[self.controller.game.currentcolor]
             if self.controller.players[self.controller.game.currentcolor].timesettings:
                 self.set_clock(curr_player.color, curr_player.timesettings.nexttime())
@@ -76,16 +161,21 @@ class Sidebar(QFrame):
         menu.addSeparator()
         return menu
 
-    def show_menu(self):
-        menu = self.get_menu()
-        menu.exec_(
-            self.controls['settings'].mapToGlobal(
-                self.controls['settings'].pos()))
-
     def save_as_file(self):
-        pass
+        name = filename_from_savedialog(self)
+        with open(name, "w") as fileobj:
+            fileobj.write(self.controller.game.movetree.to_sgf())
+        print(name)
 
     def update_controlls(self):
         for color in (BLACK, WHITE):
             curr = self.player_controlls[color]
             curr['prisoners_label'].setText(str(self.controller.game.movetree.prisoners[color]))
+        if self.is_game:
+            self.pass_btn.setEnabled(
+                isinstance(self.controller.players[self.controller.game.currentcolor], GuiPlayer))
+        if self.can_edit:
+            self.prev_move.setEnabled(bool(
+                self.controller.game.cursor and self.controller.game.cursor.parent))
+            self.next_move.setEnabled(bool(
+                self.controller.game.cursor and self.controller.game.cursor.children))
