@@ -66,7 +66,7 @@ class MoveTree:
         color = result.color
         self.prisoners[color] += len(result.killed)
         old_cursor = self.cursor
-        self.cursor = move #or Move(color, result.x, result.yursor)
+        self.cursor = move
         move.parent = old_cursor
 
     def pass_(self, color):
@@ -84,20 +84,20 @@ class MoveTree:
     def set_cursor(self, move):
         self.cursor = move
         self.prisoners = {BLACK: 0, WHITE: 0}
-        path = self.get_path()
         self.board = Board(self.board.boardsize)
         self.set_handicap()
+        path = self.get_path()
         self.cursor = self.root
-        for move in path:
-            self.test_move(move, apply_result=True)
-            #self.cursor.decorations = move.decorations
+        for pmove in path:
+            self.test_move(pmove, apply_result=True)
 
     def to_sgf(self):
         txt = "(;" + "".join([f"{k}[{v}]" for k, v in self.infos.items()])
+        boardsize = self.board.boardsize
 
         def variations(move):
             nonlocal txt
-            txt += str(move)
+            txt += move.to_sgf(boardsize)
             lenchildren = len(move.children)
             if lenchildren > 1:
                 txt += "("
@@ -108,5 +108,4 @@ class MoveTree:
                 variations(child)
 
         variations(self.root)
-        #txt += ")"
         return txt

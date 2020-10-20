@@ -13,7 +13,9 @@ class MoveList(list):
         items = [str(item) for item in self]
         return "(%s)" % " ".join(items)
 
+
 class Move:
+
     def __init__(self, color: Status, coord, parent=None):
         self.coord = coord
         self.color = color
@@ -23,8 +25,6 @@ class Move:
         if parent:
             self.parent = parent
 
-        self.is_pass = not self.coord
-        self.is_root = self.color is None
         self.comments: List[str] = []
         self.decorations: Dict[Any, Any] = {}
 
@@ -37,11 +37,15 @@ class Move:
         self._parent = _parent
         self._parent.children[self.coord] = self
 
-    def __del__(self):
-        if self.parent:
-            self.parent.children.pop(self.coord)
+    @property
+    def is_pass(self):
+        return not self.coord
 
-    def __str__(self):
+    @property
+    def is_root(self):
+        return not self.color
+
+    def to_sgf(self, boardsize):
         if self.is_root:
             return ""
         txt = ";{color_char}[{val}]"
@@ -55,6 +59,10 @@ class Move:
             if comment:
                 txt += f"C[{comment}]"
         return txt
+
+    def __del__(self):
+        if self.parent:
+            self.parent.children.pop(self.coord)
 
     #def get_decorated_variations(self, tree=None):
     #    '''all variations'''
