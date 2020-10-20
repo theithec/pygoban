@@ -27,8 +27,8 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         Timer(1, lambda: self.set_turn(self.game.currentcolor, None)).start()
 
     def set_turn(self, color, result):
-        print(self.game.movetree.board)
-        print(self.game.movetree.to_sgf())
+        print(self.game._movetree.board)
+        print(self.game._movetree.to_sgf())
 
         if result and not result.extra:
             if self.game.cursor and self.game.cursor.parent:
@@ -49,7 +49,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
 
         self.sidebar.timeupdate_signal.emit()
         self.sidebar.update_controlls()
-        self.board.update_intersections(self.game.movetree.board)
+        self.board.update_intersections(self.game._movetree.board)
         self.update()
         super().set_turn(color, result)
 

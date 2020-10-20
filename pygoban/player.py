@@ -112,7 +112,7 @@ class GTPPlayer(Player):
             stderr=subprocess.STDOUT
         )
         time.sleep(1)
-        self.do_cmd("boardsize %s" % self.controller.game.movetree.board.boardsize, False)
+        self.do_cmd("boardsize %s" % self.controller.game.boardsize, False)
         #self.do_cmd("fixed_handicap %s" % self.controller.game.handicap,  False)
 
     def set_timesettings(self, timesettings):

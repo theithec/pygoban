@@ -32,10 +32,10 @@ class GameTest(BaseGameTest):
             (0, 1, ),
             (0, 0, ),
             (1, 0, ),
-            )
+        )
 
         self.play_moves(moves)
-        self.assertEqual(1, self.game.movetree.prisoners[BLACK])
+        self.assertEqual(1, self.game._movetree.prisoners[BLACK])
 
     def test_ko(self):
 
@@ -49,7 +49,7 @@ class GameTest(BaseGameTest):
         )
 
         self.play_moves(moves)
-        self.assertEqual(1, self.game.movetree.prisoners[WHITE])
+        self.assertEqual(1, self.game._movetree.prisoners[WHITE])
         # now is ko
         with self.assertRaises(KoViolation):
             self.play_move( 0, 1, BLACK)
@@ -60,15 +60,15 @@ class GameTest(BaseGameTest):
             (4, 4),
             (5, 5),
             (0, 1)))
-        self.assertEqual(1, self.game.movetree.prisoners[BLACK])
+        self.assertEqual(1, self.game._movetree.prisoners[BLACK])
 
         self.play_move(6, 6, WHITE)
         self.play_move(7, 7, BLACK)
         self.play_move(0, 2, WHITE)
-        self.assertEqual(2, self.game.movetree.prisoners[WHITE])
+        self.assertEqual(2, self.game._movetree.prisoners[WHITE])
 
         self.game.undo()
-        self.assertEqual(1, self.game.movetree.prisoners[WHITE])
+        self.assertEqual(1, self.game._movetree.prisoners[WHITE])
 
     def test_occupied(self):
         self.play_move(4, 4, BLACK, )
@@ -88,14 +88,14 @@ class GameTest(BaseGameTest):
             (0, 3),
         )
         self.play_moves(moves)
-        self.assertEqual(2, self.game.movetree.prisoners[BLACK])
+        self.assertEqual(2, self.game._movetree.prisoners[BLACK])
 
         self.assertEqual(WHITE, self.game.currentcolor)
         self.game.undo()
         self.assertEqual(BLACK, self.game.currentcolor)
-        self.assertEqual(0, self.game.movetree.prisoners[BLACK])
+        self.assertEqual(0, self.game._movetree.prisoners[BLACK])
         self.game.undo()
-        self.assertEqual(EMPTY, self.game.movetree.board[3][3])
+        self.assertEqual(EMPTY, self.game._movetree.board[3][3])
         self.assertEqual(WHITE, self.game.currentcolor)
 
 

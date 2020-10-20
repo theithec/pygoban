@@ -29,7 +29,7 @@ class GuiBoard(QWidget):
     def __init__(self, parent, game, *args, **kwargs):
         super().__init__(parent=parent, *args, **kwargs)
         self.bgimage = QImage(os.path.join(BASE_DIR, "gui/imgs/shinkaya.jpg"))
-        board = game.movetree.board
+        board = game._movetree.board
         self.boardsize = board.boardsize
         self.intersections = {}
         self.boardrange = range(self.boardsize)

@@ -16,7 +16,7 @@ class Controller:
     def __init__(
             self, black: Player, white: Player, game: Game,
             *args, timesettings: TimeSettings = None, **kwargs):
-        super().__init__(*args, **kwargs)  # Maybe used as a mixin
+        # super().__init__(*args, **kwargs)  # Maybe used as a mixin
         self.game = game
         self.players = {
             BLACK: black,
@@ -102,9 +102,9 @@ class Controller:
 class ConsoleController(Controller):
 
     def set_turn(self, color, result=None):
-        print(self.game.movetree.board)
+        print(self.game._movetree.board)
         print("\n".join([
-            f"{key} caught\t{val}" for key, val in self.game.movetree.prisoners.items()]))
+            f"{key} caught\t{val}" for key, val in self.game._movetree.prisoners.items()]))
         print("Has turn", color)
         if result:
             print("Last:", result, gtp_coords(result.x, result.y, self.game.boardsize))

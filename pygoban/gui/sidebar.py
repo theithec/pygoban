@@ -45,7 +45,7 @@ class Sidebar(QFrame):
             player_box = QGroupBox(str(color))
             player_layout = QFormLayout()
             player_layout.addRow("Name:", QLabel(self.controller.players[color].name))
-            curr['prisoners_label'] = QLabel(str(self.controller.game.movetree.prisoners[color]))
+            curr['prisoners_label'] = QLabel(str(self.controller.game._movetree.prisoners[color]))
             player_layout.addRow("Prisoners:", curr['prisoners_label'])
             if self.controller.timesettings:
                 curr['time'] = QLCDNumber()
@@ -111,7 +111,7 @@ class Sidebar(QFrame):
         pass
 
     def do_undo(self):
-        movetree = self.controller.game.movetree
+        movetree = self.controller.game._movetree
         if movetree.cursor.is_root:
             return
         self.controller.handle_move(self.controller.game.currentcolor, "undo")
@@ -164,13 +164,13 @@ class Sidebar(QFrame):
     def save_as_file(self):
         name = filename_from_savedialog(self)
         with open(name, "w") as fileobj:
-            fileobj.write(self.controller.game.movetree.to_sgf())
+            fileobj.write(self.controller.game._movetree.to_sgf())
         print(name)
 
     def update_controlls(self):
         for color in (BLACK, WHITE):
             curr = self.player_controlls[color]
-            curr['prisoners_label'].setText(str(self.controller.game.movetree.prisoners[color]))
+            curr['prisoners_label'].setText(str(self.controller.game._movetree.prisoners[color]))
         if self.is_game:
             self.pass_btn.setEnabled(
                 isinstance(self.controller.players[self.controller.game.currentcolor], GuiPlayer))

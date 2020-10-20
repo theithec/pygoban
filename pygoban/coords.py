@@ -20,24 +20,20 @@ def gtp_coords(x, y, boardsize):
 
 
 def sgf_coord_to_gtp(pos, boardsize):
-    xchar, ychar = pos #.lower()
+    xchar, ychar = pos
     yord = ord(xchar)
     if yord >= 105:
         yord += 1
-    xchar = chr(yord)
+    xchar = chr(yord).upper()
     x = 96 - ord(ychar) + boardsize + 1
     coord = f"{xchar}{x}"
     return coord
 
 
 def gtp_coord_to_sgf(pos):
-
     xnum = ord(pos[0].lower())
     ynum = 96 + int(pos[1:])
     if xnum > 105:
         xnum -= 1
-    print("pos", pos, xnum)
-    # xval= "i" if xnum == 105 else chr(ynum)
     xval= chr(ynum)
-    #if xval
     return chr(xnum) + xval

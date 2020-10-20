@@ -55,7 +55,6 @@ class MoveTree:
             self.board[pos[0]][pos[1]] = BLACK
 
     def test_move(self, move, apply_result=False):
-        print("S", self.board.boardsize)
         result = self.board.result(move.color, *array_indexes(move.coord, self.board.boardsize))
         if apply_result:
             self.apply_result(result, move)

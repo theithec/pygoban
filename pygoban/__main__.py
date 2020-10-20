@@ -38,7 +38,7 @@ def startgame(args: argparse.Namespace, init_gui: bool):
         with open(args.sgf_file) as fileobj:
             sgftxt = fileobj.read()
             tree = parse(sgftxt)
-        game.movetree = tree
+        game._movetree = tree
 
     controller_kwargs = dict(
         black=players[BLACK],

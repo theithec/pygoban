@@ -33,7 +33,7 @@ class BaseRuleset:
         if result.extra == "pass":
             self.ko = None
 
-        bxy = self.game.movetree.board[result.x][result.y]
+        bxy = self.game._movetree.board[result.x][result.y]
         if bxy != EMPTY:
             raise OccupiedViolation(f"Not empty: {result} BUT {bxy}")
         if not result.libs and not result.killed:

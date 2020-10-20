@@ -24,21 +24,21 @@ class Game:
         movetree_kwargs = dict(SZ=int(boardsize))
         if handicap:
             movetree_kwargs["HA"] = int(handicap)
-        self.movetree = MoveTree(**movetree_kwargs)
+        self._movetree = MoveTree(**movetree_kwargs)
         self.ruleset = ruleset_cls(self)
         self.pass_cnt = 0
 
     @property
     def boardsize(self):
-        return self.movetree.board.boardsize
+        return self._movetree.board.boardsize
 
     @property
     def cursor(self):
-        return self.movetree.cursor
+        return self._movetree.cursor
 
     @property
     def currentcolor(self):
-        return self.get_othercolor(self.movetree.cursor.color)
+        return self.get_othercolor(self._movetree.cursor.color)
 
     def get_othercolor(self, color: Status):
         return BLACK if not color or color == WHITE else WHITE
@@ -46,19 +46,19 @@ class Game:
     def play(self, color, coord):
         move = self.cursor.children.get(
             coord, Move(color, coord))
-        result = self.movetree.test_move(move)
+        result = self._movetree.test_move(move)
         self.ruleset.validate(result)
-        self.movetree.apply_result(result, move)
+        self._movetree.apply_result(result, move)
         self.pass_cnt = 0
         return result
 
     def pass_(self, color):
-        self.movetree.pass_(color)
+        self._movetree.pass_(color)
         self.pass_cnt += 1
         if self.pass_cnt == 3:
             raise ThreeTimesPassed(color)
 
     def undo(self):
-        parent = self.movetree.cursor.parent
-        self.movetree.set_cursor(parent)
+        parent = self._movetree.cursor.parent
+        self._movetree.set_cursor(parent)
         self.pass_cnt = 0
