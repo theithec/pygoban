@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
 import sys
 import traceback
-from typing import Dict, List, Set
+from typing import Dict, List
 
 from .status import Status, BLACK, WHITE
-from .coords import gtp_coord_to_sgf, sgf_coord_to_gtp
+from .coords import gtp_coord_to_sgf
 
 
 class MoveList(list):
@@ -12,7 +12,7 @@ class MoveList(list):
 
     def __str__(self):
         items = [str(item) for item in self]
-        return "(%s)" % " ".join(items)
+        return "(ml:%s)" % " ".join(items)
 
 
 @dataclass
@@ -20,6 +20,8 @@ class MoveExtras:
     comments: List[str] = field(default_factory=list)
     decorations: Dict[str, str] = field(default_factory=dict)
     stones: Dict = field(default_factory=lambda: {BLACK: set(), WHITE: set()})
+    nr = 1
+    char = "A"
 
     def has_stones(self):
         return self.stones[BLACK] or self.stones[WHITE]
@@ -29,7 +31,7 @@ class Move:
     def __init__(self, color: Status = None, coord: str = None, parent=None, **extras):
         self.coord = coord
         self.color = color
-        self.children: Dict[str, List["Move"]] = {}
+        self.children: Dict[str, MoveList] = {}
         stones = extras.pop("stones", {})
         self.extras = MoveExtras(**extras)
         self.extras.stones.update(stones)
@@ -44,7 +46,7 @@ class Move:
     @parent.setter
     def parent(self, _parent):
         self._parent = _parent
-        self._parent.children.setdefault(self.coord, [])
+        self._parent.children.setdefault(self.coord, MoveList())
         self._parent.children[self.coord].append(self)
 
     @property
@@ -69,7 +71,8 @@ class Move:
             txt = ""
         elif self.extras.has_stones():
             for status in (BLACK, WHITE):
-                sgfcoords = "][".join([gtp_coord_to_sgf(coord) for coord in self.extras.stones[status]])
+                sgfcoords = "][".join([gtp_coord_to_sgf(coord)
+                                       for coord in self.extras.stones[status]])
                 txt = f";A{status.shortval}[{sgfcoords}]"
         else:
             val = gtp_coord_to_sgf(self.coord)
@@ -82,14 +85,8 @@ class Move:
 
     def __del__(self):
         if self.parent:
-            try:
-                if len(self.parent.children) == 1:
-                    self.parent.children.pop(self.coord)
-
-            except Exception as err:
-                #traceback.print_exc()
-                traceback.print_exception(*sys.exc_info())
-                #import pdb; pdb.set_trace()
+            if len(self.parent.children) == 1:
+                self.parent.children.pop(self.coord, None)
 
     def __str__(self):
         return self.to_sgf(19)

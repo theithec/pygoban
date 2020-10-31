@@ -41,18 +41,18 @@ class GameTest(BaseGameTest):
 
         moves = (
             (0, 1, ),
-                (0, 0, ),
+            (0, 0, ),
             (1, 2, ),
-                (1, 1, ),
+            (1, 1, ),
             (0, 3, ),
-                (0, 2, ),
+            (0, 2, ),
         )
 
         self.play_moves(moves)
         self.assertEqual(1, self.game.prisoners[WHITE])
         # now is ko
         with self.assertRaises(KoViolation):
-            self.play_move( 0, 1, BLACK)
+            self.play_move(0, 1, BLACK)
 
         self.assertEqual(BLACK, self.game.currentcolor)
 
@@ -80,11 +80,11 @@ class GameTest(BaseGameTest):
     def test_undo(self):
         moves = (
             (0, 0),
-                (0, 1),
+            (0, 1),
             (1, 1),
-                (0, 2),
+            (0, 2),
             (1, 2),
-                (3, 3),
+            (3, 3),
             (0, 3),
         )
         self.play_moves(moves)

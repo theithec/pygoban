@@ -35,5 +35,5 @@ def gtp_coord_to_sgf(pos):
     ynum = 96 + int(pos[1:])
     if xnum > 105:
         xnum -= 1
-    xval= chr(ynum)
+    xval = chr(ynum)
     return chr(xnum) + xval

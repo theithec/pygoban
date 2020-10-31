@@ -92,7 +92,7 @@ class Parser:
 
         parts = cmd.split("][")
 
-        coords =[ sgf_coord_to_gtp(pos, int(self.infos["SZ"])) for pos in parts]
+        coords = [sgf_coord_to_gtp(pos, int(self.infos["SZ"])) for pos in parts]
         # import pudb; pudb.set_trace()
         self._play_move(None, None, stones={color: coords})
         print("SGF:", self.game.cursor, color, coords)

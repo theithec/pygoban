@@ -1,13 +1,13 @@
 import os
 from threading import Timer
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QMainWindow
-
 from pygoban.controller import Controller
 from pygoban.coords import gtp_coords
 from pygoban.game import End
-from pygoban.status import EMPTY, Status
+from pygoban.move import Move
+from pygoban.status import BLACK, EMPTY, WHITE, Status
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QMainWindow
 
 from . import BASE_DIR, CenteredMixin, InputMode, rotate
 from .board import GuiBoard
@@ -17,37 +17,33 @@ from .sidebar import Sidebar
 
 
 class GameWindow(QMainWindow, Controller, CenteredMixin):
-    def __init__(self, black, white, game, *args, **kwargs):
+    def __init__(self, black, white, game):
         super().__init__(black=black, white=white, game=game)
         self.board = GuiBoard(self, game)
         self.sidebar = Sidebar(self)
 
         self.setWindowIcon(QIcon(f'{BASE_DIR}/gui/imgs/icon.png'))
         self.input_mode = InputMode.PLAY
+        self._deco = None
         Timer(1, lambda: self.set_turn(self.game.currentcolor, None)).start()
 
     def set_turn(self, color, result):
-        print(self.game.board)
-        #print(self.game.to_sgf())
-
-        if False:result and not result.extra:
+        # print(self.game.board)
+        if result and not result.extra:
             if self.game.cursor and self.game.cursor.parent:
                 comments = self.sidebar.comments.toPlainText().split(os.linesep)
                 self.game.cursor.parent.extras.comments = comments
         if self.game.cursor:
             self.sidebar.game_signal.emit(os.linesep.join(self.game.cursor.extras.comments))
         if result and not result.extra:
-
             inter = self.board.intersections[gtp_coords(result.x, result.y, self.game.boardsize)]
             inter.status = result.color
+            bsz = self.game.boardsize
             for killed in result.killed:
-                self.board.intersections[gtp_coords(
-                    *rotate(killed[0],killed[1], self.game.boardsize), self.game.boardsize)].status = EMPTY
+                self.board.intersections[gtp_coords(*rotate(*killed, bsz), bsz)].status = EMPTY
 
         self.sidebar.timeupdate_signal.emit()
-        self.sidebar.update_controlls()
-        self.board.update_intersections(self.game.board)
-        self.update()
+        self.update_board()
         super().set_turn(color, result)
 
     def update_board(self):
@@ -76,7 +72,21 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
                 return
             self.handle_move(self.game.currentcolor, inter.coord)
         else:
-            self.game.cursor.extras.decorations[inter.coord] = "A"
+            if self._deco in (BLACK, WHITE):
+                move = (
+                    self.game.cursor
+                    if self.game.cursor.extras.stones
+                    else Move(color=None, coord=None)
+                )
+                move.extras.stones[self._deco].add(inter.coord)
+                self.game._test_move(move, apply_result=True)
+                self.update_board()
+            else:
+                self.game.cursor.extras.decorations[inter.coord] = self.deco
+                if self._deco == "NR":
+                    self.game.cursor.extras.nr += 1
+                elif self._deco == "CHAR":
+                    self.game.cursor.extras.char = chr(ord(self.game.cursor.extras.char) + 1)
 
     def end(self, reason: End, color: Status):
         self.sidebar.timeended_signal.emit()
@@ -94,3 +104,15 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self.sidebar.setGeometry(mindim, 0, bwidth + cmin - mindim, height)
         self.board.resize(mindim, mindim)
         self.center()
+
+    @property
+    def deco(self):
+        if self._deco == "NR":
+            return str(self.game.cursor.extras.nr)
+        if self._deco == "CHAR":
+            return self.game.cursor.extras.char
+        return self._deco
+
+    @deco.setter
+    def deco(self, val):
+        self._deco = val

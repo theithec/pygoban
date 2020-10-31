@@ -1,10 +1,7 @@
-from . import logging
-from typing import Type
 import time
-import datetime
 from threading import Thread
 import subprocess
-from . import status
+from . import status, logging
 from .coords import gtp_coords
 
 
@@ -13,6 +10,7 @@ class Player():
         self.color = color
         self.name = name or str(color)
         self.timesettings = None
+        self.controller = None
 
     def lost_by_overtime(self):
         self.end()
@@ -133,7 +131,7 @@ class GTPPlayer(Player):
         self.do_cmd("genmove " + self.color.strval.lower())
 
     def set_turn(self, result):
-        print("SET TURN", result)
+        #print("SET TURN", result)
         if result:
             if not result.extra:
                 coords = gtp_coords(result.x, result.y, self.controller.game.boardsize)
@@ -143,6 +141,3 @@ class GTPPlayer(Player):
             self.do_cmd("showboard", False)
 
         self._get_move()
-
-
-

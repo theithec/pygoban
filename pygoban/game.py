@@ -20,9 +20,9 @@ class ThreeTimesPassed(Exception):
 
 
 HANDICAPS: Dict[int, Tuple] = {
-    1: ((3, 3),)
+    1: ((15, 3),)
 }
-HANDICAPS[2] = HANDICAPS[1] + ((15, 15),)
+HANDICAPS[2] = HANDICAPS[1] + ((3, 15),)
 
 INFO_KEYS = (
     "GM",  # 1 = go

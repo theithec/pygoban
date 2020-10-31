@@ -13,4 +13,3 @@ def filename_from_savedialog(parent):
         parent,
         QtCore.QCoreApplication.translate("Dialog", "Save Sgf-file"),
         "", "All Files (*);;Sgf Files (*.sgf)")[0]
-

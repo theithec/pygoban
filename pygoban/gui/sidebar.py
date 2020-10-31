@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (QAction, QFileDialog, QFormLayout, QFrame,
-                             QGroupBox, QHBoxLayout, QLabel,
+                             QGroupBox, QHBoxLayout, QLabel, QVBoxLayout,
                              QLCDNumber, QMenu, QPushButton, QSizePolicy,
                              QTextEdit)
 
@@ -69,32 +69,71 @@ class Sidebar(QFrame):
         self.setLayout(layout)
 
     def get_game_box(self):
-        self.pass_btn = QPushButton("Pass")
-        self.pass_btn.clicked.connect(self.do_pass)
-        resign_btn = QPushButton("Resign")
-        resign_btn.clicked.connect(self.do_resign)
         game_box = QGroupBox("Game")
         game_layout = QHBoxLayout()
-        game_layout.addWidget(self.pass_btn)
-        game_layout.addWidget(resign_btn)
+        add_gamebutton = btn_adder(game_layout)
+        self.undo_btn = add_gamebutton("Undo", self.do_undo)
+        self.pass_btn = add_gamebutton("Pass", self.do_pass)
+        add_gamebutton("Resign", self.do_resign)
+        add_gamebutton("Count", self.do_count)
         game_box.setLayout(game_layout)
         return game_box
 
     def get_edit_box(self):
         btns_layout = QHBoxLayout()
         add_dirbutton = btn_adder(btns_layout)
-        self.back_moves = add_dirbutton("<<", self.do_back)
-        self.prev_move = add_dirbutton("<", self.do_undo)
-        self.next_move = add_dirbutton(">", self.do_redo)
-        self.forward_moves = add_dirbutton(">>", self.do_next)
-        self.foo = add_dirbutton("mark", self.do_mark)
+        self.back_moves = add_dirbutton("<<", self.do_last_variation)
+        self.prev_move = add_dirbutton("<", self.do_prev_move)
+        self.next_move = add_dirbutton(">", self.do_next_move)
+        self.forward_moves = add_dirbutton(">>", self.do_next_variation)
+
+        deco_layout = QHBoxLayout()
+        add_decobutton = btn_adder(deco_layout)
+        group = QGroupBox("Deco")
+        group.setCheckable(True)
+        group.setChecked(False)
+        group.toggled.connect(self.toggle_deco)
+        add_decobutton("B", self.do_B)
+        add_decobutton("W", self.do_W)
+        add_decobutton("▲", self.do_tr)
+        add_decobutton("■", self.do_sq)
+        add_decobutton("●", self.do_ci)
+        add_decobutton("1", self.do_nr)
+        add_decobutton("A", self.do_char)
+        group.setLayout(deco_layout)
+
+        box_layout = QFormLayout()
+        box_layout.addRow(btns_layout)
+        box_layout.addRow(group)
+
         edit_box = QGroupBox()
-        edit_box.setLayout(btns_layout)
+        edit_box.setLayout(box_layout)
         return edit_box
 
-    def do_mark(self):
+    def toggle_deco(self, checked):
         self.controller.input_mode = (
-            InputMode.EDIT if self.controller.input_mode == InputMode.PLAY else InputMode.PLAY)
+            InputMode.EDIT if checked else InputMode.PLAY)
+
+    def do_B(self):
+        self.controller.deco = BLACK
+
+    def do_W(self):
+        self.controller.deco = WHITE
+
+    def do_tr(self):
+        self.controller.deco = "▲"
+
+    def do_sq(self):
+        self.controller.deco = "■"
+
+    def do_ci(self):
+        self.controller.deco = "●"
+
+    def do_nr(self):
+        self.controller.deco = "NR"
+
+    def do_char(self):
+        self.controller.deco = "CHAR"
 
     def do_pass(self):
         game = self.controller.game
@@ -107,8 +146,16 @@ class Sidebar(QFrame):
             return
         self.controller.handle_move(game.currentcolor, "resign")
 
-    def do_back(self):
-        pass
+    def do_last_variation(self):
+        game = self.controller.game
+        curr = game.cursor
+        while curr:
+            if len(curr.children) == 1:
+                curr = curr.parent
+            else:
+                break
+        game._set_cursor(curr)
+        self.controller.update_board()
 
     def do_undo(self):
         movetree = self.controller.game
@@ -117,15 +164,31 @@ class Sidebar(QFrame):
         self.controller.handle_move(self.controller.game.currentcolor, "undo")
         self.controller.update_board()
 
-    def do_redo(self):
+    def do_prev_move(self):
         game = self.controller.game
-        move  = list(game.cursor.children.values())[0][0]
-        print("Move...", game.cursor.children)
+        game._set_cursor(game.cursor.parent)
+        self.controller.update_board()
+
+    def do_next_move(self):
+        game = self.controller.game
+        move = list(game.cursor.children.values())[0][0]
+        # print("Move...", game.cursor.children)
         game._set_cursor(move)
         self.controller.update_board()
 
-    def do_next(self):
-        pass
+    def do_next_variation(self):
+        game = self.controller.game
+        curr = game.cursor
+        while curr:
+            if len(curr.children) == 1:
+                curr = list(curr.children.values())[0][0]
+            else:
+                break
+        game._set_cursor(curr)
+        self.controller.update_board()
+
+    def do_count(self):
+        self.controller.count()
 
     def game_update(self, txt):
         self.comments.setText(txt)
@@ -164,7 +227,6 @@ class Sidebar(QFrame):
         name = filename_from_savedialog(self)
         with open(name, "w") as fileobj:
             fileobj.write(self.controller.game.to_sgf())
-        print(name)
 
     def update_controlls(self):
         for color in (BLACK, WHITE):
@@ -176,5 +238,8 @@ class Sidebar(QFrame):
         if self.can_edit:
             self.prev_move.setEnabled(bool(
                 self.controller.game.cursor and self.controller.game.cursor.parent))
-            print("UC", self.controller.game.cursor, self.controller.game.cursor.children)
-            self.next_move.setEnabled(bool(self.controller.game.cursor and len(self.controller.game.cursor.children)))
+            # print("UC", self.controller.game.cursor, self.controller.game.cursor.children)
+            self.next_move.setEnabled(
+                bool(
+                    self.controller.game.cursor and len(
+                        self.controller.game.cursor.children)))

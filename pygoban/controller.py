@@ -9,7 +9,7 @@ from .game import End, Game, ThreeTimesPassed
 from .rulesets import RuleViolation
 from .status import BLACK, WHITE, Status
 from .timesettings import PlayerTime, TimeSettings
-from .coords import array_indexes, gtp_coords
+from .coords import gtp_coords
 
 
 class Controller:
@@ -90,7 +90,7 @@ class Controller:
             self.set_turn(self.game.get_othercolor(color), result)
 
     def end(self, reason: End, color: Status):
-        print("END", reason, color)
+        logging.info("END: %s %s", reason, color)
         self.timeout = True
         for player in self.players.values():
             player.end()

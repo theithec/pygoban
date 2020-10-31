@@ -34,15 +34,15 @@ class Intersection(QWidget):
 
     @pyqtProperty(bool)
     def is_current(self):
-        self.__class__.current = None
         return self._is_current
 
     @is_current.setter
     def is_current(self, _is_current):
-        if self._is_current != _is_current:
-            self._is_current = _is_current
-            self.__class__.current = self if _is_current else None
-            self.update()
+        if self.__class__.current:
+            self.__class__.current._is_current = False
+        self._is_current = _is_current
+        self.__class__.current = self if _is_current else None
+        self.update()
 
     @pyqtProperty(int)
     def status(self):
@@ -78,6 +78,10 @@ class Intersection(QWidget):
             painter.setBrush(QColor("black"))
             painter.drawEllipse(hosp, hosp, hosz, hosz)
 
+        for status in (BLACK, WHITE):
+            if self.coord in self.controller.game.cursor.extras.stones[status]:
+                self.status = status
+
         stone_img = self.stone_by_status.get(self.status)
         if self.controller.game.currentcolor and self._hover and not stone_img:
             stone_img = self.stone_by_status.get(
@@ -106,7 +110,6 @@ class Intersection(QWidget):
         child = self.controller.game.cursor.children.get(self.coord)
 
         if child and not deco:
-            print("IS CHILD")
             font = painter.font()
             font.setPixelSize(cls.curr_font_height)
             painter.setFont(font)
