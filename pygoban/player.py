@@ -143,3 +143,6 @@ class GTPPlayer(Player):
             self.do_cmd("showboard", False)
 
         self._get_move()
+
+
+

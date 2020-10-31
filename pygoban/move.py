@@ -1,9 +1,10 @@
-from typing import Dict
-from collections import OrderedDict
-from typing import Any, Dict, List
+from dataclasses import dataclass, field
+import sys
+import traceback
+from typing import Dict, List, Set
 
-from .status import Status
-from .coords import gtp_coord_to_sgf
+from .status import Status, BLACK, WHITE
+from .coords import gtp_coord_to_sgf, sgf_coord_to_gtp
 
 
 class MoveList(list):
@@ -14,19 +15,27 @@ class MoveList(list):
         return "(%s)" % " ".join(items)
 
 
-class Move:
+@dataclass
+class MoveExtras:
+    comments: List[str] = field(default_factory=list)
+    decorations: Dict[str, str] = field(default_factory=dict)
+    stones: Dict = field(default_factory=lambda: {BLACK: set(), WHITE: set()})
 
-    def __init__(self, color: Status, coord, parent=None):
+    def has_stones(self):
+        return self.stones[BLACK] or self.stones[WHITE]
+
+
+class Move:
+    def __init__(self, color: Status = None, coord: str = None, parent=None, **extras):
         self.coord = coord
         self.color = color
-        self.children: Dict[str, "Move"] = OrderedDict()
-
+        self.children: Dict[str, List["Move"]] = {}
+        stones = extras.pop("stones", {})
+        self.extras = MoveExtras(**extras)
+        self.extras.stones.update(stones)
         self._parent = None
         if parent:
             self.parent = parent
-
-        self.comments: List[str] = []
-        self.decorations: Dict[Any, Any] = {}
 
     @property
     def parent(self):
@@ -35,48 +44,52 @@ class Move:
     @parent.setter
     def parent(self, _parent):
         self._parent = _parent
-        self._parent.children[self.coord] = self
+        self._parent.children.setdefault(self.coord, [])
+        self._parent.children[self.coord].append(self)
 
     @property
-    def is_pass(self):
+    def is_empty(self):
         return not self.coord
 
     @property
+    def is_pass(self):
+        return not self.coord and not self.extras.has_stones()
+
+    @property
     def is_root(self):
-        return not self.color
+        return not self.color and not self.extras.has_stones()
+
+    def real_children(self):
+        return {k: v for (k, v) in self.children.values() if not v.is_empty}
 
     def to_sgf(self, boardsize):
         if self.is_root:
             return ""
-        txt = ";{color_char}[{val}]"
         if self.is_pass:
-            val = ""
+            txt = ""
+        elif self.extras.has_stones():
+            for status in (BLACK, WHITE):
+                sgfcoords = "][".join([gtp_coord_to_sgf(coord) for coord in self.extras.stones[status]])
+                txt = f";A{status.shortval}[{sgfcoords}]"
         else:
             val = gtp_coord_to_sgf(self.coord)
-
-        txt = txt.format(color_char=self.color.shortval, val=val)
-        for comment in self.comments:
+            txt = ";{color_char}[{val}]"
+            txt = txt.format(color_char=self.color.shortval, val=val)
+        for comment in self.extras.comments:
             if comment:
                 txt += f"C[{comment}]"
         return txt
 
     def __del__(self):
         if self.parent:
-            self.parent.children.pop(self.coord)
+            try:
+                if len(self.parent.children) == 1:
+                    self.parent.children.pop(self.coord)
 
-    #def get_decorated_variations(self, tree=None):
-    #    '''all variations'''
-    #    tree = MoveList() if tree is None else tree
-    #    tree.append(self)
+            except Exception as err:
+                #traceback.print_exc()
+                traceback.print_exception(*sys.exc_info())
+                #import pdb; pdb.set_trace()
 
-    #    if len(self.children) == 1:
-    #        self.children[0].get_variations(tree)
-    #    else:
-    #        for child in self.children:
-    #            tree.append(child.get_variations())
-
-    #    return tree
-
-    #@classmethod
-    #def pass_(cls, color: Status, parent: "Move"):
-    #    return cls(color, -1, -1, parent)
+    def __str__(self):
+        return self.to_sgf(19)

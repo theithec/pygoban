@@ -1,53 +1,25 @@
+from typing import Dict
 import re
 from .status import BLACK, WHITE
 from .move import Move
-from .movetree import MoveTree
+from .game import Game, INFO_KEYS
 from .coords import sgf_coord_to_gtp
 
 
 SGF_CMD_PATTERN = r"([A-Z]{1,2})((?:\[.*?(?<!\\)\])+).*"
 
-INFO_KEYS = (
-    "GM",  # 1 = go
-    "FF",  # File format
-    "AP",  # Application
-    "RU",  # Ruleset,
-    "SZ",  # Size,
-    "AN",  # Annotations: name of the person commenting the game.
-    "BR", "WR",  # Rank,
-    "BT", "WT",  # Team
-    "CP",  # Copyright
-    "DT",  # Date,
-    "EV",  # Event
-    "GN",  # Game name,
-    "HA",  # Handicap,
-    "KM",  # KOmi,
-    "ON",  # OPening,
-    "OT",  # Overtime
-    "PB", "PW",  # Player Name,
-    "PC",  # Place
-    "PL",  # Start color
-    "RE",  # Result,
-    "RO",  # Round
-    "SO",  # Source
-    "TM",  # Time limits
-    "US",  # user (file creator)
-    "CA",  # encoding
-    "ST",  # ?
-    #  "GC" "ST", "CA",
-)
-
-INT_KEYS = ("SZ",)
+INT_KEYS = ("SZ", "HA")
 
 
 class Parser:
 
-    def __init__(self, sgftxt):
+    def __init__(self, sgftxt: str, defaults: Dict):
         self.sgftxt = sgftxt
+        self.defaults = defaults
         self.pattern = re.compile(SGF_CMD_PATTERN, re.DOTALL)
         self.variations = []
-        self.infos = {}
-        self.tree: MoveTree = None
+        self.infos = {**defaults}
+        self.game: Game = None
 
     def parse_part(self, part):
         while part := part.strip():
@@ -55,13 +27,12 @@ class Parser:
             if match:
                 key, val = match.groups()
                 val = val[1:-1]
-                print("KV", key, val)
                 if key in INFO_KEYS:
                     if key in INT_KEYS:
                         val = int(val)
                     self.infos[key] = val
                 else:
-                    self.tree = self.tree or MoveTree(**self.infos)
+                    self.game = self.game or Game(**self.infos)
                     self[f"do_{key.lower()}"](val)
                 part = part[match.span(2)[1]:]
             else:
@@ -69,11 +40,11 @@ class Parser:
                     if not char.strip():
                         continue
                     if char == "(":
-                        self.variations.append(self.tree.cursor)
+                        self.variations.append(self.game.cursor)
                     elif char == ")":
-                        self.tree.set_cursor(self.variations.pop())
-                    #else:
-                    #    raise Exception(f"Can not parse: '{part}' from '{org}'")
+                        self.game._set_cursor(self.variations.pop())
+                    # else:
+                    #     raise Exception(f"Can not parse: '{part}' from '{org}'")
                 break
 
     def parse(self):
@@ -88,20 +59,49 @@ class Parser:
             #  raise Exception("NOT SUPPORTED")
         return named
 
-    def _play_move(self, color, pos):
-        coord = sgf_coord_to_gtp(pos, int(self.infos["SZ"])) if pos else None
-        self.tree.test_move(Move(color, coord), apply_result=True)
+    def _play_move(self, color, pos, **extras):
+        if pos or extras:
+            coord = sgf_coord_to_gtp(pos, int(self.infos["SZ"])) if pos else None
+            self.game._test_move(Move(color, coord, **extras), apply_result=True)
+        else:
+            self.game.pass_(color)
+
+    def do_tr(self, val):
+        parts = val.split("][")
+        for pos in parts:
+            coord = sgf_coord_to_gtp(pos, int(self.infos["SZ"]))
+            self.game.cursor.extras.decorations[coord] = "▲"
 
     def do_b(self, pos):
-        print("PB", pos)
         self._play_move(BLACK, pos)
 
     def do_w(self, pos):
         self._play_move(WHITE, pos)
 
     def do_c(self, cmd):
-        print("CMT", cmd)
-        self.tree.cursor.comments.append(cmd)
+        self.game.cursor.extras.comments.append(cmd)
+
+    def do_lb(self, cmd):
+        parts = cmd.split("][")
+        for part in parts:
+            pos, char = part.split(":")
+            coord = sgf_coord_to_gtp(pos, int(self.infos["SZ"]))
+            self.game.cursor.extras.decorations[coord] = char
+
+    def _do_a(self, cmd, color):
+
+        parts = cmd.split("][")
+
+        coords =[ sgf_coord_to_gtp(pos, int(self.infos["SZ"])) for pos in parts]
+        # import pudb; pudb.set_trace()
+        self._play_move(None, None, stones={color: coords})
+        print("SGF:", self.game.cursor, color, coords)
+
+    def do_ab(self, cmd):
+        self._do_a(cmd, BLACK)
+
+    def do_aw(self, cmd):
+        self._do_a(cmd, WHITE)
 
     def __getitem__(self, name):
         if name.startswith("do_"):
@@ -112,8 +112,8 @@ class Parser:
         return None
 
 
-def parse(sgftxt):
-    parser = Parser(sgftxt)
+def parse(sgftxt: str, defaults: Dict):
+    parser = Parser(sgftxt, defaults)
     parser.parse()
-    print(parser.tree.board)
-    return parser.tree
+    print(parser.game.board)
+    return parser.game

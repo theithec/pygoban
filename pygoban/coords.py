@@ -25,8 +25,8 @@ def sgf_coord_to_gtp(pos, boardsize):
     if yord >= 105:
         yord += 1
     xchar = chr(yord).upper()
-    x = 96 - ord(ychar) + boardsize + 1
-    coord = f"{xchar}{x}"
+    y = 96 - ord(ychar) + boardsize + 1
+    coord = f"{xchar}{y}"
     return coord
 
 

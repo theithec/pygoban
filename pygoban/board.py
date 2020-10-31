@@ -11,6 +11,7 @@ from .coords import letter_coord_from_int
 class StonelessReason(Enum):
     UNDO = "undo"
     PASS = "pass"
+    ADD_STONES = "ADD_STONES"
 
 
 @dataclass

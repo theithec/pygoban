@@ -18,7 +18,7 @@ from .sidebar import Sidebar
 
 class GameWindow(QMainWindow, Controller, CenteredMixin):
     def __init__(self, black, white, game, *args, **kwargs):
-        super().__init__(black=black, white=white, game=game, *args, **kwargs)
+        super().__init__(black=black, white=white, game=game)
         self.board = GuiBoard(self, game)
         self.sidebar = Sidebar(self)
 
@@ -27,31 +27,40 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         Timer(1, lambda: self.set_turn(self.game.currentcolor, None)).start()
 
     def set_turn(self, color, result):
-        print(self.game._movetree.board)
-        print(self.game._movetree.to_sgf())
+        print(self.game.board)
+        #print(self.game.to_sgf())
 
-        if result and not result.extra:
+        if False:result and not result.extra:
             if self.game.cursor and self.game.cursor.parent:
                 comments = self.sidebar.comments.toPlainText().split(os.linesep)
-                self.game.cursor.parent.comments = comments
+                self.game.cursor.parent.extras.comments = comments
         if self.game.cursor:
-            self.sidebar.game_signal.emit(os.linesep.join(self.game.cursor.comments))
+            self.sidebar.game_signal.emit(os.linesep.join(self.game.cursor.extras.comments))
         if result and not result.extra:
-            if Intersection.current:
-                Intersection.current.is_current = False
 
             inter = self.board.intersections[gtp_coords(result.x, result.y, self.game.boardsize)]
             inter.status = result.color
-            inter.is_current = True
             for killed in result.killed:
                 self.board.intersections[gtp_coords(
                     *rotate(killed[0],killed[1], self.game.boardsize), self.game.boardsize)].status = EMPTY
 
         self.sidebar.timeupdate_signal.emit()
         self.sidebar.update_controlls()
-        self.board.update_intersections(self.game._movetree.board)
+        self.board.update_intersections(self.game.board)
         self.update()
         super().set_turn(color, result)
+
+    def update_board(self):
+
+        if Intersection.current:
+            Intersection.current.is_current = False
+        curr = self.game.cursor
+        if not curr.is_empty:
+            self.board.intersections[curr.coord].is_current = True
+
+        self.board.update_intersections(self.game.board)
+        self.sidebar.update_controlls()
+        self.update()
 
     def period_ended(self, player):
         self.sidebar.timeupdate_signal.emit()
@@ -67,7 +76,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
                 return
             self.handle_move(self.game.currentcolor, inter.coord)
         else:
-            self.game.cursor.decorations[inter.coord] = "A"
+            self.game.cursor.extras.decorations[inter.coord] = "A"
 
     def end(self, reason: End, color: Status):
         self.sidebar.timeended_signal.emit()

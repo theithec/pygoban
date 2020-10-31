@@ -11,7 +11,7 @@ class BaseGameTest(unittest.TestCase):
     ruleset_cls = BaseRuleset
 
     def setUp(self):
-        self.game = Game(9, ruleset_cls=self.ruleset_cls)
+        self.game = Game(SZ=9)
 
     def play_move(self, x, y, color=None):
         color = color or self.game.currentcolor
@@ -35,7 +35,7 @@ class GameTest(BaseGameTest):
         )
 
         self.play_moves(moves)
-        self.assertEqual(1, self.game._movetree.prisoners[BLACK])
+        self.assertEqual(1, self.game.prisoners[BLACK])
 
     def test_ko(self):
 
@@ -49,7 +49,7 @@ class GameTest(BaseGameTest):
         )
 
         self.play_moves(moves)
-        self.assertEqual(1, self.game._movetree.prisoners[WHITE])
+        self.assertEqual(1, self.game.prisoners[WHITE])
         # now is ko
         with self.assertRaises(KoViolation):
             self.play_move( 0, 1, BLACK)
@@ -60,15 +60,15 @@ class GameTest(BaseGameTest):
             (4, 4),
             (5, 5),
             (0, 1)))
-        self.assertEqual(1, self.game._movetree.prisoners[BLACK])
+        self.assertEqual(1, self.game.prisoners[BLACK])
 
         self.play_move(6, 6, WHITE)
         self.play_move(7, 7, BLACK)
         self.play_move(0, 2, WHITE)
-        self.assertEqual(2, self.game._movetree.prisoners[WHITE])
+        self.assertEqual(2, self.game.prisoners[WHITE])
 
         self.game.undo()
-        self.assertEqual(1, self.game._movetree.prisoners[WHITE])
+        self.assertEqual(1, self.game.prisoners[WHITE])
 
     def test_occupied(self):
         self.play_move(4, 4, BLACK, )
@@ -88,15 +88,20 @@ class GameTest(BaseGameTest):
             (0, 3),
         )
         self.play_moves(moves)
-        self.assertEqual(2, self.game._movetree.prisoners[BLACK])
+        self.assertEqual(2, self.game.prisoners[BLACK])
 
         self.assertEqual(WHITE, self.game.currentcolor)
         self.game.undo()
         self.assertEqual(BLACK, self.game.currentcolor)
-        self.assertEqual(0, self.game._movetree.prisoners[BLACK])
+        self.assertEqual(0, self.game.prisoners[BLACK])
         self.game.undo()
-        self.assertEqual(EMPTY, self.game._movetree.board[3][3])
+        self.assertEqual(EMPTY, self.game.board[3][3])
         self.assertEqual(WHITE, self.game.currentcolor)
+
+    def test_pass(self):
+        self.game.play(BLACK, "A1")
+        self.game.pass_(WHITE)
+        self.game.play(BLACK, "A2")
 
 
 class DenyAllRuleset(BaseRuleset):
@@ -105,9 +110,9 @@ class DenyAllRuleset(BaseRuleset):
 
 
 class DeynAllRulesetTest(BaseGameTest):
-    ruleset_cls = DenyAllRuleset
 
     def test_raise(self):
+        self.game.ruleset = DenyAllRuleset(self.game)
         moves = ((0, 1, ),)
         with self.assertRaises(RuleViolation):
             self.play_moves(moves)

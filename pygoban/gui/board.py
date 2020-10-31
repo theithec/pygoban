@@ -29,11 +29,10 @@ class GuiBoard(QWidget):
     def __init__(self, parent, game, *args, **kwargs):
         super().__init__(parent=parent, *args, **kwargs)
         self.bgimage = QImage(os.path.join(BASE_DIR, "gui/imgs/shinkaya.jpg"))
-        board = game._movetree.board
-        self.boardsize = board.boardsize
+        self.boardsize = game.board.boardsize
         self.intersections = {}
         self.boardrange = range(self.boardsize)
-        self.update_intersections(board, create=True)
+        self.update_intersections(game.board, create=True)
 
     def update_intersections(self, board, create=False):
         hoshis = HOSHIS.get(self.boardsize, [])
@@ -55,7 +54,7 @@ class GuiBoard(QWidget):
         bordersize = int(self.width() / self.boardsize)
         return bordersize
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, _event):
         borderspace = self.get_bordersize()
         width = (self.width() - 2 * borderspace) / self.boardsize
         for x in range(self.boardsize):
@@ -69,7 +68,7 @@ class GuiBoard(QWidget):
         self.intersections["A1"].calc()
         self.repaint()
 
-    def paintEvent(self, evt):  # pylint: disable=invalid-name, unused-argument
+    def paintEvent(self, _event):
         '''Paint a board'''
         painter = QPainter()
         painter.begin(self)

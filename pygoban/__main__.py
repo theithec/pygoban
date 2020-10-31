@@ -1,10 +1,11 @@
+# pylint: disable=import-outside-toplevel
+# because qt is optional
 import sys
 import argparse
 import signal
 
 from . import getconfig
 from .game import BLACK, WHITE, Game
-from .rulesets import BaseRuleset
 from .player import GTPPlayer
 from .sgf import parse
 from .timesettings import TimeSettings
@@ -32,13 +33,13 @@ def startgame(args: argparse.Namespace, init_gui: bool):
         else:
             players[col] = GTPPlayer(col, cmd=config["GTP"][cmd])
 
-    boardsize = args.boardsize or config["PYGOBAN"]["boardsize"]
-    game = Game(boardsize=boardsize, ruleset_cls=BaseRuleset, handicap=args.handicap)
+    defaults = {"SZ": args.boardsize or config["PYGOBAN"]["boardsize"]}
     if args.sgf_file:
         with open(args.sgf_file) as fileobj:
             sgftxt = fileobj.read()
-            tree = parse(sgftxt)
-        game._movetree = tree
+            game = parse(sgftxt, defaults=defaults)
+    else:
+        game = Game(HA=args.handicap, **defaults)
 
     controller_kwargs = dict(
         black=players[BLACK],
@@ -54,7 +55,7 @@ def startgame(args: argparse.Namespace, init_gui: bool):
     if args.nogui:
         controller.set_turn(game.currentcolor)
     else:
-        controller.setWindowTitle('pygoban')
+        controller.setWindowTitle('Pygoban')
         controller.show()
         controller.setMinimumSize(800, 600)
 
@@ -76,7 +77,7 @@ def main():
         from PyQt5.QtWidgets import QApplication
         global QAPP
         QAPP = QApplication([])
-        if not args.sgf_file and not args.boardsize:
+        if not any((args.sgf_file, args.boardsize, args.black_gtp, args.white_gtp)):
             from .gui.startwindow import StartWindow
             win = StartWindow(parser, starter_callback=startgame)
             win.show()

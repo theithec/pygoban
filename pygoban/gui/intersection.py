@@ -34,6 +34,7 @@ class Intersection(QWidget):
 
     @pyqtProperty(bool)
     def is_current(self):
+        self.__class__.current = None
         return self._is_current
 
     @is_current.setter
@@ -92,7 +93,7 @@ class Intersection(QWidget):
                     cls.curr_stone_size),
                 pixmap)
 
-        deco = self.controller.game.cursor.decorations.get(self.coord)
+        deco = self.controller.game.cursor.extras.decorations.get(self.coord)
         if deco:
             font = painter.font()
             font.setPixelSize(cls.curr_font_height)
@@ -103,7 +104,9 @@ class Intersection(QWidget):
                       cls.curr_width),
                 Qt.AlignCenter, deco)
         child = self.controller.game.cursor.children.get(self.coord)
-        if child:
+
+        if child and not deco:
+            print("IS CHILD")
             font = painter.font()
             font.setPixelSize(cls.curr_font_height)
             painter.setFont(font)

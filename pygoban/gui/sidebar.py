@@ -45,7 +45,7 @@ class Sidebar(QFrame):
             player_box = QGroupBox(str(color))
             player_layout = QFormLayout()
             player_layout.addRow("Name:", QLabel(self.controller.players[color].name))
-            curr['prisoners_label'] = QLabel(str(self.controller.game._movetree.prisoners[color]))
+            curr['prisoners_label'] = QLabel(str(self.controller.game.prisoners[color]))
             player_layout.addRow("Prisoners:", curr['prisoners_label'])
             if self.controller.timesettings:
                 curr['time'] = QLCDNumber()
@@ -111,19 +111,18 @@ class Sidebar(QFrame):
         pass
 
     def do_undo(self):
-        movetree = self.controller.game._movetree
+        movetree = self.controller.game
         if movetree.cursor.is_root:
             return
         self.controller.handle_move(self.controller.game.currentcolor, "undo")
-        self.controller.board.update_intersections(movetree.board)
-        if Intersection.current:
-            Intersection.current.is_current = False
-        curr = movetree.cursor
-        if not curr.is_pass:
-            self.controller.board.intersections[curr.coord].is_current = True
+        self.controller.update_board()
 
     def do_redo(self):
-        pass
+        game = self.controller.game
+        move  = list(game.cursor.children.values())[0][0]
+        print("Move...", game.cursor.children)
+        game._set_cursor(move)
+        self.controller.update_board()
 
     def do_next(self):
         pass
@@ -164,18 +163,18 @@ class Sidebar(QFrame):
     def save_as_file(self):
         name = filename_from_savedialog(self)
         with open(name, "w") as fileobj:
-            fileobj.write(self.controller.game._movetree.to_sgf())
+            fileobj.write(self.controller.game.to_sgf())
         print(name)
 
     def update_controlls(self):
         for color in (BLACK, WHITE):
             curr = self.player_controlls[color]
-            curr['prisoners_label'].setText(str(self.controller.game._movetree.prisoners[color]))
+            curr['prisoners_label'].setText(str(self.controller.game.prisoners[color]))
         if self.is_game:
             self.pass_btn.setEnabled(
                 isinstance(self.controller.players[self.controller.game.currentcolor], GuiPlayer))
         if self.can_edit:
             self.prev_move.setEnabled(bool(
                 self.controller.game.cursor and self.controller.game.cursor.parent))
-            self.next_move.setEnabled(bool(
-                self.controller.game.cursor and self.controller.game.cursor.children))
+            print("UC", self.controller.game.cursor, self.controller.game.cursor.children)
+            self.next_move.setEnabled(bool(self.controller.game.cursor and len(self.controller.game.cursor.children)))
