@@ -15,7 +15,8 @@ class BoardTest(unittest.TestCase):
             self.assertEqual(
                 len(result.killed),
                 killed,
-                "Move %s [%s][%s] %s != %s" % (index, x, y, len(result.killed), killed))
+                "Move %s [%s][%s] %s != %s" % (index, x, y, len(result.killed), killed),
+            )
 
             print(self.board)
         return result
@@ -43,5 +44,5 @@ class BoardTest(unittest.TestCase):
         self.play(moves)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

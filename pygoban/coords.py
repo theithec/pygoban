@@ -15,8 +15,7 @@ def array_indexes(coords, boardsize):
 
 
 def gtp_coords(x, y, boardsize):
-    return "%s%s" % (
-        letter_coord_from_int(y, boardsize), boardsize - x)
+    return "%s%s" % (letter_coord_from_int(y, boardsize), boardsize - x)
 
 
 def sgf_coord_to_gtp(pos, boardsize):

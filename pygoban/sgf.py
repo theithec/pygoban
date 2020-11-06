@@ -12,7 +12,6 @@ INT_KEYS = ("SZ", "HA")
 
 
 class Parser:
-
     def __init__(self, sgftxt: str, defaults: Dict):
         self.sgftxt = sgftxt
         self.defaults = defaults
@@ -34,7 +33,7 @@ class Parser:
                 else:
                     self.game = self.game or Game(**self.infos)
                     self[f"do_{key.lower()}"](val)
-                part = part[match.span(2)[1]:]
+                part = part[match.span(2)[1] :]
             else:
                 for char in part:
                     if not char.strip():
@@ -57,6 +56,7 @@ class Parser:
         def named(*args, **kwargs):
             print("Not supported", name, args, kwargs)
             #  raise Exception("NOT SUPPORTED")
+
         return named
 
     def _play_move(self, color, pos, **extras):
@@ -89,13 +89,9 @@ class Parser:
             self.game.cursor.extras.decorations[coord] = char
 
     def _do_a(self, cmd, color):
-
         parts = cmd.split("][")
-
         coords = [sgf_coord_to_gtp(pos, int(self.infos["SZ"])) for pos in parts]
-        # import pudb; pudb.set_trace()
         self._play_move(None, None, stones={color: coords})
-        print("SGF:", self.game.cursor, color, coords)
 
     def do_ab(self, cmd):
         self._do_a(cmd, BLACK)

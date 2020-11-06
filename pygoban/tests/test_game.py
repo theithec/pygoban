@@ -29,9 +29,18 @@ class GameTest(BaseGameTest):
 
     def test_kill1(self):
         moves = (
-            (0, 1, ),
-            (0, 0, ),
-            (1, 0, ),
+            (
+                0,
+                1,
+            ),
+            (
+                0,
+                0,
+            ),
+            (
+                1,
+                0,
+            ),
         )
 
         self.play_moves(moves)
@@ -40,12 +49,30 @@ class GameTest(BaseGameTest):
     def test_ko(self):
 
         moves = (
-            (0, 1, ),
-            (0, 0, ),
-            (1, 2, ),
-            (1, 1, ),
-            (0, 3, ),
-            (0, 2, ),
+            (
+                0,
+                1,
+            ),
+            (
+                0,
+                0,
+            ),
+            (
+                1,
+                2,
+            ),
+            (
+                1,
+                1,
+            ),
+            (
+                0,
+                3,
+            ),
+            (
+                0,
+                2,
+            ),
         )
 
         self.play_moves(moves)
@@ -56,10 +83,7 @@ class GameTest(BaseGameTest):
 
         self.assertEqual(BLACK, self.game.currentcolor)
 
-        self.play_moves((
-            (4, 4),
-            (5, 5),
-            (0, 1)))
+        self.play_moves(((4, 4), (5, 5), (0, 1)))
         self.assertEqual(1, self.game.prisoners[BLACK])
 
         self.play_move(6, 6, WHITE)
@@ -71,7 +95,11 @@ class GameTest(BaseGameTest):
         self.assertEqual(1, self.game.prisoners[WHITE])
 
     def test_occupied(self):
-        self.play_move(4, 4, BLACK, )
+        self.play_move(
+            4,
+            4,
+            BLACK,
+        )
         with self.assertRaises(OccupiedViolation):
             self.play_move(4, 4, WHITE)
 
@@ -110,9 +138,13 @@ class DenyAllRuleset(BaseRuleset):
 
 
 class DeynAllRulesetTest(BaseGameTest):
-
     def test_raise(self):
         self.game.ruleset = DenyAllRuleset(self.game)
-        moves = ((0, 1, ),)
+        moves = (
+            (
+                0,
+                1,
+            ),
+        )
         with self.assertRaises(RuleViolation):
             self.play_moves(moves)

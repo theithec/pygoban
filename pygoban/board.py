@@ -2,10 +2,10 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Set
+from typing import Optional, Set, Tuple, Dict
 
-from .status import EMPTY, Status
 from .coords import letter_coord_from_int
+from .status import EMPTY, Status
 
 
 class StonelessReason(Enum):
@@ -31,17 +31,13 @@ class StonelessResult(MoveResult):
 
 
 class Board(list):
-    """
-        A situation in a go game/movetree
-    """
-
     def __init__(self, boardsize):
         super().__init__()
         boardrange = range(boardsize)
         self.extend([[EMPTY for x in boardrange] for y in boardrange])
         self.boardsize = boardsize
 
-    def _adjacent_ins(self, index):
+    def _adjacent_ins(self, index) -> Dict[Tuple[int, int], Status]:
         adjacents = {}
         x, y = index
         if x > 0:
@@ -58,14 +54,19 @@ class Board(list):
 
         return adjacents
 
-    def analyze(self, x, y, started=None, group=None, killed=None,
-                libs=0, findkilled=True):
-        '''Analyze from a starting point'''
+    def analyze(
+        self,
+        pos: Tuple[int, int],
+        started: Set = None,
+        group: Set = None,
+        killed: Set = None,
+        libs: int = 0,
+        findkilled: bool = True,
+    ):
+        """Analyze from a starting point"""
         started = started or set()
         group = group or set()
         killed = killed or set()
-        col = self[x][y]
-        pos = (x, y)
         started.add(pos)
         group.add(pos)
         adjacents = self._adjacent_ins(pos)
@@ -79,14 +80,19 @@ class Board(list):
                 libs += 1
 
             # friend
-            elif acol.intval == col.intval:
+            elif acol.intval == self.pos(pos).intval:
                 started, group, killed, libs = self.analyze(
-                    axy[0], axy[1], started=started, group=group, killed=killed,
-                    libs=libs, findkilled=False)[:4]
+                    axy,
+                    started=started,
+                    group=group,
+                    killed=killed,
+                    libs=libs,
+                    findkilled=False,
+                )[:4]
 
             # enemy!
             elif findkilled:
-                result = self.analyze(axy[0], axy[1], findkilled=False)
+                result = self.analyze(axy, findkilled=False)
                 enemylibs = result[3]
                 if enemylibs == 0:
                     enemygroup = result[1]
@@ -98,18 +104,11 @@ class Board(list):
         return started, group, killed, libs, findkilled
 
     def result(self, color: Status, x, y):
-        '''Result of a move (may be invalid)'''
+        """Result of a move (may be invalid)"""
         cpy = deepcopy(self)
         cpy[x][y] = color
-        raw = cpy.analyze(x, y)
-        result = MoveResult(
-            x=x,
-            y=y,
-            color=color,
-            libs=raw[3],
-            killed=raw[2],
-            group=raw[1]
-        )
+        raw = cpy.analyze((x, y))
+        result = MoveResult(x=x, y=y, color=color, libs=raw[3], killed=raw[2], group=raw[1])
         return result
 
     def apply_result(self, result):
@@ -137,6 +136,9 @@ class Board(list):
 
         return cpy
 
+    def pos(self, pos):
+        return self[pos[0]][pos[1]]
+
     def __str__(self):
         cpy = self.rotated(switch_axis=False, switch_y=False)
         txt = "\n    "
@@ -145,9 +147,7 @@ class Board(list):
         for xorg in range(cpy.boardsize):
             x = cpy.boardsize - xorg - 1
             txt += "%2s  " % (x + 1)
-            txt += " ".join([
-                "%s" % (cpy[xorg][y]).short()
-                for y in range(cpy.boardsize)])
+            txt += " ".join(["%s" % (cpy[xorg][y]).short() for y in range(cpy.boardsize)])
             txt += "\n"
 
         return txt

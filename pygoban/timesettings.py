@@ -65,7 +65,9 @@ class PlayerTime:
             if self.byomi_left > 0:
                 _next = self.byomi_time
         if start_timer:
-            assert not self.timer or self.timer.finished.is_set(), "T " + str(self.timer)
+            assert not self.timer or self.timer.finished.is_set(), "T " + str(
+                self.timer
+            )
             self.timer = _PlayerTimer(_next, self.period_ended)
         return _next
 

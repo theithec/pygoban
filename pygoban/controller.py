@@ -10,18 +10,19 @@ from .rulesets import RuleViolation
 from .status import BLACK, WHITE, Status
 from .timesettings import PlayerTime, TimeSettings
 from .coords import gtp_coords
+from .counting import count
 
 
 class Controller:
     def __init__(
-            self, black: Player, white: Player, game: Game,
-            timesettings: TimeSettings = None):
-        # super().__init__(*args, **kwargs)  # Maybe used as a mixin
+        self,
+        black: Player,
+        white: Player,
+        game: Game,
+        timesettings: TimeSettings = None,
+    ):
         self.game = game
-        self.players = {
-            BLACK: black,
-            WHITE: white
-        }
+        self.players = {BLACK: black, WHITE: white}
         self.timesettings = timesettings
         for player in self.players.values():
             player.set_controller(self)
@@ -32,7 +33,6 @@ class Controller:
         self.move_start = None
 
     def player_lost_by_overtime(self, player):
-        self.game.currentcolor = None
         self.end(End.BY_TIME, player.color)
 
     def set_turn(self, color, result):
@@ -51,7 +51,8 @@ class Controller:
         if restart:
             time.sleep(0.2)
             self.players[color].timesettings.nexttime(
-                (datetime.datetime.now() - self.move_start).seconds)
+                (datetime.datetime.now() - self.move_start).seconds
+            )
 
     def handle_move(self, color, move):
         if self.timeout:
@@ -70,13 +71,13 @@ class Controller:
 
             self.set_turn(
                 self.game.get_othercolor(color),
-                StonelessResult(color, StonelessReason.PASS)
+                StonelessResult(color, StonelessReason.PASS),
             )
         elif move == "undo":
             self.game.undo()
             self.set_turn(
                 self.game.get_othercolor(color),
-                StonelessResult(color, StonelessReason.UNDO)
+                StonelessResult(color, StonelessReason.UNDO),
             )
         elif move:
             try:
@@ -89,6 +90,10 @@ class Controller:
                 self.update_time(color)
             self.set_turn(self.game.get_othercolor(color), result)
 
+    def count(self):
+        groups = count(self.game.board)
+        self.game.ruleset.set_result(groups=groups, end=None)
+
     def end(self, reason: End, color: Status):
         logging.info("END: %s %s", reason, color)
         self.timeout = True
@@ -100,11 +105,12 @@ class Controller:
 
 
 class ConsoleController(Controller):
-
     def set_turn(self, color, result=None):
-        # print(self.game._movetree.board)
-        print("\n".join([
-            f"{key} caught\t{val}" for key, val in self.game.prisoners.items()]))
+        print(
+            "\n".join(
+                [f"{key} caught\t{val}" for key, val in self.game.prisoners.items()]
+            )
+        )
         print("Has turn", color)
         if result:
             print("Last:", result, gtp_coords(result.x, result.y, self.game.boardsize))

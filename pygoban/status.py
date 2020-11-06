@@ -1,5 +1,4 @@
 class Status:
-
     def __init__(self, intval, strval, shortval=None):
         self.intval = intval
         self.strval = strval
@@ -17,6 +16,10 @@ class Status:
     def short(self):
         return self.shortval
 
+    def toggle_dead(self):
+        assert self.intval in (1, 2, 3, 4)
+        return STATUS[self.intval + (2 if self.intval < 3 else -2)]
+
 
 KO = Status(-1, "Ko", "?")
 EMPTY = Status(0, "Empty", "+")
@@ -24,7 +27,6 @@ BLACK = Status(1, "Black")
 WHITE = Status(2, "White")
 DEAD_BLACK = Status(3, "b")
 DEAD_WHITE = Status(4, "w")
-
-STATUS = {
-    int(sts): sts for sts in (KO, EMPTY, BLACK, WHITE, DEAD_BLACK, DEAD_WHITE)
-}
+BLACK_LIB = Status(5, "B")
+WHITE_LIB = Status(6, "W")
+STATUS = {int(sts): sts for sts in (KO, EMPTY, BLACK, WHITE, DEAD_BLACK, DEAD_WHITE)}

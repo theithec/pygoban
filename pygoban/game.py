@@ -19,9 +19,7 @@ class ThreeTimesPassed(Exception):
         self.color = color
 
 
-HANDICAPS: Dict[int, Tuple] = {
-    1: ((15, 3),)
-}
+HANDICAPS: Dict[int, Tuple] = {1: ((15, 3),)}
 HANDICAPS[2] = HANDICAPS[1] + ((3, 15),)
 
 INFO_KEYS = (
@@ -31,8 +29,10 @@ INFO_KEYS = (
     "RU",  # Ruleset,
     "SZ",  # Size,
     "AN",  # Annotations: name of the person commenting the game.
-    "BR", "WR",  # Rank,
-    "BT", "WT",  # Team
+    "BR",
+    "WR",  # Rank,
+    "BT",
+    "WT",  # Team
     "CP",  # Copyright
     "DT",  # Date,
     "EV",  # Event
@@ -41,7 +41,8 @@ INFO_KEYS = (
     "KM",  # KOmi,
     "ON",  # OPening,
     "OT",  # Overtime
-    "PB", "PW",  # Player Name,
+    "PB",
+    "PW",  # Player Name,
     "PC",  # Place
     "PL",  # Start color
     "RE",  # Result,
@@ -55,7 +56,6 @@ INFO_KEYS = (
 
 
 class Game:
-
     def __init__(self, **infos):
         self.infos = {k: v for k in INFO_KEYS if (v := infos.get(k))}
         self.board = Board(int(infos["SZ"]))
@@ -140,7 +140,9 @@ class Game:
 
     def _test_move(self, move, apply_result=False):
         if move.coord:
-            result = self.board.result(move.color, *array_indexes(move.coord, self.board.boardsize))
+            result = self.board.result(
+                move.color, *array_indexes(move.coord, self.board.boardsize)
+            )
         else:
             extra = StonelessReason.PASS if move.is_pass else StonelessReason.ADD_STONES
             result = StonelessResult(color=None, extra=extra)
@@ -163,7 +165,9 @@ class Game:
                     x, y = array_indexes(coord, self.boardsize)
                     self.board[x][y] = status
         self._cursor = move
-        move.parent = old_cursor
+        # For "deco" moves we may reuse a move
+        if move != old_cursor:
+            move.parent = old_cursor
 
     def _set_handicap(self):
         handicap = self.infos.get("HA")
@@ -178,6 +182,7 @@ class Game:
         curr = self.cursor
         while curr:
             path.append(curr)
+            assert curr != curr.parent
             curr = curr.parent
         path.reverse()
         return path[1:]

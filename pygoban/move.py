@@ -8,7 +8,7 @@ from .coords import gtp_coord_to_sgf
 
 
 class MoveList(list):
-    '''sgf-like output'''
+    """sgf-like output"""
 
     def __str__(self):
         items = [str(item) for item in self]
@@ -71,8 +71,9 @@ class Move:
             txt = ""
         elif self.extras.has_stones():
             for status in (BLACK, WHITE):
-                sgfcoords = "][".join([gtp_coord_to_sgf(coord)
-                                       for coord in self.extras.stones[status]])
+                sgfcoords = "][".join(
+                    [gtp_coord_to_sgf(coord) for coord in self.extras.stones[status]]
+                )
                 txt = f";A{status.shortval}[{sgfcoords}]"
         else:
             val = gtp_coord_to_sgf(self.coord)

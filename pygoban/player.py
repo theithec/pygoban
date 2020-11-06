@@ -5,7 +5,7 @@ from . import status, logging
 from .coords import gtp_coords
 
 
-class Player():
+class Player:
     def __init__(self, color: status.Status, name=None):
         self.color = color
         self.name = name or str(color)
@@ -97,7 +97,7 @@ class GTPComm(Thread):
 
 class GTPPlayer(Player):
     def __init__(self, *args, **kwargs):
-        self.command = kwargs.pop('cmd')
+        self.command = kwargs.pop("cmd")
         super().__init__(*args, **kwargs)
 
     def set_controller(self, controller):
@@ -107,16 +107,18 @@ class GTPPlayer(Player):
             shell=False,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT,
         )
         time.sleep(1)
         self.do_cmd("boardsize %s" % self.controller.game.boardsize, False)
-        #self.do_cmd("fixed_handicap %s" % self.controller.game.handicap,  False)
+        # self.do_cmd("fixed_handicap %s" % self.controller.game.handicap,  False)
 
     def set_timesettings(self, timesettings):
         self.timesettings = timesettings
         ts = self.timesettings
-        self.do_cmd(f"time_settings {ts.maintime} {ts.byomi_time} {ts.byomi_stones}", False)
+        self.do_cmd(
+            f"time_settings {ts.maintime} {ts.byomi_time} {ts.byomi_stones}", False
+        )
 
     def do_cmd(self, cmd, handle_output=True):
         GTPComm(self, cmd, handle_output=handle_output).join()
@@ -131,13 +133,10 @@ class GTPPlayer(Player):
         self.do_cmd("genmove " + self.color.strval.lower())
 
     def set_turn(self, result):
-        #print("SET TURN", result)
         if result:
             if not result.extra:
                 coords = gtp_coords(result.x, result.y, self.controller.game.boardsize)
-                self.do_cmd("play %s %s" % (
-                    result.color.strval.lower(),
-                    coords), False)
+                self.do_cmd("play %s %s" % (result.color.strval.lower(), coords), False)
             self.do_cmd("showboard", False)
 
         self._get_move()

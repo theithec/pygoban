@@ -1,22 +1,22 @@
-import os
 import configparser
-import sysconfig
 import logging
+import os
+import sysconfig
+
 logging.basicConfig(level=logging.INFO)
 
 
 def writeconfig(config):
-    configpath = os.path.sep.join((sysconfig.get_config_var("userbase"), ".pygoban.ini"))
+    configpath = os.path.sep.join((sysconfig.get_config_var("userbase"), "pygoban.ini"))
     with open(configpath, "w") as configfile:
         config.write(configfile)
 
 
 def getconfig():
     config = configparser.ConfigParser()
-    config.read(os.path.sep.join((sysconfig.get_config_var("userbase"), ".pygoban.ini")))
+    config.read(os.path.sep.join((sysconfig.get_config_var("userbase"), "pygoban.ini")))
     if not config.sections():
-        config['PYGOBAN'] = {
-            'boardsize': '19',
-        }
+        config["PYGOBAN"] = {"boardsize": "19", "komi": 7.5}
+        config["GTP"] = {}
         writeconfig(config)
     return config

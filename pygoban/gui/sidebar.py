@@ -1,8 +1,19 @@
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
-from PyQt5.QtWidgets import (QAction, QFileDialog, QFormLayout, QFrame,
-                             QGroupBox, QHBoxLayout, QLabel, QVBoxLayout,
-                             QLCDNumber, QMenu, QPushButton, QSizePolicy,
-                             QTextEdit)
+from PyQt5.QtWidgets import (
+    QAction,
+    QFileDialog,
+    QFormLayout,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QVBoxLayout,
+    QLCDNumber,
+    QMenu,
+    QPushButton,
+    QSizePolicy,
+    QTextEdit,
+)
 
 from pygoban.status import BLACK, WHITE
 from . import InputMode, btn_adder
@@ -27,7 +38,7 @@ class Sidebar(QFrame):
         self.setMinimumSize(80, 30)
 
         layout = QFormLayout()
-        btn_settings = QPushButton('\u2630')
+        btn_settings = QPushButton("\u2630")
         btn_settings.setMenu(self.get_menu())
         settings_layout = QHBoxLayout()
         settings_layout.addWidget(btn_settings, 0, Qt.AlignRight)
@@ -45,12 +56,12 @@ class Sidebar(QFrame):
             player_box = QGroupBox(str(color))
             player_layout = QFormLayout()
             player_layout.addRow("Name:", QLabel(self.controller.players[color].name))
-            curr['prisoners_label'] = QLabel(str(self.controller.game.prisoners[color]))
-            player_layout.addRow("Prisoners:", curr['prisoners_label'])
+            curr["prisoners_label"] = QLabel(str(self.controller.game.prisoners[color]))
+            player_layout.addRow("Prisoners:", curr["prisoners_label"])
             if self.controller.timesettings:
-                curr['time'] = QLCDNumber()
-                curr['time'].display("00:00")
-                player_layout.addRow(curr['time'])
+                curr["time"] = QLCDNumber()
+                curr["time"].display("00:00")
+                player_layout.addRow(curr["time"])
             player_box.setLayout(player_layout)
             layout.addRow(player_box)
 
@@ -61,8 +72,7 @@ class Sidebar(QFrame):
             layout.addRow(self.get_edit_box())
 
         self.comments = QTextEdit()
-        self.comments.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.comments.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         layout.addRow(self.comments)
 
         layout.addRow("Ruleset", QLabel(str(self.controller.game.ruleset.name)))
@@ -111,8 +121,7 @@ class Sidebar(QFrame):
         return edit_box
 
     def toggle_deco(self, checked):
-        self.controller.input_mode = (
-            InputMode.EDIT if checked else InputMode.PLAY)
+        self.controller.input_mode = InputMode.EDIT if checked else InputMode.PLAY
 
     def do_B(self):
         self.controller.deco = BLACK
@@ -142,7 +151,8 @@ class Sidebar(QFrame):
     def do_resign(self):
         game = self.controller.game
         if not self.controller.timeout or not isinstance(
-                self.controller.players[game.currentcolor], GuiPlayer):
+            self.controller.players[game.currentcolor], GuiPlayer
+        ):
             return
         self.controller.handle_move(game.currentcolor, "resign")
 
@@ -159,6 +169,7 @@ class Sidebar(QFrame):
 
     def do_undo(self):
         movetree = self.controller.game
+        self.controller.input_mode = InputMode.PLAY
         if movetree.cursor.is_root:
             return
         self.controller.handle_move(self.controller.game.currentcolor, "undo")
@@ -188,6 +199,7 @@ class Sidebar(QFrame):
         self.controller.update_board()
 
     def do_count(self):
+        self.controller.input_mode = InputMode.COUNT
         self.controller.count()
 
     def game_update(self, txt):
@@ -201,8 +213,13 @@ class Sidebar(QFrame):
                 self.set_clock(curr_player.color, curr_player.timesettings.nexttime())
 
     def clock_tick(self):
-        seconds = self.player_controlls[self.controller.game.currentcolor]["time"].intValue() - 1
-        self.player_controlls[self.controller.game.currentcolor]["time"].display(str(seconds))
+        seconds = (
+            self.player_controlls[self.controller.game.currentcolor]["time"].intValue()
+            - 1
+        )
+        self.player_controlls[self.controller.game.currentcolor]["time"].display(
+            str(seconds)
+        )
 
     def set_clock(self, color, seconds):
         self.time_ended()
@@ -216,7 +233,7 @@ class Sidebar(QFrame):
             self.timer.stop()
 
     def get_menu(self):
-        save_action = QAction('Save', self)
+        save_action = QAction("Save", self)
         save_action.triggered.connect(self.save_as_file)
         menu = QMenu(self)
         menu.addAction(save_action)
@@ -231,15 +248,21 @@ class Sidebar(QFrame):
     def update_controlls(self):
         for color in (BLACK, WHITE):
             curr = self.player_controlls[color]
-            curr['prisoners_label'].setText(str(self.controller.game.prisoners[color]))
+            curr["prisoners_label"].setText(str(self.controller.game.prisoners[color]))
         if self.is_game:
             self.pass_btn.setEnabled(
-                isinstance(self.controller.players[self.controller.game.currentcolor], GuiPlayer))
+                isinstance(
+                    self.controller.players[self.controller.game.currentcolor],
+                    GuiPlayer,
+                )
+            )
         if self.can_edit:
-            self.prev_move.setEnabled(bool(
-                self.controller.game.cursor and self.controller.game.cursor.parent))
-            # print("UC", self.controller.game.cursor, self.controller.game.cursor.children)
+            self.prev_move.setEnabled(
+                bool(self.controller.game.cursor and self.controller.game.cursor.parent)
+            )
             self.next_move.setEnabled(
                 bool(
-                    self.controller.game.cursor and len(
-                        self.controller.game.cursor.children)))
+                    self.controller.game.cursor
+                    and len(self.controller.game.cursor.children)
+                )
+            )

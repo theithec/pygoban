@@ -7,6 +7,3 @@ with open(sys.argv[1]) as sgffile:
 
 
 sgf.parse(txt)
-
-
-

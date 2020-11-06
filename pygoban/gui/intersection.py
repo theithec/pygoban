@@ -5,13 +5,23 @@ from PyQt5.QtCore import QRect, Qt, pyqtProperty, QEvent
 from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap
 from PyQt5.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
-from pygoban.status import STATUS, BLACK, WHITE, DEAD_BLACK, DEAD_WHITE, EMPTY
+from pygoban.status import (
+    STATUS,
+    BLACK,
+    WHITE,
+    DEAD_BLACK,
+    DEAD_WHITE,
+    EMPTY,
+    BLACK_LIB,
+    WHITE_LIB,
+)
 
-from . import BASE_DIR
+from . import BASE_DIR, InputMode
 
 
 class Intersection(QWidget):
     """Visual representation of a intersection in a go board"""
+
     boardsize = 9
     stone_by_status = {
         BLACK: QImage(os.path.join(BASE_DIR, "gui/imgs/black.png")),
@@ -20,7 +30,7 @@ class Intersection(QWidget):
         DEAD_WHITE: QImage(os.path.join(BASE_DIR, "gui/imgs/white_trans.png")),
     }
 
-    current = None
+    current_in = None
 
     def __init__(self, parent, coord, status, is_hoshi):
         super().__init__(parent)
@@ -38,10 +48,10 @@ class Intersection(QWidget):
 
     @is_current.setter
     def is_current(self, _is_current):
-        if self.__class__.current:
-            self.__class__.current._is_current = False
+        if self.controller.current_in:
+            self.controller.current_in._is_current = False
         self._is_current = _is_current
-        self.__class__.current = self if _is_current else None
+        self.controller.current_in = self if _is_current else None
         self.update()
 
     @pyqtProperty(int)
@@ -57,24 +67,37 @@ class Intersection(QWidget):
     def mousePressEvent(self, event):
         self.controller.inter_clicked(self)
 
+    def draw_char(self, painter, char):
+        ctrl = self.controller
+        font = painter.font()
+        font.setPixelSize(ctrl.ins_font_height)
+        painter.setFont(font)
+        painter.setPen(QColor("green"))
+        painter.drawText(
+            QRect(0, ctrl.ins_font_bottom, ctrl.ins_width, ctrl.ins_width),
+            Qt.AlignCenter,
+            char,
+        )
+
     def paintEvent(self, _):
         """Draw"""
 
         painter = QPainter()
         painter.begin(self)
         painter.setRenderHints(
-            painter.Antialiasing |
-            painter.SmoothPixmapTransform |
-            painter.HighQualityAntialiasing)
+            painter.Antialiasing
+            | painter.SmoothPixmapTransform
+            | painter.HighQualityAntialiasing
+        )
         pen = painter.pen()
         pen.setWidth(2)
         pen.setColor(QColor("black"))
         painter.setPen(pen)
-        cls = self.__class__
+        ctrl = self.controller
 
         if self.is_hoshi:
-            hosz = cls.curr_hoshi_size
-            hosp = cls.curr_hoshi_pos
+            hosz = ctrl.ins_hoshi_size
+            hosp = ctrl.ins_hoshi_pos
             painter.setBrush(QColor("black"))
             painter.drawEllipse(hosp, hosp, hosz, hosz)
 
@@ -85,69 +108,79 @@ class Intersection(QWidget):
         stone_img = self.stone_by_status.get(self.status)
         if self.controller.game.currentcolor and self._hover and not stone_img:
             stone_img = self.stone_by_status.get(
-                STATUS[self.controller.game.currentcolor.intval + 2])
+                STATUS[self.controller.game.currentcolor.intval + 2]
+            )
 
         if stone_img:
             pixmap = QPixmap(stone_img)
             painter.drawPixmap(
                 QRect(
-                    cls.curr_stone_pos,
-                    cls.curr_stone_pos,
-                    cls.curr_stone_size,
-                    cls.curr_stone_size),
-                pixmap)
+                    ctrl.ins_stone_pos,
+                    ctrl.ins_stone_pos,
+                    ctrl.ins_stone_size,
+                    ctrl.ins_stone_size,
+                ),
+                pixmap,
+            )
+        if self.controller.input_mode != InputMode.COUNT:
+            deco = self.controller.game.cursor.extras.decorations.get(self.coord)
+            if deco:
+                self.draw_char(painter, deco)
+            child = self.controller.game.cursor.children.get(self.coord)
 
-        deco = self.controller.game.cursor.extras.decorations.get(self.coord)
-        if deco:
-            font = painter.font()
-            font.setPixelSize(cls.curr_font_height)
-            painter.setFont(font)
-            painter.setPen(QColor("green"))
-            painter.drawText(
-                QRect(0, cls.curr_font_bottom, cls.curr_width,
-                      cls.curr_width),
-                Qt.AlignCenter, deco)
-        child = self.controller.game.cursor.children.get(self.coord)
+            if child and not deco:
+                self.draw_char(
+                    painter,
+                    str(
+                        tuple(self.controller.game.cursor.children.keys()).index(
+                            self.coord
+                        )
+                        + 1
+                    ),
+                )
 
-        if child and not deco:
-            font = painter.font()
-            font.setPixelSize(cls.curr_font_height)
-            painter.setFont(font)
-            painter.setPen(QColor("green"))
-            painter.drawText(
-                QRect(0, cls.curr_font_bottom, cls.curr_width,
-                      cls.curr_width),
-                Qt.AlignCenter,
-                str(tuple(self.controller.game.cursor.children.keys()).index(self.coord) + 1))
-
-        if self.is_current:
-            painter.setBrush(QColor("red"))
-            painter.drawEllipse(
-                cls.curr_curr_pos,
-                cls.curr_curr_pos,
-                cls.curr_curr_height,
-                cls.curr_curr_height,
+            if self.is_current:
+                painter.setBrush(QColor("red"))
+                painter.drawEllipse(
+                    ctrl.ins_small_pos,
+                    ctrl.ins_small_pos,
+                    ctrl.ins_small_height,
+                    ctrl.ins_small_height,
+                )
+        elif self.status in (BLACK_LIB, WHITE_LIB, DEAD_BLACK, DEAD_WHITE):
+            stone_img = self.stone_by_status[
+                BLACK if self.status in (BLACK_LIB, DEAD_WHITE) else WHITE
+            ]
+            pixmap = QPixmap(stone_img)
+            painter.drawPixmap(
+                QRect(
+                    ctrl.ins_small_pos,
+                    ctrl.ins_small_pos,
+                    ctrl.ins_small_height,
+                    ctrl.ins_small_height,
+                ),
+                pixmap,
             )
 
         painter.end()
 
     def calc(self):
         """Calc for one - use for all"""
-        cls = self.__class__
+        ctrl = self.controller
         width = self.width()
-        cls.curr_width = width
+        ctrl.ins_width = width
 
-        cls.curr_hoshi_size = int(width / 5)
-        cls.curr_hoshi_pos = (width - cls.curr_hoshi_size) / 2
+        ctrl.ins_hoshi_size = int(width / 5)
+        ctrl.ins_hoshi_pos = (width - ctrl.ins_hoshi_size) / 2
 
-        cls.curr_stone_size = int(width * 1)
-        cls.curr_stone_pos = int((width - cls.curr_stone_size) / 2)
+        ctrl.ins_stone_size = int(width)
+        ctrl.ins_stone_pos = int((width - ctrl.ins_stone_size) / 2)
 
-        cls.curr_font_height = int(width * .8)
-        cls.curr_font_bottom = int((cls.curr_font_height - width) / 2)
+        ctrl.ins_font_height = int(width * 0.8)
+        ctrl.ins_font_bottom = int((ctrl.ins_font_height - width) / 2)
 
-        cls.curr_curr_height = cls.curr_hoshi_size * 2
-        cls.curr_curr_pos = (width - cls.curr_curr_height) / 2
+        ctrl.ins_small_height = ctrl.ins_hoshi_size * 2
+        ctrl.ins_small_pos = (width - ctrl.ins_small_height) / 2
 
     def eventFilter(self, object_, event):
         type_ = event.type()

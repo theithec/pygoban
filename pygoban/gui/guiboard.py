@@ -50,7 +50,7 @@ class GuiBoard(QWidget):
                     inter.status = status
 
     def get_bordersize(self):
-        '''Todo'''
+        """Todo"""
         bordersize = int(self.width() / self.boardsize)
         return bordersize
 
@@ -62,20 +62,19 @@ class GuiBoard(QWidget):
                 coord = gtp_coords(*rotate(x, y, self.boardsize), self.boardsize)
                 inter = self.intersections[coord]
                 inter.setGeometry(
-                    x * width + borderspace,
-                    y * width + borderspace,
-                    width, width)
+                    x * width + borderspace, y * width + borderspace, width, width
+                )
         self.intersections["A1"].calc()
         self.repaint()
 
     def paintEvent(self, _event):
-        '''Paint a board'''
+        """Paint a board"""
         painter = QPainter()
         painter.begin(self)
         painter.drawImage(
             QRect(0, 0, self.width(), self.height()),
             self.bgimage,
-            QRect(0, 0, 905, 898)
+            QRect(0, 0, 905, 898),
         )
         borderspace = self.get_bordersize()
         boardwidth = self.width() - 2 * borderspace
@@ -87,29 +86,35 @@ class GuiBoard(QWidget):
             pen.setWidth(4 if pos in (0, self.boardsize - 1) else 2)
             painter.setPen(pen)
             painter.setRenderHints(
-                painter.Antialiasing |
-                painter.SmoothPixmapTransform |
-                painter.HighQualityAntialiasing)
+                painter.Antialiasing
+                | painter.SmoothPixmapTransform
+                | painter.HighQualityAntialiasing
+            )
             x = pos * dist
             painter.drawText(
                 QRect(x + borderspace, borderspace / 4, dist, dist),
                 Qt.AlignCenter,
-                COORDS[pos].upper())
+                COORDS[pos].upper(),
+            )
 
             painter.drawText(
                 QRect(borderspace / 4, x + borderspace, dist, dist),
-                Qt.AlignCenter, str(self.boardsize - pos))
+                Qt.AlignCenter,
+                str(self.boardsize - pos),
+            )
 
             painter.drawLine(
                 x + hdist + borderspace,
                 hdist + borderspace,
                 x + hdist + borderspace,
-                (dist * self.boardsize - hdist) + borderspace)
+                (dist * self.boardsize - hdist) + borderspace,
+            )
 
             painter.drawLine(
                 hdist + borderspace,
                 x + hdist + borderspace,
                 dist * self.boardsize - hdist + borderspace,
-                x + hdist + borderspace)
+                x + hdist + borderspace,
+            )
 
         painter.end()

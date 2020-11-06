@@ -2,6 +2,7 @@ from typing import Callable
 import enum
 import os
 from PyQt5 import QtWidgets
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -16,13 +17,11 @@ class CenteredMixin:
 class InputMode(enum.Enum):
     PLAY = "PLAY"
     EDIT = "EDIT"
+    COUNT = "COUNT"
 
 
 def rotate(x, y, boardsize):
-    return (
-        y,
-        x
-    )
+    return (y, x)
 
 
 def btn_adder(layout: QtWidgets.QLayout):

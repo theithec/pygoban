@@ -1,15 +1,14 @@
-# pylint: disable=import-outside-toplevel
-# because qt is optional
-import sys
+# pylint: disable=import-outside-toplevel, global-statement
+# because qt is optional, global is forQApp
 import argparse
 import signal
+import sys
 
 from . import getconfig
 from .game import BLACK, WHITE, Game
 from .player import GTPPlayer
 from .sgf import parse
 from .timesettings import TimeSettings
-
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)  # kill with <Ctrl-C>
 
@@ -33,7 +32,10 @@ def startgame(args: argparse.Namespace, init_gui: bool):
         else:
             players[col] = GTPPlayer(col, cmd=config["GTP"][cmd])
 
-    defaults = {"SZ": args.boardsize or config["PYGOBAN"]["boardsize"]}
+    defaults = {
+        "SZ": args.boardsize or config["PYGOBAN"]["boardsize"],
+        "KM": args.komi or config["PYGOBAN"]["komi"],
+    }
     if args.sgf_file:
         with open(args.sgf_file) as fileobj:
             sgftxt = fileobj.read()
@@ -41,21 +43,20 @@ def startgame(args: argparse.Namespace, init_gui: bool):
     else:
         game = Game(HA=args.handicap, **defaults)
 
-    controller_kwargs = dict(
-        black=players[BLACK],
-        white=players[WHITE],
-        game=game
-    )
+    controller_kwargs = dict(black=players[BLACK], white=players[WHITE], game=game)
     if args.time:
-        timekwargs = dict(zip(
-            ("maintime", "byomi_time", "byomi_num", "byomi_stones"),
-            [int(arg) for arg in args.time.split(":")]))
+        timekwargs = dict(
+            zip(
+                ("maintime", "byomi_time", "byomi_num", "byomi_stones"),
+                [int(arg) for arg in args.time.split(":")],
+            )
+        )
         controller_kwargs["timesettings"] = TimeSettings(**timekwargs)
     controller = Controller(**controller_kwargs)
     if args.nogui:
         controller.set_turn(game.currentcolor)
     else:
-        controller.setWindowTitle('Pygoban')
+        controller.setWindowTitle("Pygoban")
         controller.show()
         controller.setMinimumSize(800, 600)
 
@@ -65,8 +66,11 @@ def startgame(args: argparse.Namespace, init_gui: bool):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('sgf_file', nargs='?', default=None)
+    parser.add_argument("sgf_file", nargs="?", default=None)
     parser.add_argument("--nogui", action="store_true", help="Show GUI")
+    parser.add_argument("--komi", help="komi", type=float)
+    parser.add_argument("--black-name", help="Black Name")
+    parser.add_argument("--white-name", help="White Name")
     parser.add_argument("--black-gtp", help="Black GTP")
     parser.add_argument("--white-gtp", help="White GTP")
     parser.add_argument("--handicap", help="Handicap", type=int, default=0)
@@ -75,10 +79,12 @@ def main():
     args = parser.parse_args()
     if not args.nogui:
         from PyQt5.QtWidgets import QApplication
+
         global QAPP
         QAPP = QApplication([])
         if not any((args.sgf_file, args.boardsize, args.black_gtp, args.white_gtp)):
             from .gui.startwindow import StartWindow
+
             win = StartWindow(parser, starter_callback=startgame)
             win.show()
             sys.exit(QAPP.exec_())
