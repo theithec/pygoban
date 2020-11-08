@@ -16,7 +16,7 @@ class End(Enum):
 
 class ThreeTimesPassed(Exception):
     def __init__(self, color):
-        self.color = color
+        super().__init__(color)
 
 
 HANDICAPS: Dict[int, Tuple] = {1: ((15, 3),)}
@@ -77,19 +77,12 @@ class Game:
         return self._cursor
 
     def get_othercolor(self, color: Status):
+        assert color in (BLACK, WHITE, None)
         return BLACK if not color or color == WHITE else WHITE
 
     def play(self, color, coord):
-        children = self.cursor.children.get(coord)
-        move = None
-        if children:
-            for child in children:
-                if child.color == color:
-                    move = child
-                    break
-        if not move:
-            move = Move(color, coord)
-        result = self._test_move(move)
+        move = Move(color, coord)
+        move, result = self._test_move(move)
         self.ruleset.validate(result)
         self._apply_result(result, move)
         return result
@@ -105,12 +98,10 @@ class Game:
         self._set_cursor(parent)
 
     def to_sgf(self):
-        txt = "(;" + "".join([f"{k}[{v}]" for k, v in self.infos.items()])
         boardsize = self.board.boardsize
-        has_variations = False
 
         def add_children(move):
-            nonlocal txt, has_variations
+            nonlocal txt
 
             parent = move.parent
             is_variation = parent and parent.children and len(parent.children) > 1
@@ -124,6 +115,8 @@ class Game:
             if is_variation:
                 txt += ")"
 
+        txt = "(;" + "".join([f"{k}[{v}]" for k, v in self.infos.items()])
+        txt += self.root.to_sgf(boardsize)
         add_children(self.root)
         txt += ")"
         return txt
@@ -134,11 +127,18 @@ class Game:
         self.board = Board(self.board.boardsize)
         self._set_handicap()
         path = self._get_path()
+        # self.root = Move(color=None, coord=None)
         self._cursor = self.root
         for pmove in path:
             self._test_move(pmove, apply_result=True)
 
     def _test_move(self, move, apply_result=False):
+        children = self.cursor.children.get(move.coord)
+        if children:
+            for child in children:
+                if child.color == move.color:
+                    move = child
+                    break
         if move.coord:
             result = self.board.result(
                 move.color, *array_indexes(move.coord, self.board.boardsize)
@@ -149,7 +149,7 @@ class Game:
         if apply_result:
             self._apply_result(result, move)
 
-        return result
+        return move, result
 
     def _apply_result(self, result, move=None):
         color = result.color
@@ -166,7 +166,8 @@ class Game:
                     self.board[x][y] = status
         self._cursor = move
         # For "deco" moves we may reuse a move
-        if move != old_cursor:
+        # if move != old_cursor and not move.parent:
+        if not move.parent:
             move.parent = old_cursor
 
     def _set_handicap(self):
@@ -186,3 +187,13 @@ class Game:
             curr = curr.parent
         path.reverse()
         return path[1:]
+
+    def tree(self, curr=None, level=1):
+        print("\t" * level, curr, " Parent: ", curr.parent if curr else "-")
+        curr = curr or self.root
+        children = curr.children
+        if children:
+            level += 1
+            for innerchildren in children.values():
+                for child in innerchildren:
+                    self.tree(child, level)

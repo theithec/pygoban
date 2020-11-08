@@ -7,19 +7,22 @@ from PyQt5.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
-    QVBoxLayout,
     QLCDNumber,
     QMenu,
     QPushButton,
     QSizePolicy,
     QTextEdit,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
 )
 
 from pygoban.status import BLACK, WHITE
+
 from . import InputMode, btn_adder
+from .filedialog import filename_from_savedialog
 from .intersection import Intersection
 from .player import GuiPlayer
-from .filedialog import filename_from_savedialog
 
 
 class Sidebar(QFrame):
@@ -71,6 +74,8 @@ class Sidebar(QFrame):
         if can_edit:
             layout.addRow(self.get_edit_box())
 
+        self.tree = QTreeWidget(self)
+        layout.addRow(self.tree)
         self.comments = QTextEdit()
         self.comments.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         layout.addRow(self.comments)
@@ -150,17 +155,16 @@ class Sidebar(QFrame):
 
     def do_resign(self):
         game = self.controller.game
-        if not self.controller.timeout or not isinstance(
+        if not self.controller.timeout or isinstance(
             self.controller.players[game.currentcolor], GuiPlayer
         ):
-            return
-        self.controller.handle_move(game.currentcolor, "resign")
+            self.controller.handle_move(game.currentcolor, "resign")
 
     def do_last_variation(self):
         game = self.controller.game
-        curr = game.cursor
+        curr = game.cursor.parent
         while curr:
-            if len(curr.children) == 1:
+            if curr.parent and len(curr.parent.children) == 1:
                 curr = curr.parent
             else:
                 break
@@ -170,10 +174,9 @@ class Sidebar(QFrame):
     def do_undo(self):
         movetree = self.controller.game
         self.controller.input_mode = InputMode.PLAY
-        if movetree.cursor.is_root:
-            return
-        self.controller.handle_move(self.controller.game.currentcolor, "undo")
-        self.controller.update_board()
+        if not movetree.cursor.is_root:
+            self.controller.handle_move(self.controller.game.currentcolor, "undo")
+            self.controller.update_board()
 
     def do_prev_move(self):
         game = self.controller.game
@@ -183,7 +186,6 @@ class Sidebar(QFrame):
     def do_next_move(self):
         game = self.controller.game
         move = list(game.cursor.children.values())[0][0]
-        # print("Move...", game.cursor.children)
         game._set_cursor(move)
         self.controller.update_board()
 
@@ -257,12 +259,36 @@ class Sidebar(QFrame):
                 )
             )
         if self.can_edit:
-            self.prev_move.setEnabled(
-                bool(self.controller.game.cursor and self.controller.game.cursor.parent)
+            has_parent = bool(
+                self.controller.game.cursor and self.controller.game.cursor.parent
             )
-            self.next_move.setEnabled(
-                bool(
-                    self.controller.game.cursor
-                    and len(self.controller.game.cursor.children)
-                )
+            self.prev_move.setEnabled(has_parent)
+            self.back_moves.setEnabled(has_parent)
+
+            has_children = bool(
+                self.controller.game.cursor
+                and len(self.controller.game.cursor.children)
             )
+            self.next_move.setEnabled(has_children)
+            self.forward_moves.setEnabled(has_children)
+        self.tree.clear()
+        self.tree.setColumnCount(1)
+        w1 = QTreeWidgetItem(self.tree)
+        w1.setText(0, "A")
+        w2 = QTreeWidgetItem(w1)
+        w2.setText(0, "B")
+        # w1.addChild(w2)
+        w3 = QTreeWidgetItem(w2)
+        w3.setText(0, "C")
+        # w1.addChild(w3)
+        w4 = QTreeWidgetItem(w2)
+        w4.setText(0, "D")
+        curr = w4
+        for i in range(5, 10):
+            item = QTreeWidgetItem(curr)
+            item.setText(0, str(i))
+            curr = item
+        self.tree.expandAll()
+
+        # w2.addChild(w4)
+        self.tree.addTopLevelItem(w1)

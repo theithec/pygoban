@@ -30,14 +30,14 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         Timer(1, lambda: self.set_turn(self.game.currentcolor, None)).start()
 
     def set_turn(self, color, result):
-        if result and not result.extra:
-            if self.game.cursor and self.game.cursor.parent:
-                comments = self.sidebar.comments.toPlainText().split(os.linesep)
-                self.game.cursor.parent.extras.comments = comments
-        if self.game.cursor:
-            self.sidebar.game_signal.emit(
-                os.linesep.join(self.game.cursor.extras.comments)
-            )
+        # if result and not result.extra:
+        #    if self.game.cursor and self.game.cursor.parent:
+        #        comments = self.sidebar.comments.toPlainText().split(os.linesep)
+        #        self.game.cursor.parent.extras.comments = comments
+        # if self.game.cursor:
+        #    self.sidebar.game_signal.emit(
+        #        os.linesep.join(self.game.cursor.extras.comments)
+        #    )
         if result and not result.extra:
             inter = self.guiboard.intersections[
                 gtp_coords(result.x, result.y, self.game.boardsize)
@@ -60,6 +60,10 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         if not curr.is_empty:
             self.guiboard.intersections[curr.coord.upper()].is_current = True
 
+        if self.game.cursor:
+            self.sidebar.game_signal.emit(
+                os.linesep.join(self.game.cursor.extras.comments)
+            )
         self.guiboard.update_intersections(self.game.board)
         self.sidebar.update_controlls()
         self.update()
@@ -100,7 +104,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
                     )
         elif self.input_mode == InputMode.COUNT and inter.status != EMPTY:
             x, y = array_indexes(inter.coord, self.game.boardsize)
-            group = self.game.board.analyze(x, y, findkilled=False)[1]
+            group = self.game.board.analyze((x, y), findkilled=False)[1]
             status = inter.status.toggle_dead()
             for x, y in group:
                 self.game.board[x][y] = status

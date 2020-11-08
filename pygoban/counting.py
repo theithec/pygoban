@@ -1,10 +1,10 @@
-from .status import BLACK, BLACK_LIB, DEAD_BLACK, DEAD_WHITE, EMPTY, WHITE, WHITE_LIB
+from .status import BLACK, BLACK_LIB, EMPTY, WHITE, WHITE_LIB
 
 
 def check(x, y, board, checked, group=None):
     group = group or {"owner": None, "coords": set()}
     status = board[x][y]
-    if status == EMPTY or status in (DEAD_BLACK, DEAD_WHITE, BLACK_LIB, WHITE_LIB):
+    if status == EMPTY or status.is_owned():
         group["coords"].add((x, y))
         checked.add((x, y))
     else:
@@ -16,12 +16,7 @@ def check(x, y, board, checked, group=None):
         ax, ay = adj
         if (ax, ay) in checked:
             continue
-        elif status == EMPTY or status in (
-            DEAD_BLACK,
-            DEAD_WHITE,
-            BLACK_LIB,
-            WHITE_LIB,
-        ):
+        if status == EMPTY or status.is_owned():
             check(ax, ay, board, checked, group)
     return group
 

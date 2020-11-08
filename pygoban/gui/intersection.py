@@ -64,7 +64,7 @@ class Intersection(QWidget):
             self._status = status
             self.update()
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, _event):
         self.controller.inter_clicked(self)
 
     def draw_char(self, painter, char):
@@ -129,14 +129,18 @@ class Intersection(QWidget):
             child = self.controller.game.cursor.children.get(self.coord)
 
             if child and not deco:
-                self.draw_char(
-                    painter,
-                    str(
-                        tuple(self.controller.game.cursor.children.keys()).index(
-                            self.coord
-                        )
-                        + 1
+                stone_img = self.stone_by_status[
+                    DEAD_BLACK if child[0].color == BLACK else DEAD_WHITE
+                ]
+                pixmap = QPixmap(stone_img)
+                painter.drawPixmap(
+                    QRect(
+                        ctrl.ins_small_pos,
+                        ctrl.ins_small_pos,
+                        ctrl.ins_small_height,
+                        ctrl.ins_small_height,
                     ),
+                    pixmap,
                 )
 
             if self.is_current:
@@ -182,7 +186,7 @@ class Intersection(QWidget):
         ctrl.ins_small_height = ctrl.ins_hoshi_size * 2
         ctrl.ins_small_pos = (width - ctrl.ins_small_height) / 2
 
-    def eventFilter(self, object_, event):
+    def eventFilter(self, _object, event):
         type_ = event.type()
 
         if type_ == QEvent.Enter:

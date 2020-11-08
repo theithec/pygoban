@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import sys
 import traceback
-from typing import Dict, List
+from typing import Dict, List, Set
 
 from .status import Status, BLACK, WHITE
 from .coords import gtp_coord_to_sgf
@@ -20,6 +20,7 @@ class MoveExtras:
     comments: List[str] = field(default_factory=list)
     decorations: Dict[str, str] = field(default_factory=dict)
     stones: Dict = field(default_factory=lambda: {BLACK: set(), WHITE: set()})
+    empty: Set[str] = field(default_factory=set)
     nr = 1
     char = "A"
 
@@ -65,17 +66,15 @@ class Move:
         return {k: v for (k, v) in self.children.values() if not v.is_empty}
 
     def to_sgf(self, boardsize):
-        if self.is_root:
-            return ""
-        if self.is_pass:
+        if self.is_root or self.is_pass:
             txt = ""
-        elif self.extras.has_stones():
+        if self.extras.has_stones():
             for status in (BLACK, WHITE):
                 sgfcoords = "][".join(
                     [gtp_coord_to_sgf(coord) for coord in self.extras.stones[status]]
                 )
                 txt = f";A{status.shortval}[{sgfcoords}]"
-        else:
+        elif self.coord:
             val = gtp_coord_to_sgf(self.coord)
             txt = ";{color_char}[{val}]"
             txt = txt.format(color_char=self.color.shortval, val=val)
@@ -90,4 +89,4 @@ class Move:
                 self.parent.children.pop(self.coord, None)
 
     def __str__(self):
-        return self.to_sgf(19)
+        return ", ".join((self.coord or "-", str(self.color), str(self.extras)))

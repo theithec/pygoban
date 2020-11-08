@@ -75,7 +75,9 @@ def main():
     parser.add_argument("--white-gtp", help="White GTP")
     parser.add_argument("--handicap", help="Handicap", type=int, default=0)
     parser.add_argument("--boardsize", help="Handicap", type=int)
-    parser.add_argument("--time", help="[maintime]:[byomi_time]:[byomi_num]:[byomi_stones]")
+    parser.add_argument(
+        "--time", help="[maintime]:[byomi_time]:[byomi_num]:[byomi_stones]"
+    )
     args = parser.parse_args()
     if not args.nogui:
         from PyQt5.QtWidgets import QApplication

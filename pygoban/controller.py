@@ -13,6 +13,7 @@ from .coords import gtp_coords
 from .counting import count
 
 
+# pylint: disable=no-self-use
 class Controller:
     def __init__(
         self,
@@ -36,6 +37,8 @@ class Controller:
         self.end(End.BY_TIME, player.color)
 
     def set_turn(self, color, result):
+        print(self.game.board)
+        print(self.game.board)
         logging.info("SET TURN %s", color)
         if self.players[color].timesettings:
             nexttime = self.players[color].timesettings.nexttime(start_timer=True)
@@ -65,7 +68,7 @@ class Controller:
             try:
                 self.game.pass_(color)
             except ThreeTimesPassed as err:
-                self.end(End.PASSED, err.color)
+                self.end(End.PASSED, err.args[0])
             if self.timesettings:
                 self.update_time(color)
 

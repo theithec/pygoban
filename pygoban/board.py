@@ -1,4 +1,3 @@
-"""Boards"""
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
@@ -19,15 +18,16 @@ class MoveResult:
     x: int
     y: int
     color: Status
-    libs: Set[int] = field(default_factory=set)
+    libs: int
     killed: Set[int] = field(default_factory=set)
     group: Set[int] = field(default_factory=set)
     extra: Optional[StonelessReason] = None
 
 
+@dataclass
 class StonelessResult(MoveResult):
     def __init__(self, color, extra):
-        super().__init__(-1, -1, color, extra=extra)
+        super().__init__(-1, -1, color, libs=0, extra=extra)
 
 
 class Board(list):
@@ -57,12 +57,12 @@ class Board(list):
     def analyze(
         self,
         pos: Tuple[int, int],
-        started: Set = None,
+        started: Optional[Set[Tuple[int, int]]] = None,
         group: Set = None,
         killed: Set = None,
         libs: int = 0,
         findkilled: bool = True,
-    ):
+    ) -> Tuple[Set[Tuple[int, int]], Set, Set, int, bool]:
         """Analyze from a starting point"""
         started = started or set()
         group = group or set()
@@ -108,7 +108,9 @@ class Board(list):
         cpy = deepcopy(self)
         cpy[x][y] = color
         raw = cpy.analyze((x, y))
-        result = MoveResult(x=x, y=y, color=color, libs=raw[3], killed=raw[2], group=raw[1])
+        result = MoveResult(
+            x=x, y=y, color=color, libs=raw[3], killed=raw[2], group=raw[1]
+        )
         return result
 
     def apply_result(self, result):
@@ -142,12 +144,16 @@ class Board(list):
     def __str__(self):
         cpy = self.rotated(switch_axis=False, switch_y=False)
         txt = "\n    "
-        txt += " ".join([letter_coord_from_int(i, cpy.boardsize) for i in range(cpy.boardsize)])
+        txt += " ".join(
+            [letter_coord_from_int(i, cpy.boardsize) for i in range(cpy.boardsize)]
+        )
         txt += "\n\n"
         for xorg in range(cpy.boardsize):
             x = cpy.boardsize - xorg - 1
             txt += "%2s  " % (x + 1)
-            txt += " ".join(["%s" % (cpy[xorg][y]).short() for y in range(cpy.boardsize)])
+            txt += " ".join(
+                ["%s" % (cpy[xorg][y]).short() for y in range(cpy.boardsize)]
+            )
             txt += "\n"
 
         return txt

@@ -20,6 +20,12 @@ class Status:
         assert self.intval in (1, 2, 3, 4)
         return STATUS[self.intval + (2 if self.intval < 3 else -2)]
 
+    def is_empty(self):
+        return self == EMPTY or self == BLACK_LIB or self == WHITE_LIB
+
+    def is_owned(self):
+        return self in (DEAD_BLACK, DEAD_WHITE, BLACK_LIB, WHITE_LIB)
+
 
 KO = Status(-1, "Ko", "?")
 EMPTY = Status(0, "Empty", "+")
