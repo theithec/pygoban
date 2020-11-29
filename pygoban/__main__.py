@@ -7,8 +7,10 @@ import sys
 from . import getconfig
 from .game import BLACK, WHITE, Game
 from .player import GTPPlayer
-from .sgf import parse
+from .sgf.reader import parse
 from .timesettings import TimeSettings
+from .events import MovePlayed, CursorChanged, MovesReseted
+from .counting import count
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)  # kill with <Ctrl-C>
 
@@ -35,6 +37,7 @@ def startgame(args: argparse.Namespace, init_gui: bool):
     defaults = {
         "SZ": args.boardsize or config["PYGOBAN"]["boardsize"],
         "KM": args.komi or config["PYGOBAN"]["komi"],
+        "RU": "default",
     }
     if args.sgf_file:
         with open(args.sgf_file) as fileobj:
@@ -43,7 +46,22 @@ def startgame(args: argparse.Namespace, init_gui: bool):
     else:
         game = Game(HA=args.handicap, **defaults)
 
-    controller_kwargs = dict(black=players[BLACK], white=players[WHITE], game=game)
+    callbacks = {
+        "play": game.play,
+        "get_prisoners": lambda: game.prisoners,
+        "get_board": lambda: game.board,
+        "set_cursor": game._set_cursor,
+        "pass": game.pass_,
+        "undo": game.undo,
+        "analyze": game.board.analyze,
+        "count": lambda: count(game.board),
+    }
+    controller_kwargs = dict(
+        black=players[BLACK],
+        white=players[WHITE],
+        callbacks=callbacks,
+        infos=game.infos,
+    )
     if args.time:
         timekwargs = dict(
             zip(
@@ -53,9 +71,13 @@ def startgame(args: argparse.Namespace, init_gui: bool):
         )
         controller_kwargs["timesettings"] = TimeSettings(**timekwargs)
     controller = Controller(**controller_kwargs)
-    if args.nogui:
-        controller.set_turn(game.currentcolor)
-    else:
+    game.add_listener(controller, [CursorChanged, MovesReseted])
+    for col in (BLACK, WHITE):
+        game.add_listener(players[col], [MovePlayed])
+
+    game.start()
+
+    if not args.nogui:
         controller.setWindowTitle("Pygoban")
         controller.show()
         controller.setMinimumSize(800, 600)

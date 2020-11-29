@@ -1,4 +1,5 @@
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QSize
+from PyQt5.QtGui import QBrush
 from PyQt5.QtWidgets import (
     QAction,
     QFileDialog,
@@ -15,21 +16,100 @@ from PyQt5.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
+    QHeaderView,
 )
 
 from pygoban.status import BLACK, WHITE
+from pygoban.board import MoveResult
+from pygoban.move import Move
+from pygoban.coords import pos_to_sgf
 
 from . import InputMode, btn_adder
 from .filedialog import filename_from_savedialog
-from .intersection import Intersection
 from .player import GuiPlayer
+from .tree import Tree
 
 
-class Sidebar(QFrame):
+class ActionMixin:
+    def toggle_deco(self, checked):
+        self.controller.input_mode = InputMode.EDIT if checked else InputMode.PLAY
+
+    def do_B(self):
+        self.controller.deco = BLACK
+
+    def do_W(self):
+        self.controller.deco = WHITE
+
+    def do_tr(self):
+        self.controller.deco = "▲"
+
+    def do_sq(self):
+        self.controller.deco = "■"
+
+    def do_ci(self):
+        self.controller.deco = "●"
+
+    def do_nr(self):
+        self.controller.deco = "NR"
+
+    def do_char(self):
+        self.controller.deco = "CHAR"
+
+    def do_pass(self):
+        self.controller.callbacks["pass"](self.controller.last_result.next_player)
+
+    def do_resign(self):
+        game = self.controller.game
+        if not self.controller.timeout or isinstance(
+            self.controller.players[game.nextcolor], GuiPlayer
+        ):
+            self.controller.handle_move(game.nextcolor, "resign")
+
+    def do_last_variation(self):
+        curr = self.controller.last_result.move
+        while curr:
+            if curr.parent and len(curr.parent.children) == 1:
+                curr = curr.parent
+            else:
+                break
+        self.controller.callbacks["set_cursor"](curr)
+
+    def do_next_variation(self):
+        curr = self.controller.last_result.move
+        while curr:
+            if len(curr.children) == 1:
+                curr = list(curr.children.values())[0]
+            else:
+                break
+        self.controller.callbacks["set_cursor"](curr)
+
+    def do_undo(self):
+        self.controller.input_mode = InputMode.PLAY
+        if not self.controller.last_result.move.is_root:
+            self.controller.handle_move(self.controller.last_result.move.color, "undo")
+
+    def do_prev_move(self):
+        self.controller.callbacks["set_cursor"](self.controller.last_result.move.parent)
+
+    def do_next_move(self):
+        self.controller.callbacks["set_cursor"](
+            list(self.controller.last_result.move.children.values())[0]
+        )
+
+    def do_count(self):
+        self.controller.input_mode = InputMode.COUNT
+        self.controller.count()
+
+
+class Sidebar(QFrame, ActionMixin):
 
     timeupdate_signal = pyqtSignal()
     timeended_signal = pyqtSignal()
-    game_signal = pyqtSignal(str)
+    game_signal = pyqtSignal(MoveResult)
+    moves_signal = pyqtSignal(Move)
+
+    BLACK_STYLE = "QLabel { background-color : black; color : white; }"
+    WHITE_STYLE = "QLabel { background-color : white; color : black; }"
 
     def __init__(self, parent, is_game=True, can_edit=True):
         super().__init__(parent)
@@ -37,9 +117,7 @@ class Sidebar(QFrame):
         self.is_game = is_game
         self.can_edit = can_edit
 
-        self.setGeometry(0, 0, 180, parent.height())
-        self.setMinimumSize(80, 30)
-
+        self.setMinimumWidth(180)
         layout = QFormLayout()
         btn_settings = QPushButton("\u2630")
         btn_settings.setMenu(self.get_menu())
@@ -51,7 +129,8 @@ class Sidebar(QFrame):
         self.timer = None
         self.timeupdate_signal.connect(self.update_clock)
         self.timeended_signal.connect(self.time_ended)
-        self.game_signal.connect(self.game_update)
+        self.game_signal.connect(self.update_controlls)
+        self.moves_signal.connect(self.update_moves)
 
         for color in (BLACK, WHITE):
             curr = {}
@@ -59,11 +138,15 @@ class Sidebar(QFrame):
             player_box = QGroupBox(str(color))
             player_layout = QFormLayout()
             player_layout.addRow("Name:", QLabel(self.controller.players[color].name))
-            curr["prisoners_label"] = QLabel(str(self.controller.game.prisoners[color]))
+            curr["prisoners_label"] = QLabel(
+                str(self.controller.callbacks["get_prisoners"]()[color])
+            )
             player_layout.addRow("Prisoners:", curr["prisoners_label"])
             if self.controller.timesettings:
                 curr["time"] = QLCDNumber()
-                curr["time"].display("00:00")
+                curr["time"].display(
+                    self.controller.players[color].timesettings.nexttime()
+                )
                 player_layout.addRow(curr["time"])
             player_box.setLayout(player_layout)
             layout.addRow(player_box)
@@ -74,13 +157,21 @@ class Sidebar(QFrame):
         if can_edit:
             layout.addRow(self.get_edit_box())
 
-        self.tree = QTreeWidget(self)
+        # self.tree = QTreeWidget(self)
+        self.tree = Tree(self, self.tree_click)
+        # self.tree.itemClicked.connect(self.tree_click)
+        # self.tree.setColumnCount(1)
+        # self.tree.horizontalScrollBar().setEnabled(True)
+        # self.tree.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        # self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        # self.tree.header().setStretchLastSection(False)
+        # self.tree_items = {}
         layout.addRow(self.tree)
         self.comments = QTextEdit()
         self.comments.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         layout.addRow(self.comments)
 
-        layout.addRow("Ruleset", QLabel(str(self.controller.game.ruleset.name)))
+        layout.addRow("Ruleset", QLabel(str(self.controller.infos["RU"])))
         self.setLayout(layout)
 
     def get_game_box(self):
@@ -125,101 +216,22 @@ class Sidebar(QFrame):
         edit_box.setLayout(box_layout)
         return edit_box
 
-    def toggle_deco(self, checked):
-        self.controller.input_mode = InputMode.EDIT if checked else InputMode.PLAY
-
-    def do_B(self):
-        self.controller.deco = BLACK
-
-    def do_W(self):
-        self.controller.deco = WHITE
-
-    def do_tr(self):
-        self.controller.deco = "▲"
-
-    def do_sq(self):
-        self.controller.deco = "■"
-
-    def do_ci(self):
-        self.controller.deco = "●"
-
-    def do_nr(self):
-        self.controller.deco = "NR"
-
-    def do_char(self):
-        self.controller.deco = "CHAR"
-
-    def do_pass(self):
-        game = self.controller.game
-        self.controller.handle_move(game.currentcolor, "pass")
-
-    def do_resign(self):
-        game = self.controller.game
-        if not self.controller.timeout or isinstance(
-            self.controller.players[game.currentcolor], GuiPlayer
-        ):
-            self.controller.handle_move(game.currentcolor, "resign")
-
-    def do_last_variation(self):
-        game = self.controller.game
-        curr = game.cursor.parent
-        while curr:
-            if curr.parent and len(curr.parent.children) == 1:
-                curr = curr.parent
-            else:
-                break
-        game._set_cursor(curr)
-        self.controller.update_board()
-
-    def do_undo(self):
-        movetree = self.controller.game
-        self.controller.input_mode = InputMode.PLAY
-        if not movetree.cursor.is_root:
-            self.controller.handle_move(self.controller.game.currentcolor, "undo")
-            self.controller.update_board()
-
-    def do_prev_move(self):
-        game = self.controller.game
-        game._set_cursor(game.cursor.parent)
-        self.controller.update_board()
-
-    def do_next_move(self):
-        game = self.controller.game
-        move = list(game.cursor.children.values())[0][0]
-        game._set_cursor(move)
-        self.controller.update_board()
-
-    def do_next_variation(self):
-        game = self.controller.game
-        curr = game.cursor
-        while curr:
-            if len(curr.children) == 1:
-                curr = list(curr.children.values())[0][0]
-            else:
-                break
-        game._set_cursor(curr)
-        self.controller.update_board()
-
-    def do_count(self):
-        self.controller.input_mode = InputMode.COUNT
-        self.controller.count()
-
-    def game_update(self, txt):
-        self.comments.setText(txt)
-        # self.update_controls()
-
     def update_clock(self):
         if not self.controller.timeout:
-            curr_player = self.controller.players[self.controller.game.currentcolor]
-            if self.controller.players[self.controller.game.currentcolor].timesettings:
+            curr_player = self.controller.players[
+                self.controller.last_result.next_player
+            ]
+            if self.controller.timesettings:
                 self.set_clock(curr_player.color, curr_player.timesettings.nexttime())
 
     def clock_tick(self):
         seconds = (
-            self.player_controlls[self.controller.game.currentcolor]["time"].intValue()
+            self.player_controlls[self.controller.last_result.next_player][
+                "time"
+            ].intValue()
             - 1
         )
-        self.player_controlls[self.controller.game.currentcolor]["time"].display(
+        self.player_controlls[self.controller.last_result.next_player]["time"].display(
             str(seconds)
         )
 
@@ -247,48 +259,72 @@ class Sidebar(QFrame):
         with open(name, "w") as fileobj:
             fileobj.write(self.controller.game.to_sgf())
 
-    def update_controlls(self):
+    def tree_click(self, item, _col=None):
+        self.controller.callbacks["set_cursor"](item)
+
+    def update_controlls(self, result):
+        print("\nUPDATE CONTL", result)
         for color in (BLACK, WHITE):
             curr = self.player_controlls[color]
-            curr["prisoners_label"].setText(str(self.controller.game.prisoners[color]))
+            curr["prisoners_label"].setText(
+                str(self.controller.callbacks["get_prisoners"]()[color])
+            )
+
         if self.is_game:
             self.pass_btn.setEnabled(
                 isinstance(
-                    self.controller.players[self.controller.game.currentcolor],
+                    self.controller.players[result.next_player],
                     GuiPlayer,
                 )
             )
         if self.can_edit:
-            has_parent = bool(
-                self.controller.game.cursor and self.controller.game.cursor.parent
-            )
+            has_parent = bool(result.move and result.move.parent)
             self.prev_move.setEnabled(has_parent)
             self.back_moves.setEnabled(has_parent)
 
-            has_children = bool(
-                self.controller.game.cursor
-                and len(self.controller.game.cursor.children)
-            )
+            has_children = bool(result.move and len(result.move.children))
             self.next_move.setEnabled(has_children)
             self.forward_moves.setEnabled(has_children)
-        self.tree.clear()
-        self.tree.setColumnCount(1)
-        w1 = QTreeWidgetItem(self.tree)
-        w1.setText(0, "A")
-        w2 = QTreeWidgetItem(w1)
-        w2.setText(0, "B")
-        # w1.addChild(w2)
-        w3 = QTreeWidgetItem(w2)
-        w3.setText(0, "C")
-        # w1.addChild(w3)
-        w4 = QTreeWidgetItem(w2)
-        w4.setText(0, "D")
-        curr = w4
-        for i in range(5, 10):
-            item = QTreeWidgetItem(curr)
-            item.setText(0, str(i))
-            curr = item
-        self.tree.expandAll()
 
-        # w2.addChild(w4)
-        self.tree.addTopLevelItem(w1)
+        if result.move:
+            cmts = result.move.extras.comments or [""]
+            self.comments.setText("\n".join(cmts))
+
+            if result.is_new:
+                self.tree.add_move(result.move)
+            else:
+                self.tree.set_cursor(result.move)
+
+        # if key := self.tree_items.get(id(result.move)):
+        #    self.tree.setCurrentItem(key[0])
+
+    def update_moves(self, move: Move):
+        print("UPDATE MOVE", move)
+        self.tree.add_move(move)
+        self.tree.canvas.set_moves(move)
+        # if (has := len(self.tree_items)) % 100 == 0:
+        #     print("u", has, move)
+        # if move.parent:
+        #     res = self.tree_items.get(id(move.parent))
+        #     tree_parent = None
+        #     if res:
+        #         tree_parent = res[0]
+        #     if not tree_parent:
+        #         tree_parent = self.tree
+        #     item = QTreeWidgetItem(tree_parent)
+        #     item.key = id(move)
+        #     #item.setText(0, str(move.pos))
+        #     label = QLabel()
+        #     if move.pos:
+        #         mstr = pos_to_sgf(move.pos, self.controller.infos['SZ'])
+        #     else:
+        #         mstr = "-"
+        #     level = len(move.get_path()) - 1
+        #     label.setText(f"{level}: {mstr}")
+        #     label.setStyleSheet(self.BLACK_STYLE if move.color == BLACK else self.WHITE_STYLE)
+        #     self.tree.setItemWidget(item,0, label)
+        #     item.setSizeHint(0, label.sizeHint())
+        #     self.tree_items[id(move)] = (item, move)
+        # for child in move.children.values():
+        #     self.update_moves(child)
+        # self.tree.expandAll()

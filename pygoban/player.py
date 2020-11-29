@@ -3,6 +3,7 @@ from threading import Thread
 import subprocess
 from . import status, logging
 from .coords import gtp_coords
+from .events import MovePlayed, CursorChanged
 
 
 class Player:
@@ -24,6 +25,7 @@ class Player:
             self.timesettings.timer.cancel()
 
     def set_timesettings(self, timesettings):
+        print(self, "T", timesettings)
         self.timesettings = timesettings
 
     def _get_move(self):
@@ -38,7 +40,7 @@ class Player:
 
 class ConsolePlayer(Player):
     def _get_move(self):
-        move = input("cmd: ").strip()
+        move = input(f"cmd {self.color}: ").strip()
         try:
             valid = True  # move in ("resign", "undo", "pass") or self._game.array_indexes(move)
             if move.startswith("#"):
@@ -49,6 +51,14 @@ class ConsolePlayer(Player):
             return self._get_move()
 
         return move
+
+    def handle_game_event(self, event):
+        if isinstance(event, MovePlayed):
+            if event.result.next_player == self.color:
+                self.set_turn(event.result)
+
+        if self.timesettings:
+            self.update_time(event.move.color)
 
     def set_turn(self, result):
         try:
@@ -110,7 +120,7 @@ class GTPPlayer(Player):
             stderr=subprocess.STDOUT,
         )
         time.sleep(1)
-        self.do_cmd("boardsize %s" % self.controller.game.boardsize, False)
+        self.do_cmd("boardsize %s" % self.controller.infos["SZ"], False)
         # self.do_cmd("fixed_handicap %s" % self.controller.game.handicap,  False)
 
     def set_timesettings(self, timesettings):
@@ -132,11 +142,12 @@ class GTPPlayer(Player):
         # self.controller.handle_move(self.color, "pass")
         self.do_cmd("genmove " + self.color.strval.lower())
 
-    def set_turn(self, result):
-        if result:
-            if not result.extra:
-                coords = gtp_coords(result.x, result.y, self.controller.game.boardsize)
-                self.do_cmd("play %s %s" % (result.color.strval.lower(), coords), False)
-            self.do_cmd("showboard", False)
-
+    def handle_game_event(self, event):
+        result = event.result
+        if not result.extra:
+            coords = gtp_coords(*result.move.pos, self.controller.infos["SZ"])
+            self.do_cmd(
+                "play %s %s" % (result.move.color.strval.lower(), coords), False
+            )
+        self.do_cmd("showboard", False)
         self._get_move()

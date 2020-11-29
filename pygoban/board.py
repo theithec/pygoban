@@ -2,12 +2,13 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Set, Tuple, Dict
-
-from .coords import letter_coord_from_int
+from .coords import array_indexes, letter_coord_from_int
+from .move import Move
 from .status import EMPTY, Status
 
 
 class StonelessReason(Enum):
+    FIRST_MOVE = "first_move"
     UNDO = "undo"
     PASS = "pass"
     ADD_STONES = "ADD_STONES"
@@ -15,19 +16,13 @@ class StonelessReason(Enum):
 
 @dataclass
 class MoveResult:
-    x: int
-    y: int
-    color: Status
-    libs: int
+    next_player: Optional[Status] = None
+    move: Optional[Move] = None
+    libs: int = 0
     killed: Set[int] = field(default_factory=set)
     group: Set[int] = field(default_factory=set)
     extra: Optional[StonelessReason] = None
-
-
-@dataclass
-class StonelessResult(MoveResult):
-    def __init__(self, color, extra):
-        super().__init__(-1, -1, color, libs=0, extra=extra)
+    is_new: bool = True
 
 
 class Board(list):
@@ -80,7 +75,7 @@ class Board(list):
                 libs += 1
 
             # friend
-            elif acol.intval == self.pos(pos).intval:
+            elif acol.intval == self[pos[0]][pos[1]].intval:
                 started, group, killed, libs = self.analyze(
                     axy,
                     started=started,
@@ -103,18 +98,21 @@ class Board(list):
 
         return started, group, killed, libs, findkilled
 
-    def result(self, color: Status, x, y):
+    def result(self, move):
         """Result of a move (may be invalid)"""
+        # color: Status, pos: Tuple[int, int]):
+        x, y = move.pos
         cpy = deepcopy(self)
-        cpy[x][y] = color
+        cpy[x][y] = move.color
         raw = cpy.analyze((x, y))
-        result = MoveResult(
-            x=x, y=y, color=color, libs=raw[3], killed=raw[2], group=raw[1]
-        )
+        result = MoveResult(move=move, libs=raw[3], killed=raw[2], group=raw[1])
         return result
 
     def apply_result(self, result):
-        self[result.x][result.y] = result.color
+        # self.pos(result.move.coord, result.move.color)
+        pos = result.move.pos
+        x, y = pos
+        self[x][y] = result.move.color
         for x, y in result.killed:
             self[x][y] = EMPTY
 
@@ -138,8 +136,11 @@ class Board(list):
 
         return cpy
 
-    def pos(self, pos):
-        return self[pos[0]][pos[1]]
+    def pos(self, coord, status=None):
+        x, y = array_indexes(coord, self.boardsize)
+        if status:
+            self[x][y] = status
+        return self[x][y]
 
     def __str__(self):
         cpy = self.rotated(switch_axis=False, switch_y=False)

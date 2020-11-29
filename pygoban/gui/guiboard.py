@@ -5,11 +5,11 @@ from itertools import permutations
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtGui import QColor, QImage, QPainter
 from PyQt5.QtWidgets import QWidget
-
-from pygoban.coords import gtp_coords
+from PyQt5.QtCore import pyqtSignal
 
 from . import BASE_DIR, rotate
 from .intersection import Intersection
+
 
 COORDS = [chr(i) for i in list(range(97, 117))]
 
@@ -26,28 +26,35 @@ HOSHIS = {
 
 
 class GuiBoard(QWidget):
-    def __init__(self, parent, game, *args, **kwargs):
+    boardupdate_signal = pyqtSignal(list)
+
+    def __init__(self, parent, boardsize, *args, **kwargs):
         super().__init__(parent=parent, *args, **kwargs)
         self.bgimage = QImage(os.path.join(BASE_DIR, "gui/imgs/shinkaya.jpg"))
-        self.boardsize = game.board.boardsize
+        self.boardsize = boardsize
         self.intersections = {}
         self.boardrange = range(self.boardsize)
-        self.update_intersections(game.board, create=True)
+        self.update_intersections(parent.callbacks["get_board"]())
+        self.boardupdate_signal.connect(self.update_intersections)
 
-    def update_intersections(self, board, create=False):
+    def update_intersections(self, board):
+        create = not self.intersections
         hoshis = HOSHIS.get(self.boardsize, [])
         for x in self.boardrange:
             for y in self.boardrange:
-                cx, cy = rotate(x, y, self.boardsize)
-                coord = gtp_coords(cx, cy, self.boardsize)
+                cx, cy = x, y  # rotate(x, y, self.boardsize)
+                pos = (cx, cy)
                 status = board[cx][cy]
                 if create:
                     is_hoshi = (cx, cy) in hoshis
-                    inter = Intersection(self, coord, status, is_hoshi)
-                    self.intersections[coord] = inter
+                    inter = Intersection(self, pos, status, is_hoshi)
+                    inter.setParent(self)
+                    self.intersections[pos] = inter
                 else:
-                    inter = self.intersections[coord]
+                    inter = self.intersections[pos]
                     inter.status = status
+        if create:
+            self.resizeEvent(None)
 
     def get_bordersize(self):
         """Todo"""
@@ -57,14 +64,18 @@ class GuiBoard(QWidget):
     def resizeEvent(self, _event):
         borderspace = self.get_bordersize()
         width = (self.width() - 2 * borderspace) / self.boardsize
-        for x in range(self.boardsize):
-            for y in range(self.boardsize):
-                coord = gtp_coords(*rotate(x, y, self.boardsize), self.boardsize)
-                inter = self.intersections[coord]
-                inter.setGeometry(
-                    x * width + borderspace, y * width + borderspace, width, width
-                )
-        self.intersections["A1"].calc()
+        if self.intersections:
+            for x in range(self.boardsize):
+                for y in range(self.boardsize):
+                    pos = rotate(x, y, self.boardsize)
+                    inter = self.intersections[pos]
+                    # print("xY", x,y, inter)
+                    # print( x * width + borderspace, y * width + borderspace, width, width)
+                    inter.setGeometry(
+                        x * width + borderspace, y * width + borderspace, width, width
+                    )
+                    # inter.update()
+            self.intersections[(0, 0)].calc()
         self.repaint()
 
     def paintEvent(self, _event):

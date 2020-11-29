@@ -52,6 +52,7 @@ class PlayerTime:
         self.player.controller.period_ended(self.player)
 
     def nexttime(self, used=0, start_timer=False):
+        print("nexttime", self.player)
         _next = 0
         if self.maintime > 0:
             self.maintime -= used

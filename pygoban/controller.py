@@ -1,16 +1,17 @@
 import datetime
 import sys
 import time
+from typing import Dict, Optional
 
 from .player import Player
 from . import logging
-from .board import StonelessReason, StonelessResult
-from .game import End, Game, ThreeTimesPassed
+from .game import End, ThreeTimesPassed, MoveResult
+from .move import Move
 from .rulesets import RuleViolation
 from .status import BLACK, WHITE, Status
 from .timesettings import PlayerTime, TimeSettings
-from .coords import gtp_coords
-from .counting import count
+from .coords import array_indexes
+from .events import CursorChanged, MovesReseted, MovePlayed
 
 
 # pylint: disable=no-self-use
@@ -19,12 +20,16 @@ class Controller:
         self,
         black: Player,
         white: Player,
-        game: Game,
+        callbacks: Dict,
+        infos: Dict,
         timesettings: TimeSettings = None,
     ):
-        self.game = game
+        # self.game = game
         self.players = {BLACK: black, WHITE: white}
         self.timesettings = timesettings
+        self.callbacks = callbacks
+        self.infos = infos
+        print("I", self.infos)
         for player in self.players.values():
             player.set_controller(self)
             if self.timesettings:
@@ -32,30 +37,22 @@ class Controller:
 
         self.timeout = False
         self.move_start = None
+        self.last_result: Optional[MoveResult] = None
 
     def player_lost_by_overtime(self, player):
         self.end(End.BY_TIME, player.color)
-
-    def set_turn(self, color, result):
-        print(self.game.board)
-        print(self.game.board)
-        logging.info("SET TURN %s", color)
-        if self.players[color].timesettings:
-            nexttime = self.players[color].timesettings.nexttime(start_timer=True)
-            logging.info("TIME %s", nexttime)
-        self.move_start = datetime.datetime.now()
-        self.players[color].set_turn(result)
 
     def handle_rule_exception(self, exception):
         logging.info(str(exception))
 
     def update_time(self, color, restart=True):
-        self.players[color].timesettings.cancel()
-        if restart:
-            time.sleep(0.2)
-            self.players[color].timesettings.nexttime(
-                (datetime.datetime.now() - self.move_start).seconds
-            )
+        if color in (BLACK, WHITE):
+            self.players[color].timesettings.cancel()
+            if restart:
+                time.sleep(0.2)
+                self.players[color].timesettings.nexttime(
+                    (datetime.datetime.now() - self.move_start).seconds
+                )
 
     def handle_move(self, color, move):
         if self.timeout:
@@ -66,36 +63,51 @@ class Controller:
             self.end(End.RESIGN, color)
         elif move == "pass":
             try:
-                self.game.pass_(color)
+                self.callbacks["pass"](color)
             except ThreeTimesPassed as err:
                 self.end(End.PASSED, err.args[0])
-            if self.timesettings:
-                self.update_time(color)
+            # if self.timesettings:
+            #    self.update_time(color)
 
-            self.set_turn(
-                self.game.get_othercolor(color),
-                StonelessResult(color, StonelessReason.PASS),
-            )
+            # self.set_turn(
+            #    self.game.get_othercolor(color),
+            #    StonelessResult(color, StonelessReason.PASS),
+            # )
         elif move == "undo":
-            self.game.undo()
-            self.set_turn(
-                self.game.get_othercolor(color),
-                StonelessResult(color, StonelessReason.UNDO),
-            )
+            self.callbacks["undo"]()
+            # self.set_turn(
+            #    self.game.get_othercolor(color),
+            #    StonelessResult(color, StonelessReason.UNDO),
+            # )
         elif move:
             try:
-                result = self.game.play(color, move)
+                self.callbacks["play"](color, pos=array_indexes(move, self.infos["SZ"]))
             except RuleViolation as err:
                 self.handle_rule_exception(err)
-                return
-
-            if self.timesettings:
-                self.update_time(color)
-            self.set_turn(self.game.get_othercolor(color), result)
 
     def count(self):
-        groups = count(self.game.board)
-        self.game.ruleset.set_result(groups=groups, end=None)
+        self.callbacks["count"]()
+
+    def update_moves(self, root: Move):
+        pass
+
+    def update_board(self, result: MoveResult, board):
+        raise NotImplementedError()
+
+    def handle_game_event(self, event):
+        print("CTRL handle", event)
+        if isinstance(event, CursorChanged):
+            self.last_result: MoveResult = event.result
+            self.update_board(event.result, event.board)
+
+            if self.timesettings:
+                self.update_time(event.result.move.color)
+                self.players[event.result.next_player].timesettings.nexttime(
+                    start_timer=True
+                )
+                self.move_start = datetime.datetime.now()
+        if isinstance(event, MovesReseted):
+            self.update_moves(event.root)
 
     def end(self, reason: End, color: Status):
         logging.info("END: %s %s", reason, color)
@@ -108,15 +120,19 @@ class Controller:
 
 
 class ConsoleController(Controller):
-    def set_turn(self, color, result=None):
+    def update_board(self, result, board=None):
         print(
             "\n".join(
-                [f"{key} caught\t{val}" for key, val in self.game.prisoners.items()]
+                [
+                    f"{key} caught\t{val}"
+                    for key, val in self.callbacks["get_prisoners"]().items()
+                ]
             )
         )
+        color = self.callbacks["get_next_color"]()
         print("Has turn", color)
         if result:
-            print("Last:", result, gtp_coords(result.x, result.y, self.game.boardsize))
-        print("Time Black", self.players[BLACK].timesettings)
-        print("Time White", self.players[WHITE].timesettings)
-        super().set_turn(color, result)
+            print("Last:", result, result.move)
+        if self.timesettings:
+            print("Time Black", self.players[BLACK].timesettings)
+            print("Time White", self.players[WHITE].timesettings)

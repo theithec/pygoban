@@ -2,5 +2,5 @@ from pygoban.player import Player
 
 
 class GuiPlayer(Player):
-    def set_turn(self, result):
+    def handle_game_event(self, event):
         pass

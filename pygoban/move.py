@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
 import sys
 import traceback
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Tuple
 
 from .status import Status, BLACK, WHITE
-from .coords import gtp_coord_to_sgf
+from .coords import gtp_coord_to_sgf, gtp_coords
 
 
 class MoveList(list):
@@ -29,16 +29,21 @@ class MoveExtras:
 
 
 class Move:
-    def __init__(self, color: Status = None, coord: str = None, parent=None, **extras):
-        self.coord = coord
+    def __init__(
+        self, color: Status = None, pos: Tuple[int, int] = None, parent=None, **extras
+    ):
+        self.pos = pos
         self.color = color
-        self.children: Dict[str, MoveList] = {}
+        self.children: Dict[str, Move] = {}
         stones = extras.pop("stones", {})
+        self._parent = None
         self.extras = MoveExtras(**extras)
         self.extras.stones.update(stones)
-        self._parent = None
         if parent:
             self.parent = parent
+
+    def coord(self, boardsize):
+        return gtp_coord_to_sgf(*self.pos, boardsize)
 
     @property
     def parent(self):
@@ -47,16 +52,15 @@ class Move:
     @parent.setter
     def parent(self, _parent):
         self._parent = _parent
-        self._parent.children.setdefault(self.coord, MoveList())
-        self._parent.children[self.coord].append(self)
+        self._parent.children.setdefault(self.pos, self)
 
     @property
     def is_empty(self):
-        return not self.coord
+        return not self.pos
 
     @property
     def is_pass(self):
-        return not self.coord and not self.extras.has_stones()
+        return not self.pos and not self.extras.has_stones()
 
     @property
     def is_root(self):
@@ -74,8 +78,8 @@ class Move:
                     [gtp_coord_to_sgf(coord) for coord in self.extras.stones[status]]
                 )
                 txt = f";A{status.shortval}[{sgfcoords}]"
-        elif self.coord:
-            val = gtp_coord_to_sgf(self.coord)
+        elif self.pos:
+            val = gtp_coord_to_sgf(self.pos)
             txt = ";{color_char}[{val}]"
             txt = txt.format(color_char=self.color.shortval, val=val)
         for comment in self.extras.comments:
@@ -83,10 +87,23 @@ class Move:
                 txt += f"C[{comment}]"
         return txt
 
+    def get_path(self):
+        path = []
+        curr = self
+        while curr:
+            path.append(curr)
+            assert curr != curr.parent
+            curr = curr.parent
+        path.reverse()
+        return path[1:]
+
     def __del__(self):
         if self.parent:
             if len(self.parent.children) == 1:
-                self.parent.children.pop(self.coord, None)
+                self.parent.children.pop(self.pos, None)
 
     def __str__(self):
-        return ", ".join((self.coord or "-", str(self.color), str(self.extras)))
+        return ", ".join((str(self.pos) or "-", str(self.color), str(self.extras)))
+
+    def __repr__(self):
+        return str(self)

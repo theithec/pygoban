@@ -14,14 +14,14 @@ class BaseGameTest(unittest.TestCase):
         self.game = Game(SZ=9)
 
     def play_move(self, x, y, color=None):
-        color = color or self.game.currentcolor
+        color = color or self.game.nextcolor
         self.game.play(color=color, coord=gtp_coords(x, y, 9))
 
     def play_moves(self, moves):
         for index, move in enumerate(moves):
 
             x, y = move
-            self.game.play(color=self.game.currentcolor, coord=gtp_coords(x, y, 9))
+            self.game.play(color=self.game.nextcolor, coord=gtp_coords(x, y, 9))
 
 
 class GameTest(BaseGameTest):
@@ -81,7 +81,7 @@ class GameTest(BaseGameTest):
         with self.assertRaises(KoViolation):
             self.play_move(0, 1, BLACK)
 
-        self.assertEqual(BLACK, self.game.currentcolor)
+        self.assertEqual(BLACK, self.game.nextcolor)
 
         self.play_moves(((4, 4), (5, 5), (0, 1)))
         self.assertEqual(1, self.game.prisoners[BLACK])
@@ -103,7 +103,7 @@ class GameTest(BaseGameTest):
         with self.assertRaises(OccupiedViolation):
             self.play_move(4, 4, WHITE)
 
-        self.assertEqual(WHITE, self.game.currentcolor)
+        self.assertEqual(WHITE, self.game.nextcolor)
 
     def test_undo(self):
         moves = (
@@ -118,13 +118,13 @@ class GameTest(BaseGameTest):
         self.play_moves(moves)
         self.assertEqual(2, self.game.prisoners[BLACK])
 
-        self.assertEqual(WHITE, self.game.currentcolor)
+        self.assertEqual(WHITE, self.game.nextcolor)
         self.game.undo()
-        self.assertEqual(BLACK, self.game.currentcolor)
+        self.assertEqual(BLACK, self.game.nextcolor)
         self.assertEqual(0, self.game.prisoners[BLACK])
         self.game.undo()
         self.assertEqual(EMPTY, self.game.board[3][3])
-        self.assertEqual(WHITE, self.game.currentcolor)
+        self.assertEqual(WHITE, self.game.nextcolor)
 
     def test_pass(self):
         self.game.play(BLACK, "A1")

@@ -1,14 +1,61 @@
 from typing import Dict, List, Optional
 import re
-from .status import BLACK, WHITE
-from .move import Move
-from .game import Game, INFO_KEYS
-from .coords import sgf_coord_to_gtp
+from pygoban.status import BLACK, WHITE
+from pygoban.move import Move
+from pygoban.game import Game
+from pygoban.coords import sgf_to_pos
 
+from . import INFO_KEYS, INT_KEYS
 
 SGF_CMD_PATTERN = r"([A-Z]{1,2})((?:\[.*?(?<!\\)\])+).*"
 
-INT_KEYS = ("SZ", "HA")
+
+def nonescaped_square_bracket_index(txt, from_index=0):
+    while index := txt.index("]", from_index):
+        if index > 0 and txt[index - 1] == "\\":
+            from_index = index + 1
+            continue
+        return index
+
+
+def split(txt):
+    """
+    Iterator that split sgf into parts seperated by valid semicolons
+    """
+    searchindex = None
+    while True:
+        try:
+            sim = txt.index(";", searchindex or 0)
+        except ValueError:
+            yield txt
+            break
+        tmp = txt[(searchindex or 0) : sim]
+        # if "bbb" in tmp: import pudb; pudb.set_trace()
+
+        while True:
+            try:
+                tmp.index("[")
+            except ValueError:
+                if searchindex is None:
+                    break
+                searchindex = None
+            try:
+                bclose = nonescaped_square_bracket_index(tmp)
+                tmp = tmp[bclose + 1 :]
+            except ValueError:
+                searchindex = sim + 1
+                break
+
+        if searchindex is not None:
+            continue
+
+        searchindex = None
+        yield txt[:sim]
+        txt = txt[sim + 1 :]
+
+
+class Enough(Exception):
+    pass
 
 
 class Parser:
@@ -19,15 +66,19 @@ class Parser:
         self.variations: List[Move] = []
         self.infos = {**defaults}
         self.game: Optional[Game] = None
+        self.lv = 0
 
     def parse_part(self, part):
         cnt = 0
         while part := part.strip():
             cnt += 1
             if cnt == 1000:
-                print(len(part))
+                print("p", len(part))
                 cnt = 0
 
+            # self.lv += 1
+            # if self.lv == 5000:
+            #   raise Enough()
             match = self.pattern.match(part)
             if match:
                 key, val = match.groups()
@@ -55,24 +106,36 @@ class Parser:
 
     def parse(self):
         sgftxt = self.sgftxt.strip()[1:-1]
-        curr = sgftxt
         cnt = 0
-        while curr:
+        for part in split(sgftxt):
+            # print(">", part)
             try:
-                cnt += 1
-                if cnt == 1000:
-                    print(len(curr))
-                    cnt = 0
-                pos = curr[3:].index(";B[")
-                part = curr[: pos + 2]
                 self.parse_part(part)
-                curr = curr[pos + 2 :]
-            except ValueError:
-                self.parse_part(curr)
+            except Enough:
                 break
-            except Exception:
-                print(part)
-                raise
+            cnt += 1
+            if cnt % 1000 == 0:
+                print("c", cnt)
+        print("--")
+        print("C", cnt)
+
+        # curr = sgftxt
+        # cnt = 0
+        # while curr:
+        #    try:
+        #        cnt += 1
+        #        if cnt == 1000:
+        #            print(len(curr))
+        #            cnt = 0
+        #        pos = curr[3:].index(";B[")
+        #        part = curr[: pos + 2]
+        #        self.parse_part(part)
+        #        curr = curr[pos + 2 :]
+        #    except ValueError:
+        #        self.parse_part(curr)
+        #        break
+        #    except Exception:
+        #        raise
 
     def notsupported(self, name):
         def named(*args, **kwargs):
@@ -83,15 +146,15 @@ class Parser:
 
     def _play_move(self, color, pos, **extras):
         if pos or extras:
-            coord = sgf_coord_to_gtp(pos, int(self.infos["SZ"])) if pos else None
-            self.game._test_move(Move(color, coord, **extras), apply_result=True)
+            pos = sgf_to_pos(pos) if pos else None
+            self.game._test_move(Move(color, pos, **extras), apply_result=True)
         else:
             self.game.pass_(color)
 
     def _do_deco(self, val, marker):
         parts = val.split("][")
         for pos in parts:
-            coord = sgf_coord_to_gtp(pos, int(self.infos["SZ"]))
+            coord = sgf_to_pos(pos)
             self.game.cursor.extras.decorations[coord] = marker
 
     def do_tr(self, val):
@@ -122,12 +185,12 @@ class Parser:
         parts = cmd.split("][")
         for part in parts:
             pos, char = part.split(":")
-            coord = sgf_coord_to_gtp(pos, int(self.infos["SZ"]))
+            coord = sgf_to_pos(pos)
             self.game.cursor.extras.decorations[coord] = char
 
     def _do_a(self, cmd, color):
         parts = cmd.split("][")
-        coords = [sgf_coord_to_gtp(pos, int(self.infos["SZ"])) for pos in parts]
+        coords = [sgf_to_pos(pos) for pos in parts]
         self._play_move(None, None, stones={color: coords})
 
     def do_ab(self, cmd):
@@ -139,7 +202,7 @@ class Parser:
     def do_ae(self, cmd):
         parts = cmd.split("][")
         for pos in parts:
-            coord = sgf_coord_to_gtp(pos, int(self.infos["SZ"]))
+            coord = sgf_to_pos(pos)
             self.game.cursor.extras.empty.add(coord)
 
     def do_st(self, cmd):

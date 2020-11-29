@@ -7,6 +7,7 @@ from pygoban.status import (
     DEAD_BLACK,
     DEAD_WHITE,
 )
+from pygoban.coords import array_indexes
 
 
 class RuleViolation(Exception):
@@ -34,18 +35,20 @@ class BaseRuleset:
 
     def validate(self, result):
 
-        if not self.game.currentcolor == result.color:
+        if not self.game.nextcolor == result.move.color:
             raise RuleViolation(
-                "Wrong player %s %s" % (str(result.color), str(self.game.currentcolor))
+                "Wrong player %s %s"
+                % (str(result.move.color), str(self.game.nextcolor))
             )
 
-        bxy = self.game.board[result.x][result.y]
+        x, y = result.move.pos
+        bxy = self.game.board[x][y]
         if bxy != EMPTY:
             raise OccupiedViolation(f"Not empty: {result} BUT {bxy}")
         if not result.libs and not result.killed and not result.extra == "pass":
             raise NoLibsViolation(f"No liberties: {result}")
 
-        if (result.x, result.y) == self.ko:
+        if (x, y) == self.ko:
             raise KoViolation(f"Invalid Ko: {result}")
         if result.libs == 1 and len(result.killed) == 1:
             self.ko = list(result.killed)[0]
@@ -65,7 +68,6 @@ class BaseRuleset:
             for x in boardrange:
                 for y in boardrange:
                     status = board[x][y]
-                    print("XYS", x, y, int(status))
                     if status == BLACK_LIB:
                         blibs += 1
                     elif status == DEAD_WHITE:
