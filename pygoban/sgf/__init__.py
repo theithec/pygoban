@@ -33,3 +33,12 @@ INFO_KEYS = (
 
 
 INT_KEYS = ("SZ", "HA")
+
+
+TR = "▲"
+
+MA = "X"
+
+CR = "●"
+
+SQ = "■"

@@ -11,7 +11,8 @@ from .rulesets import RuleViolation
 from .status import BLACK, WHITE, Status
 from .timesettings import PlayerTime, TimeSettings
 from .coords import array_indexes
-from .events import CursorChanged, MovesReseted, MovePlayed
+from .events import CursorChanged, MovesReseted
+from .sgf.writer import to_sgf
 
 
 # pylint: disable=no-self-use
@@ -29,7 +30,6 @@ class Controller:
         self.timesettings = timesettings
         self.callbacks = callbacks
         self.infos = infos
-        print("I", self.infos)
         for player in self.players.values():
             player.set_controller(self)
             if self.timesettings:
@@ -38,6 +38,7 @@ class Controller:
         self.timeout = False
         self.move_start = None
         self.last_result: Optional[MoveResult] = None
+        self.root = None
 
     def player_lost_by_overtime(self, player):
         self.end(End.BY_TIME, player.color)
@@ -68,17 +69,8 @@ class Controller:
                 self.end(End.PASSED, err.args[0])
             # if self.timesettings:
             #    self.update_time(color)
-
-            # self.set_turn(
-            #    self.game.get_othercolor(color),
-            #    StonelessResult(color, StonelessReason.PASS),
-            # )
         elif move == "undo":
             self.callbacks["undo"]()
-            # self.set_turn(
-            #    self.game.get_othercolor(color),
-            #    StonelessResult(color, StonelessReason.UNDO),
-            # )
         elif move:
             try:
                 self.callbacks["play"](color, pos=array_indexes(move, self.infos["SZ"]))
@@ -88,14 +80,13 @@ class Controller:
     def count(self):
         self.callbacks["count"]()
 
-    def update_moves(self, root: Move):
+    def update_moves(self, move: Move):
         pass
 
     def update_board(self, result: MoveResult, board):
         raise NotImplementedError()
 
     def handle_game_event(self, event):
-        print("CTRL handle", event)
         if isinstance(event, CursorChanged):
             self.last_result: MoveResult = event.result
             self.update_board(event.result, event.board)
@@ -107,7 +98,15 @@ class Controller:
                 )
                 self.move_start = datetime.datetime.now()
         if isinstance(event, MovesReseted):
+            if not self.root:
+                self.root = event.root
             self.update_moves(event.root)
+
+        # if self.root:
+        #     print("SGF:\n", self.to_sgf())
+
+    def to_sgf(self):
+        return to_sgf(self.infos, self.root)
 
     def end(self, reason: End, color: Status):
         logging.info("END: %s %s", reason, color)

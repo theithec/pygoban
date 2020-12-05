@@ -5,7 +5,7 @@ from pygoban.move import Move
 from pygoban.game import Game
 from pygoban.coords import sgf_to_pos
 
-from . import INFO_KEYS, INT_KEYS
+from . import INFO_KEYS, INT_KEYS, TR, MA, CR, SQ
 
 SGF_CMD_PATTERN = r"([A-Z]{1,2})((?:\[.*?(?<!\\)\])+).*"
 
@@ -106,36 +106,17 @@ class Parser:
 
     def parse(self):
         sgftxt = self.sgftxt.strip()[1:-1]
-        cnt = 0
+        # cnt = 0
         for part in split(sgftxt):
-            # print(">", part)
             try:
                 self.parse_part(part)
             except Enough:
                 break
-            cnt += 1
-            if cnt % 1000 == 0:
-                print("c", cnt)
-        print("--")
-        print("C", cnt)
-
-        # curr = sgftxt
-        # cnt = 0
-        # while curr:
-        #    try:
-        #        cnt += 1
-        #        if cnt == 1000:
-        #            print(len(curr))
-        #            cnt = 0
-        #        pos = curr[3:].index(";B[")
-        #        part = curr[: pos + 2]
-        #        self.parse_part(part)
-        #        curr = curr[pos + 2 :]
-        #    except ValueError:
-        #        self.parse_part(curr)
-        #        break
-        #    except Exception:
-        #        raise
+        #     cnt += 1
+        #     if cnt % 1000 == 0:
+        #         print("c", cnt)
+        # print("--")
+        # print("C", cnt)
 
     def notsupported(self, name):
         def named(*args, **kwargs):
@@ -147,7 +128,7 @@ class Parser:
     def _play_move(self, color, pos, **extras):
         if pos or extras:
             pos = sgf_to_pos(pos) if pos else None
-            self.game._test_move(Move(color, pos, **extras), apply_result=True)
+            self.game.test_move(Move(color, pos, **extras), apply_result=True)
         else:
             self.game.pass_(color)
 
@@ -158,16 +139,16 @@ class Parser:
             self.game.cursor.extras.decorations[coord] = marker
 
     def do_tr(self, val):
-        self._do_deco(val, "▲")
+        self._do_deco(val, TR)
 
     def do_ma(self, val):
-        self._do_deco(val, "X")
+        self._do_deco(val, MA)
 
     def do_cr(self, val):
-        self._do_deco(val, "●")
+        self._do_deco(val, CR)
 
     def do_sq(self, val):
-        self._do_deco(val, "■")
+        self._do_deco(val, SQ)
 
     def do_b(self, pos):
         self._play_move(BLACK, pos)

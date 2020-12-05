@@ -1,10 +1,7 @@
 from dataclasses import dataclass, field
-import sys
-import traceback
 from typing import Dict, List, Set, Tuple
 
 from .status import Status, BLACK, WHITE
-from .coords import gtp_coord_to_sgf, gtp_coords
 
 
 class MoveList(list):
@@ -42,9 +39,6 @@ class Move:
         if parent:
             self.parent = parent
 
-    def coord(self, boardsize):
-        return gtp_coord_to_sgf(*self.pos, boardsize)
-
     @property
     def parent(self):
         return self._parent
@@ -68,24 +62,6 @@ class Move:
 
     def real_children(self):
         return {k: v for (k, v) in self.children.values() if not v.is_empty}
-
-    def to_sgf(self, boardsize):
-        if self.is_root or self.is_pass:
-            txt = ""
-        if self.extras.has_stones():
-            for status in (BLACK, WHITE):
-                sgfcoords = "][".join(
-                    [gtp_coord_to_sgf(coord) for coord in self.extras.stones[status]]
-                )
-                txt = f";A{status.shortval}[{sgfcoords}]"
-        elif self.pos:
-            val = gtp_coord_to_sgf(self.pos)
-            txt = ";{color_char}[{val}]"
-            txt = txt.format(color_char=self.color.shortval, val=val)
-        for comment in self.extras.comments:
-            if comment:
-                txt += f"C[{comment}]"
-        return txt
 
     def get_path(self):
         path = []

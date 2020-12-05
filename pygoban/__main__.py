@@ -49,7 +49,6 @@ def startgame(args: argparse.Namespace, init_gui: bool):
     callbacks = {
         "play": game.play,
         "get_prisoners": lambda: game.prisoners,
-        "get_board": lambda: game.board,
         "set_cursor": game._set_cursor,
         "pass": game.pass_,
         "undo": game.undo,

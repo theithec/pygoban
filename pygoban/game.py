@@ -52,14 +52,13 @@ class Game:
 
     def play(self, color: Status, pos):
         move = Move(color, pos)
-        result = self._test_move(move)
+        result = self.test_move(move)
         self.ruleset.validate(result)
         self._apply_result(result)
         self.fire_event(CursorChanged(result, self.board))
         self.fire_event(MovePlayed(result))
 
     def start(self):
-        print("START")
         self._set_cursor(self.cursor)
         result = MoveResult(
             next_player=self.nextcolor,
@@ -78,7 +77,6 @@ class Game:
 
     def fire_event(self, event):
         listeners = self.registrations.get(event.__class__, [])
-        # print("FIRE", event, listeners)
         for listener in listeners:
             _timer = Timer(0, lambda: listener.handle_game_event(event))
             _timer.start()
@@ -86,12 +84,12 @@ class Game:
     def pass_(self, color):
         if self.cursor.is_pass and self.cursor.parent and self.cursor.parent.is_pass:
             raise ThreeTimesPassed(color)
-        self._test_move(Move(color, pos=None), apply_result=True)
+        self.test_move(Move(color, pos=None), apply_result=True)
 
     def undo(self):
         old_color = self.cursor.color
         parent = self.cursor.parent
-        self._set_cursor(parent, no_fire=True)
+        self._set_cursor(parent)
         result = MovePlayed(
             MoveResult(
                 next_player=old_color,
@@ -110,7 +108,7 @@ class Game:
         path = self.get_path()
         self._cursor = self.root
         for pmove in path:
-            self._test_move(pmove, apply_result=True)
+            self.test_move(pmove, apply_result=True)
         if not no_fire:
             self.fire_event(
                 CursorChanged(
@@ -121,7 +119,7 @@ class Game:
                 )
             )
 
-    def _test_move(self, move, apply_result=False):
+    def test_move(self, move, apply_result=False):
         is_new = True
         if child := self.cursor.children.get(move.pos):
             if child.color == move.color:
@@ -130,46 +128,18 @@ class Game:
 
         if move.pos:
             result = self.board.result(move)
-            result.is_new = is_new
         else:
             extra = StonelessReason.PASS if move.is_pass else StonelessReason.ADD_STONES
             result = MoveResult(
-                next_player=self.get_othercolor(self.nextcolor),
-                move=move,
-                extra=extra,
-                is_new=is_new,
+                next_player=self.get_othercolor(self.nextcolor), move=move, extra=extra
             )
-
+        result.is_new = is_new
         result.move = move
         result.next_player = result.next_player or self.get_othercolor(self.nextcolor)
         if apply_result:
             self._apply_result(result)
 
         return result
-
-    def to_sgf(self):
-        boardsize = self.board.boardsize
-
-        def add_children(move):
-            nonlocal txt
-
-            parent = move.parent
-            is_variation = parent and parent.children and len(parent.children) > 1
-            if is_variation:
-                txt += "("
-            txt += move.to_sgf(boardsize)
-
-            for childlist in move.children.values():
-                for child in childlist:
-                    add_children(child)
-            if is_variation:
-                txt += ")"
-
-        txt = "(;" + "".join([f"{k}[{v}]" for k, v in self.infos.items()])
-        txt += self.root.to_sgf(boardsize)
-        add_children(self.root)
-        txt += ")"
-        return txt
 
     def _set_handicap(self):
         handicap = self.infos.get("HA")
@@ -193,9 +163,6 @@ class Game:
         if not result.move.parent:
             result.move.parent = self.cursor
         self._cursor = result.move
-
-        # self.fire_event(CursorChanged(result, self.board))
-        # self.fire_event(MovePlayed(result))
 
     def get_path(self):
         return self.cursor.get_path()

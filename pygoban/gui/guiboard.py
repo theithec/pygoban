@@ -7,6 +7,7 @@ from PyQt5.QtGui import QColor, QImage, QPainter
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import pyqtSignal
 
+from pygoban.game import MoveResult
 from . import BASE_DIR, rotate
 from .intersection import Intersection
 
@@ -26,7 +27,7 @@ HOSHIS = {
 
 
 class GuiBoard(QWidget):
-    boardupdate_signal = pyqtSignal(list)
+    boardupdate_signal = pyqtSignal(MoveResult, list)
 
     def __init__(self, parent, boardsize, *args, **kwargs):
         super().__init__(parent=parent, *args, **kwargs)
@@ -34,10 +35,10 @@ class GuiBoard(QWidget):
         self.boardsize = boardsize
         self.intersections = {}
         self.boardrange = range(self.boardsize)
-        self.update_intersections(parent.callbacks["get_board"]())
+        self.current_in = None  # "Active" intersection
         self.boardupdate_signal.connect(self.update_intersections)
 
-    def update_intersections(self, board):
+    def update_intersections(self, result, board):
         create = not self.intersections
         hoshis = HOSHIS.get(self.boardsize, [])
         for x in self.boardrange:
@@ -48,11 +49,18 @@ class GuiBoard(QWidget):
                 if create:
                     is_hoshi = (cx, cy) in hoshis
                     inter = Intersection(self, pos, status, is_hoshi)
+                    inter.show()
                     inter.setParent(self)
                     self.intersections[pos] = inter
                 else:
                     inter = self.intersections[pos]
                     inter.status = status
+
+        move = result.move
+        if self.current_in:
+            self.current_in.is_current = False
+        if not move.is_empty:
+            self.intersections[move.pos].is_current = True
         if create:
             self.resizeEvent(None)
 

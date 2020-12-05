@@ -2,7 +2,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Set, Tuple, Dict
-from .coords import array_indexes, letter_coord_from_int
+from .coords import array_indexes, letter_from_int
 from .move import Move
 from .status import EMPTY, Status
 
@@ -146,7 +146,7 @@ class Board(list):
         cpy = self.rotated(switch_axis=False, switch_y=False)
         txt = "\n    "
         txt += " ".join(
-            [letter_coord_from_int(i, cpy.boardsize) for i in range(cpy.boardsize)]
+            [letter_from_int(i) for i in range(cpy.boardsize)]
         )
         txt += "\n\n"
         for xorg in range(cpy.boardsize):

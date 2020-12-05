@@ -2,7 +2,7 @@
 # because qt
 from PyQt5.QtWidgets import QWidget, QScrollArea, QLabel
 from PyQt5.QtGui import QPainter
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, pyqtSignal
 from pygoban.move import Move
 from pygoban.status import BLACK
 
@@ -18,7 +18,8 @@ class MoveNode(QLabel):
         super().__init__(parent)
         self.move = move
         self.setStyleSheet(
-            "QLabel { color: %s }" % ("white" if self.move.color == BLACK else "black"))
+            "QLabel { color: %s }" % ("white" if self.move.color == BLACK else "black")
+        )
         self.setText(str(len(move.get_path())))
         self.setAlignment(Qt.AlignCenter)
         self.child_index = (
@@ -54,16 +55,12 @@ class TreeCanvas(QWidget):
         self.maxy = 0
 
     def add_move(self, move):
-        # print("ADD_MOVE", move, id(move))
-        print("\tparent", f"{id(move.parent)}" if move.parent else "-")
-        cnt = 0
-
         def add(move):
             # print("\tadd", move)
-            nonlocal cnt
-            if cnt % 100 == 0:
-                print("C1", cnt)
-            cnt += 1
+            # nonlocal cnt
+            # if cnt % 100 == 0:
+            #     print("C1", cnt)
+            # cnt += 1
             node = MoveNode(self, move)
             if not self.nodes:
                 self.root = node
@@ -75,11 +72,10 @@ class TreeCanvas(QWidget):
                 add(child)
 
         add(move)
-        # print("NN", self.nodes)
         self.set_moves(move)
 
     def set_moves(self, move):
-        cnt = 0
+        # cnt = 0
         alreade_used = set()
 
         def _set(node, treex, treey):
@@ -94,10 +90,10 @@ class TreeCanvas(QWidget):
             node.treey = treey
             # super(QLabel, node).move(xpos, ypos)
             node.setGeometry(xpos, ypos, node.WIDTH, node.HEIGHT)
-            nonlocal cnt
-            if cnt % 100 == 0:
-                print("C2", cnt)
-            cnt += 1
+            # nonlocal cnt
+            # if cnt % 100 == 0:
+            #     print("C2", cnt)
+            # cnt += 1
             self.maxx = max(self.maxx, xpos)
             self.maxy = max(self.maxy, ypos)
             node.repaint()
@@ -112,7 +108,7 @@ class TreeCanvas(QWidget):
         else:
             node = self.nodes[id(move)]
             _set(node, 1, 1)
-        print("RESIZE", self.maxx, self.maxy)
+        # print("RESIZE", self.maxx, self.maxy)
         self.resize(self.maxx + 40, self.maxy + 40)
         self.repaint()
 
@@ -128,6 +124,7 @@ class TreeCanvas(QWidget):
                 )
             for child in node.move.children.values():
                 con(self.nodes[id(child)])
+
         super().paintEvent(event)
         painter = QPainter()
         painter.begin(self)
@@ -144,11 +141,15 @@ class TreeCanvas(QWidget):
 
 
 class Tree(QScrollArea):
+
+    moves_signal = pyqtSignal(Move)
+
     def __init__(self, parent, callback):
         super().__init__(parent)
         self.canvas = TreeCanvas(parent=None, callback=callback)
-        self.setMinimumSize(200, 200)
+        self.setMinimumSize(80, 80)
         self.setWidget(self.canvas)
+        self.moves_signal.connect(self.update_moves)
 
     def add_move(self, move):
         return self.canvas.add_move(move)
@@ -160,3 +161,7 @@ class Tree(QScrollArea):
             self.canvas.cursor = node
             self.canvas.cursor.repaint()
             old.repaint()
+
+    def update_moves(self, move: Move):
+        self.add_move(move)
+        self.canvas.set_moves(move)

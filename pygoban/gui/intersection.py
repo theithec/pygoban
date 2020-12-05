@@ -29,7 +29,6 @@ class Intersection(QWidget):
         DEAD_BLACK: QImage(os.path.join(BASE_DIR, "gui/imgs/black_trans.png")),
         DEAD_WHITE: QImage(os.path.join(BASE_DIR, "gui/imgs/white_trans.png")),
     }
-    current_in = None
 
     def __init__(self, parent, coord, status, is_hoshi):
         super().__init__(parent)
@@ -47,10 +46,10 @@ class Intersection(QWidget):
 
     @is_current.setter
     def is_current(self, _is_current):
-        if self.controller.current_in:
-            self.controller.current_in._is_current = False
+        if self.parent().current_in:
+            self.parent().current_in._is_current = False
         self._is_current = _is_current
-        self.controller.current_in = self if _is_current else None
+        self.parent().current_in = self if _is_current else None
         self.update()
 
     @pyqtProperty(int)

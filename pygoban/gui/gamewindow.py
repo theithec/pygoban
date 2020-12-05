@@ -31,30 +31,21 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self.setWindowIcon(QIcon(f"{BASE_DIR}/gui/imgs/icon.png"))
         self.input_mode = InputMode.PLAY
         self._deco = None
-        self.current_in = None  # "Active" intersection
 
     def update_board(self, result: MoveResult, board):
-        move = result.move
-        if self.current_in:
-            self.current_in.is_current = False
-        if not move.is_empty:
-            self.guiboard.intersections[move.pos].is_current = True
-
-        self.sidebar.timeupdate_signal.emit()
-        self.guiboard.boardupdate_signal.emit(board)
+        self.guiboard.boardupdate_signal.emit(result, board)
+        if result.next_player and not self.timeout:
+            for color in (BLACK, WHITE):
+                self.sidebar.controls[color].timeupdate_signal.emit()
         self.sidebar.game_signal.emit(result)
         self.update()
 
     def update_moves(self, move: Move):
-        print("UPDATE MOVES1")
-        self.sidebar.moves_signal.emit(move)
+        self.sidebar.tree.moves_signal.emit(move)
 
     def period_ended(self, player):
-        self.sidebar.timeupdate_signal.emit()
-
-    def player_lost_by_overtime(self, player):
-        self.sidebar.timeended_signal.emit()
-        super().player_lost_by_overtime(player)
+        if not self.timeout:
+            self.sidebar.controls[player.color].timeupdate_signal.emit()
 
     def inter_clicked(self, inter: Intersection):
         if self.input_mode == InputMode.PLAY:
@@ -66,11 +57,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
                 print(err)
         elif self.input_mode == InputMode.EDIT:
             if self._deco in (BLACK, WHITE):
-                move = (
-                    self.game.cursor if self.game.cursor.extras.has_stones() else Move()
-                )
-                move.extras.stones[self._deco].add(inter.coord)
-                self.game._test_move(move, apply_result=True)
+                self.last_result.move.extras.stones[self._deco].add(inter.coord)
             else:
                 self.last_result.move.extras.decorations[inter.coord] = self.deco
                 if self._deco == "NR":
@@ -88,7 +75,8 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
             self.count()
 
     def end(self, reason: End, color: Status):
-        self.sidebar.timeended_signal.emit()
+        for color in (BLACK, WHITE):
+            self.sidebar.controls[color].timeended_signal.emit()
         super().end(reason, color)
 
     def resizeEvent(self, event):
@@ -105,7 +93,6 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
 
     @property
     def deco(self):
-        print("DD", self)
         if self._deco == "NR":
             return str(self.last_result.move.extras.nr)
         if self._deco == "CHAR":
