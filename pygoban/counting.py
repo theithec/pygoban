@@ -1,4 +1,5 @@
-from .status import BLACK, BLACK_LIB, EMPTY, WHITE, WHITE_LIB
+from typing import Dict
+from .status import STATUS, Status, BLACK, BLACK_LIB, EMPTY, WHITE, WHITE_LIB
 
 
 def check(x, y, board, checked, group=None):
@@ -34,13 +35,20 @@ def count(board):
                 if group["owner"] and group["coords"]:
                     groups.append(group)
 
+    points: Dict[Status, int] = {BLACK: 0, WHITE: 0}
+    prisoners: Dict[Status, int] = {BLACK: 0, WHITE: 0}
     for group in groups:
-        if group["owner"] == BLACK:
-            status = BLACK_LIB
-        elif group["owner"] == WHITE:
-            status = WHITE_LIB
+        owner = group["owner"]
         for coord in group["coords"]:
             x, y = coord
             if board[x][y] == EMPTY:
+                status = BLACK_LIB if owner == BLACK else WHITE_LIB
                 board[x][y] = status
+                points[owner] += 1
+            else:
+                status = board[x][y]
+            if (not status.is_empty()) and status != owner:
+                prisoners[owner] += 1
+                points[owner] += 1
     return groups
+    # return GameResult(points=points, prisoners=prisoners)

@@ -4,14 +4,13 @@ import time
 from typing import Dict, Optional
 
 from .player import Player
-from . import logging
-from .game import End, ThreeTimesPassed, MoveResult
+from . import logging, InputMode, END_BY_TIME
+from .game import MoveResult
 from .move import Move
-from .rulesets import RuleViolation
 from .status import BLACK, WHITE, Status
 from .timesettings import PlayerTime, TimeSettings
 from .coords import array_indexes
-from .events import CursorChanged, MovesReseted
+from .events import CursorChanged, MovesReseted, Counted, Ended
 from .sgf.writer import to_sgf
 
 
@@ -39,9 +38,10 @@ class Controller:
         self.move_start = None
         self.last_result: Optional[MoveResult] = None
         self.root = None
+        self.input_mode = InputMode.PLAY
 
     def player_lost_by_overtime(self, player):
-        self.end(End.BY_TIME, player.color)
+        self.end(END_BY_TIME, player.color)
 
     def handle_rule_exception(self, exception):
         logging.info(str(exception))
@@ -55,30 +55,17 @@ class Controller:
                     (datetime.datetime.now() - self.move_start).seconds
                 )
 
-    def handle_move(self, color, move):
+    def handle_gtp_move(self, color, move):
         if self.timeout:
             return
         if move == "resign":
-            if self.timesettings:
-                self.update_time(color, restart=False)
-            self.end(End.RESIGN, color)
+            self.callbacks["resign"](color)
         elif move == "pass":
-            try:
-                self.callbacks["pass"](color)
-            except ThreeTimesPassed as err:
-                self.end(End.PASSED, err.args[0])
-            # if self.timesettings:
-            #    self.update_time(color)
+            self.callbacks["pass"](color)
         elif move == "undo":
             self.callbacks["undo"]()
         elif move:
-            try:
-                self.callbacks["play"](color, pos=array_indexes(move, self.infos["SZ"]))
-            except RuleViolation as err:
-                self.handle_rule_exception(err)
-
-    def count(self):
-        self.callbacks["count"]()
+            self.callbacks["play"](color, pos=array_indexes(move, self.infos["SZ"]))
 
     def update_moves(self, move: Move):
         pass
@@ -88,28 +75,37 @@ class Controller:
 
     def handle_game_event(self, event):
         if isinstance(event, CursorChanged):
-            self.last_result: MoveResult = event.result
-            self.update_board(event.result, event.board)
+            if not event.result.exception:
+                self.last_result: MoveResult = event.result
+                self.update_board(event.result, event.board)
 
-            if self.timesettings:
-                self.update_time(event.result.move.color)
-                self.players[event.result.next_player].timesettings.nexttime(
-                    start_timer=True
-                )
-                self.move_start = datetime.datetime.now()
-        if isinstance(event, MovesReseted):
+                if self.timesettings:
+                    self.update_time(event.result.move.color)
+                    self.players[event.result.next_player].timesettings.nexttime(
+                        start_timer=True
+                    )
+                    self.move_start = datetime.datetime.now()
+        elif isinstance(event, MovesReseted):
             if not self.root:
                 self.root = event.root
             self.update_moves(event.root)
 
-        # if self.root:
-        #     print("SGF:\n", self.to_sgf())
+        elif isinstance(event, Counted):
+            if self.input_mode == InputMode.PLAY:
+                self.input_mode = InputMode.COUNT
+            self.update_board(event.result, event.board)
+        elif isinstance(event, Ended):
+            import pudb
+
+            pudb.set_trace()
+            self.input_mode = InputMode.COUNT
+            self.update_board(event.result, None)
 
     def to_sgf(self):
         return to_sgf(self.infos, self.root)
 
-    def end(self, reason: End, color: Status):
-        logging.info("END: %s %s", reason, color)
+    def end(self, reason: str, color: Status):
+        logging.info("END: %s", reason.format(color=color))
         self.timeout = True
         for player in self.players.values():
             player.end()
@@ -128,9 +124,7 @@ class ConsoleController(Controller):
                 ]
             )
         )
-        color = self.callbacks["get_next_color"]()
-        print("Has turn", color)
-        if result:
+        if isinstance(result, MoveResult):
             print("Last:", result, result.move)
         if self.timesettings:
             print("Time Black", self.players[BLACK].timesettings)

@@ -15,13 +15,15 @@ class BaseGameTest(unittest.TestCase):
 
     def play_move(self, x, y, color=None):
         color = color or self.game.nextcolor
-        self.game.play(color=color, coord=gtp_coords(x, y, 9))
+        result = self.game.play(color=color, pos=(x, y))
+        if result.exception is not None:
+            print("RAISE", result.exception)
+            raise result.exception
 
     def play_moves(self, moves):
         for index, move in enumerate(moves):
-
             x, y = move
-            self.game.play(color=self.game.nextcolor, coord=gtp_coords(x, y, 9))
+            self.play_move(x, y, color=self.game.nextcolor)
 
 
 class GameTest(BaseGameTest):
@@ -127,9 +129,9 @@ class GameTest(BaseGameTest):
         self.assertEqual(WHITE, self.game.nextcolor)
 
     def test_pass(self):
-        self.game.play(BLACK, "A1")
+        self.game.play(BLACK, (0, 1))
         self.game.pass_(WHITE)
-        self.game.play(BLACK, "A2")
+        self.game.play(BLACK, (0, 2))
 
 
 class DenyAllRuleset(BaseRuleset):

@@ -15,8 +15,9 @@ from pygoban.status import (
     BLACK_LIB,
     WHITE_LIB,
 )
+from pygoban import InputMode
 
-from . import BASE_DIR, InputMode
+from . import BASE_DIR
 
 
 class Intersection(QWidget):

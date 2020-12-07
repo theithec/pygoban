@@ -4,12 +4,13 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow
 
 from pygoban.controller import Controller
-from pygoban.game import End, MoveResult
+from pygoban.game import MoveResult
 from pygoban.move import Move
 from pygoban.status import BLACK, EMPTY, WHITE, Status
 from pygoban.rulesets import OccupiedViolation
+from pygoban import GameResult, InputMode
 
-from . import BASE_DIR, CenteredMixin, InputMode
+from . import BASE_DIR, CenteredMixin
 from .guiboard import GuiBoard
 from .intersection import Intersection
 from .player import GuiPlayer
@@ -25,19 +26,30 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
             infos=infos,
             timesettings=timesettings,
         )
-        self.guiboard = GuiBoard(self, infos["SZ"])
+        self.guiboard = GuiBoard(self, int(infos["SZ"]))
         self.sidebar = Sidebar(self)
 
         self.setWindowIcon(QIcon(f"{BASE_DIR}/gui/imgs/icon.png"))
-        self.input_mode = InputMode.PLAY
         self._deco = None
 
-    def update_board(self, result: MoveResult, board):
-        self.guiboard.boardupdate_signal.emit(result, board)
-        if result.next_player and not self.timeout:
-            for color in (BLACK, WHITE):
-                self.sidebar.controls[color].timeupdate_signal.emit()
+    def update_board(self, result: [MoveResult, GameResult], board):
+        if isinstance(result, MoveResult):
+            if result.next_player and not self.timeout:
+                for color in (BLACK, WHITE):
+                    self.sidebar.controls[color].timeupdate_signal.emit()
+        elif isinstance(result, GameResult):
+            if self.input_mode == InputMode.PLAY:
+                self.input_mode = InputMode.COUNT
+            if self.input_mode == InputMode.ENDED:
+                btotal = result.points[BLACK] + result.prisoners[BLACK]
+                wtotal = result.points[WHITE] + result.prisoners[WHITE]
+                color = BLACK if btotal > wtotal else WHITE
+                self.end(
+                    "{color}" + str(max(wtotal, btotal) - min(wtotal, btotal)), color
+                )
         self.sidebar.game_signal.emit(result)
+        if board:
+            self.guiboard.boardupdate_signal.emit(result, board)
         self.update()
 
     def update_moves(self, move: Move):
@@ -68,13 +80,13 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
                     )
         elif self.input_mode == InputMode.COUNT and inter.status != EMPTY:
             x, y = inter.coord
-            group = self.callbacks["analyze"]((x, y), findkilled=False)[1]
-            status = inter.status.toggle_dead()
-            for x, y in group:
-                self.game.board[x][y] = status
-            self.count()
+            self.callbacks["toggle_status"]((x, y))  # , findkilled=False)[1]
+            # status = inter.status.toggle_dead()
+            # for x, y in group:
+            #    self.game.board[x][y] = status
+            # self.count()
 
-    def end(self, reason: End, color: Status):
+    def end(self, reason: str, color: Status):
         for color in (BLACK, WHITE):
             self.sidebar.controls[color].timeended_signal.emit()
         super().end(reason, color)

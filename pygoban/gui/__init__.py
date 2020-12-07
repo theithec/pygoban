@@ -1,5 +1,4 @@
 from typing import Callable
-import enum
 import os
 from PyQt5 import QtWidgets
 
@@ -12,12 +11,6 @@ class CenteredMixin:
         centerPoint = QtWidgets.QDesktopWidget().availableGeometry().center()
         qtRectangle.moveCenter(centerPoint)
         self.move(qtRectangle.topLeft())
-
-
-class InputMode(enum.Enum):
-    PLAY = "PLAY"
-    EDIT = "EDIT"
-    COUNT = "COUNT"
 
 
 def rotate(x, y, boardsize):

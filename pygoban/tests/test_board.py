@@ -1,5 +1,6 @@
 import unittest
 from pygoban.board import Board
+from pygoban.move import Move
 from pygoban.status import BLACK, WHITE
 
 
@@ -10,7 +11,7 @@ class BoardTest(unittest.TestCase):
     def play(self, moves):
         for index, move in enumerate(moves):
             x, y, col_id, killed = move
-            result = self.board.result(col_id, x, y)
+            result = self.board.result(Move(col_id, (x, y)))
             self.board.apply_result(result)
             self.assertEqual(
                 len(result.killed),

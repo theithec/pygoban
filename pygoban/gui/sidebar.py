@@ -18,8 +18,10 @@ from PyQt5.QtWidgets import (
 from pygoban.status import BLACK, WHITE
 from pygoban.board import MoveResult
 from pygoban.player import Player
+from pygoban.sgf import CR, SQ, TR
+from pygoban import InputMode, Result
 
-from . import InputMode, btn_adder
+from . import btn_adder
 from .filedialog import filename_from_savedialog
 from .player import GuiPlayer
 from .tree import Tree
@@ -40,6 +42,7 @@ class PlayerBox(Box):
     timeupdate_signal = pyqtSignal()
     timeended_signal = pyqtSignal()
     timer = None
+    seconds = None
 
     def init(self, player: Player):
         self.player = player
@@ -51,8 +54,10 @@ class PlayerBox(Box):
         player_layout.addRow("Prisoners:", self.prisoners_label)
         if self.controller.timesettings:
             self.clock = QLCDNumber()
-            self.clock.display(player.timesettings.nexttime())
+            self.seconds = player.timesettings.nexttime()
+            self.clock.display(self.seconds_to_str())
             player_layout.addRow(self.clock)
+
         self.setLayout(player_layout)
         if self.controller.timesettings:
             self.timeended_signal.connect(self.time_ended)
@@ -63,11 +68,21 @@ class PlayerBox(Box):
             str(self.controller.callbacks["get_prisoners"]()[self.player.color])
         )
 
+    def seconds_to_str(self):
+        seconds = self.seconds
+        hours = int(seconds / 360) if seconds >= 360 else 0
+        seconds -= hours * 360
+        minutes = int(seconds / 60) if seconds >= 60 else 0
+        seconds -= minutes * 60
+        txt = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        return txt
+
     def set_clock(self, seconds):
+        self.seconds = seconds
         self.time_ended()
         self.timer = QTimer(self)
         self.timer.start(1000)
-        self.clock.display(seconds)
+        self.clock.display(self.seconds_to_str())
         self.timer.timeout.connect(self.clock_tick)
 
     def update_clock(self):
@@ -81,8 +96,8 @@ class PlayerBox(Box):
             self.timer.stop()
 
     def clock_tick(self):
-        seconds = self.clock.intValue() - 1
-        self.clock.display(str(seconds))
+        self.seconds -= 1
+        self.clock.display(self.seconds_to_str())
 
 
 class GameBox(Box):
@@ -91,36 +106,42 @@ class GameBox(Box):
         add_gamebutton = btn_adder(game_layout)
         self.undo_btn = add_gamebutton("Undo", self.do_undo)
         self.pass_btn = add_gamebutton("Pass", self.do_pass)
-        add_gamebutton("Resign", self.do_resign)
-        add_gamebutton("Count", self.do_count)
+        self.resign_btn = add_gamebutton("Resign", self.do_resign)
+        self.count_btn = add_gamebutton("Count", self.do_count)
         self.setLayout(game_layout)
 
     def update_controlls(self, result):
+        print("RESULT", result, self.controller.input_mode)
         self.pass_btn.setEnabled(
-            isinstance(
+            self.controller.input_mode == InputMode.PLAY
+            and isinstance(
                 self.controller.players[result.next_player],
                 GuiPlayer,
             )
         )
+        self.resign_btn.setEnabled(self.controller.input_mode == InputMode.PLAY)
+        self.count_btn.setEnabled(self.controller.input_mode != InputMode.PLAY)
 
     def do_undo(self):
         self.controller.input_mode = InputMode.PLAY
         if not self.controller.last_result.move.is_root:
-            self.controller.handle_move(self.controller.last_result.move.color, "undo")
+            self.controller.callbacks["undo"]()
 
     def do_pass(self):
         self.controller.callbacks["pass"](self.controller.last_result.next_player)
 
     def do_resign(self):
-        game = self.controller.game
         if not self.controller.timeout or isinstance(
-            self.controller.players[game.nextcolor], GuiPlayer
+            self.controller.players[self.controller.last_result.next_player], GuiPlayer
         ):
-            self.controller.handle_move(game.nextcolor, "resign")
+            self.controller.callbacks["resign"](self.controller.last_result.next_player)
 
     def do_count(self):
-        self.controller.input_mode = InputMode.COUNT
-        self.controller.count()
+        if self.controller.input_mode == InputMode.PLAY:
+            self.controller.input_mode = InputMode.COUNT
+        else:
+            self.controller.input_mode = InputMode.ENDED
+        self.controller.callbacks["count"]()
 
 
 class EditBox(Box):
@@ -140,9 +161,9 @@ class EditBox(Box):
         group.toggled.connect(self.toggle_deco)
         add_decobutton("B", self.do_B)
         add_decobutton("W", self.do_W)
-        add_decobutton("▲", self.do_tr)
-        add_decobutton("■", self.do_sq)
-        add_decobutton("●", self.do_ci)
+        add_decobutton(TR, self.do_tr)
+        add_decobutton(SQ, self.do_sq)
+        add_decobutton(CR, self.do_ci)
         add_decobutton("1", self.do_nr)
         add_decobutton("A", self.do_char)
         group.setLayout(deco_layout)
@@ -154,11 +175,14 @@ class EditBox(Box):
         self.setLayout(box_layout)
 
     def update_controlls(self, result):
-        has_parent = bool(result.move and result.move.parent)
+        has_parent = isinstance(result, MoveResult) and bool(
+            result.move and result.move.parent
+        )
         self.prev_move.setEnabled(has_parent)
         self.back_moves.setEnabled(has_parent)
-
-        has_children = bool(result.move and len(result.move.children))
+        has_children = isinstance(result, MoveResult) and bool(
+            result.move and len(result.move.children)
+        )
         self.next_move.setEnabled(has_children)
         self.forward_moves.setEnabled(has_children)
 
@@ -172,13 +196,13 @@ class EditBox(Box):
         self.controller.deco = WHITE
 
     def do_tr(self):
-        self.controller.deco = "▲"
+        self.controller.deco = TR
 
     def do_sq(self):
-        self.controller.deco = "■"
+        self.controller.deco = SQ
 
     def do_ci(self):
-        self.controller.deco = "●"
+        self.controller.deco = CR
 
     def do_nr(self):
         self.controller.deco = "NR"
@@ -215,10 +239,7 @@ class EditBox(Box):
 
 class Sidebar(QFrame):
 
-    game_signal = pyqtSignal(MoveResult)
-
-    BLACK_STYLE = "QLabel { background-color : black; color : white; }"
-    WHITE_STYLE = "QLabel { background-color : white; color : black; }"
+    game_signal = pyqtSignal(Result)
 
     def __init__(self, parent, is_game=True, can_edit=True):
         super().__init__(parent)
@@ -238,19 +259,17 @@ class Sidebar(QFrame):
             self.controls[color] = self.add_box(
                 PlayerBox(self, player=self.controller.players[color])
             )
-
         if is_game:
             self.add_box(GameBox(self))
 
         if can_edit:
-            self.layout.addRow(EditBox(self))
+            self.add_box(EditBox(self))
 
         self.tree = Tree(self, self.tree_click)
         self.layout.addRow(self.tree)
         self.comments = QTextEdit()
         self.comments.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.layout.addRow(self.comments)
-
         self.layout.addRow("Ruleset", QLabel(str(self.controller.infos["RU"])))
         self.setLayout(self.layout)
 
@@ -279,7 +298,7 @@ class Sidebar(QFrame):
         for box in self.boxes:
             box.update_controlls(result)
 
-        if result.move:
+        if isinstance(result, MoveResult):
             cmts = result.move.extras.comments or [""]
             self.comments.setText("\n".join(cmts))
 

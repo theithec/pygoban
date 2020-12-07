@@ -1,27 +1,31 @@
-from enum import Enum
 from threading import Timer
 from typing import Dict, Tuple
 
 from .board import Board, StonelessReason, MoveResult
 from .move import Move
-from .rulesets import BaseRuleset
+from .rulesets import BaseRuleset, RuleViolation
 from .status import BLACK, WHITE, Status
-from .events import MovePlayed, CursorChanged, MovesReseted
+from .events import MovePlayed, CursorChanged, MovesReseted, Counted, Ended
+from .counting import count
 from .sgf import INFO_KEYS
+from . import logging, GameResult, END_BY_RESIGN
 
 
-class End(Enum):
-    RESIGN = "resign"
-    BY_TIME = "by time"
-    PASSED = "passed"
-
-
-class ThreeTimesPassed(Exception):
-    pass
-
-
-HANDICAPS: Dict[int, Tuple] = {1: ((15, 3),)}
-HANDICAPS[2] = HANDICAPS[1] + ((3, 15),)
+HANDICAPS: Dict[int, Tuple] = {1: ((3, 3),)}
+HANDICAPS[2] = (
+    (3, 3),
+    (15, 15),
+)
+HANDICAPS[3] = HANDICAPS[2] + ((15, 3),)
+HANDICAPS[4] = HANDICAPS[3] + ((3, 15),)
+HANDICAPS[5] = HANDICAPS[4] + ((9, 9),)
+HANDICAPS[6] = HANDICAPS[4] + (
+    (9, 3),
+    (9, 15),
+)
+HANDICAPS[7] = HANDICAPS[6] + ((9, 9),)
+HANDICAPS[8] = HANDICAPS[7] + ((3, 9),)
+HANDICAPS[9] = HANDICAPS[8] + ((15, 9),)
 
 
 class Game:
@@ -48,15 +52,25 @@ class Game:
 
     @property
     def nextcolor(self):
+        if not self.cursor.parent and int(self.infos.get("HA", 0)) > 1:
+            return WHITE
         return self.get_othercolor(self.cursor.color)
 
     def play(self, color: Status, pos):
         move = Move(color, pos)
         result = self.test_move(move)
-        self.ruleset.validate(result)
-        self._apply_result(result)
+        try:
+            self.ruleset.validate(result)
+        except RuleViolation as err:
+            # logging.info("RuleViolation: %s", err)
+            result.exception = err
+            result.next_player = color
+        if not result.exception:
+            self._apply_result(result)
+
         self.fire_event(CursorChanged(result, self.board))
         self.fire_event(MovePlayed(result))
+        return result
 
     def start(self):
         self._set_cursor(self.cursor)
@@ -68,6 +82,14 @@ class Game:
         )
         self.fire_event(MovesReseted(self.root))
         self.fire_event(MovePlayed(result))
+
+    def _set_handicap(self):
+        handicap = self.infos.get("HA")
+        if not handicap:
+            return
+        positions = HANDICAPS.get(handicap, tuple())
+        for pos in positions:
+            self.board[pos[0]][pos[1]] = BLACK
 
     def add_listener(self, instance, event_classes=None):
         event_classes = event_classes or [MovePlayed]
@@ -83,8 +105,10 @@ class Game:
 
     def pass_(self, color):
         if self.cursor.is_pass and self.cursor.parent and self.cursor.parent.is_pass:
-            raise ThreeTimesPassed(color)
-        self.test_move(Move(color, pos=None), apply_result=True)
+            self.count()
+        result = self.test_move(Move(color, pos=None), apply_result=True)
+        self.fire_event(CursorChanged(result, self.board))
+        self.fire_event(MovePlayed(result))
 
     def undo(self):
         old_color = self.cursor.color
@@ -99,6 +123,9 @@ class Game:
             )
         )
         self.fire_event(result)
+
+    def resign(self, color: Status):
+        self.fire_event(Ended(END_BY_RESIGN, color, GameResult()))
 
     def _set_cursor(self, move, no_fire=False):
         self._cursor = move
@@ -141,14 +168,6 @@ class Game:
 
         return result
 
-    def _set_handicap(self):
-        handicap = self.infos.get("HA")
-        if not handicap:
-            return
-        positions = HANDICAPS.get(handicap, tuple())
-        for pos in positions:
-            self.board[pos[0]][pos[1]] = BLACK
-
     def _apply_result(self, result):
         if result.move.pos and result.move.color:
             self.board.apply_result(result)
@@ -176,3 +195,16 @@ class Game:
             for innerchildren in children.values():
                 for child in innerchildren:
                     self.tree(child, level)
+
+    def count(self):
+        groups = count(self.board)
+        res = self.ruleset.set_result(groups)
+        self.fire_event(Counted(res, self.board))
+
+    def toggle_status(self, pos):
+        status = self.board.pos(pos).toggle_dead()
+        group = self.board.analyze(pos, findkilled=False)[1]
+        for x, y in group:
+            if not self.board[x][y].is_empty():
+                self.board[x][y] = status
+        self.count()

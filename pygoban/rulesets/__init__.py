@@ -7,7 +7,7 @@ from pygoban.status import (
     DEAD_BLACK,
     DEAD_WHITE,
 )
-from pygoban.coords import array_indexes
+from pygoban import GameResult
 
 
 class RuleViolation(Exception):
@@ -55,14 +55,14 @@ class BaseRuleset:
         else:
             self.ko = None
 
-    def set_result(self, groups=None, end=None):
-        if end:
-            print("END", end)
-        elif groups:
-            blibs = 0
-            wdead = self.game.prisoners[BLACK]
-            wlibs = 0
-            bdead = self.game.prisoners[WHITE]
+    def set_result(self, groups=None):
+        blibs = 0
+        wlibs = 0
+        blibs = 0
+        wlibs = 0
+        wdead = self.game.prisoners[BLACK]
+        bdead = self.game.prisoners[WHITE]
+        if groups:
             board = self.game.board
             boardrange = range(board.boardsize)
             for x in boardrange:
@@ -79,10 +79,6 @@ class BaseRuleset:
                         bdead += 1
                         wlibs += 1
 
-            print("BWL", blibs, wlibs)
-            print("BWD", bdead, wdead)
-            print("I", self.game.infos)
-            btotal = blibs + wdead
-            wtotal = wlibs + bdead + float(self.game.infos["KM"])
-            dif = abs(wtotal - btotal)
-            print("RES: ", "B" if btotal > wtotal else "W", dif)
+        return GameResult(
+            points={BLACK: blibs, WHITE: wlibs}, prisoners={BLACK: wdead, WHITE: bdead}
+        )

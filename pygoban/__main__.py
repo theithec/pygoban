@@ -9,24 +9,34 @@ from .game import BLACK, WHITE, Game
 from .player import GTPPlayer
 from .sgf.reader import parse
 from .timesettings import TimeSettings
-from .events import MovePlayed, CursorChanged, MovesReseted
-from .counting import count
+from .events import MovePlayed, CursorChanged, MovesReseted, Counted, Ended
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)  # kill with <Ctrl-C>
 
 QAPP = None
 
 
+def get_control_cls(nogui):
+    if nogui:
+        from .controller import ConsoleController as Controller
+    else:
+        from .gui.gamewindow import GameWindow as Controller
+    return Controller
+
+
+def get_player_cls(nogui):
+    if nogui:
+        from .player import ConsolePlayer as HumanPlayer
+    else:
+        from .gui.player import GuiPlayer as HumanPlayer
+    return HumanPlayer
+
+
 def startgame(args: argparse.Namespace, init_gui: bool):
     config = getconfig()
     players = {}
-
-    if args.nogui:
-        from .controller import ConsoleController as Controller
-        from .player import ConsolePlayer as HumanPlayer
-    else:
-        from .gui.gamewindow import GameWindow as Controller
-        from .gui.player import GuiPlayer as HumanPlayer
+    Controller = get_control_cls(args.nogui)
+    HumanPlayer = get_player_cls(args.nogui)
 
     for col, cmd in ((BLACK, args.black_gtp), (WHITE, args.white_gtp)):
         if not cmd:
@@ -35,7 +45,7 @@ def startgame(args: argparse.Namespace, init_gui: bool):
             players[col] = GTPPlayer(col, cmd=config["GTP"][cmd])
 
     defaults = {
-        "SZ": args.boardsize or config["PYGOBAN"]["boardsize"],
+        "SZ": args.boardsize or int(config["PYGOBAN"]["boardsize"]),
         "KM": args.komi or config["PYGOBAN"]["komi"],
         "RU": "default",
     }
@@ -52,8 +62,9 @@ def startgame(args: argparse.Namespace, init_gui: bool):
         "set_cursor": game._set_cursor,
         "pass": game.pass_,
         "undo": game.undo,
-        "analyze": game.board.analyze,
-        "count": lambda: count(game.board),
+        "resign": game.resign,
+        "toggle_status": game.toggle_status,
+        "count": game.count,
     }
     controller_kwargs = dict(
         black=players[BLACK],
@@ -70,10 +81,9 @@ def startgame(args: argparse.Namespace, init_gui: bool):
         )
         controller_kwargs["timesettings"] = TimeSettings(**timekwargs)
     controller = Controller(**controller_kwargs)
-    game.add_listener(controller, [CursorChanged, MovesReseted])
+    game.add_listener(controller, [CursorChanged, MovesReseted, Counted, Ended])
     for col in (BLACK, WHITE):
-        game.add_listener(players[col], [MovePlayed])
-
+        game.add_listener(players[col], [MovePlayed, Counted])
     game.start()
 
     if not args.nogui:
@@ -83,6 +93,8 @@ def startgame(args: argparse.Namespace, init_gui: bool):
 
     if init_gui:
         sys.exit(QAPP.exec_())
+
+    return game
 
 
 def main():

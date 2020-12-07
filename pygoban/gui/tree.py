@@ -56,19 +56,12 @@ class TreeCanvas(QWidget):
 
     def add_move(self, move):
         def add(move):
-            # print("\tadd", move)
-            # nonlocal cnt
-            # if cnt % 100 == 0:
-            #     print("C1", cnt)
-            # cnt += 1
             node = MoveNode(self, move)
             if not self.nodes:
                 self.root = node
             self.nodes[id(move)] = node
             self.cursor = node
-            # print("Set cursor", self.cursor)
             for child in move.children.values():
-                # if move != child:
                 add(child)
 
         add(move)
@@ -108,7 +101,6 @@ class TreeCanvas(QWidget):
         else:
             node = self.nodes[id(move)]
             _set(node, 1, 1)
-        # print("RESIZE", self.maxx, self.maxy)
         self.resize(self.maxx + 40, self.maxy + 40)
         self.repaint()
 

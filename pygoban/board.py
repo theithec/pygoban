@@ -2,9 +2,10 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Set, Tuple, Dict
-from .coords import array_indexes, letter_from_int
+from .coords import letter_from_int
 from .move import Move
 from .status import EMPTY, Status
+from . import Result
 
 
 class StonelessReason(Enum):
@@ -15,7 +16,7 @@ class StonelessReason(Enum):
 
 
 @dataclass
-class MoveResult:
+class MoveResult(Result):
     next_player: Optional[Status] = None
     move: Optional[Move] = None
     libs: int = 0
@@ -23,6 +24,7 @@ class MoveResult:
     group: Set[int] = field(default_factory=set)
     extra: Optional[StonelessReason] = None
     is_new: bool = True
+    exception = None
 
 
 class Board(list):
@@ -136,8 +138,8 @@ class Board(list):
 
         return cpy
 
-    def pos(self, coord, status=None):
-        x, y = array_indexes(coord, self.boardsize)
+    def pos(self, pos, status=None):
+        x, y = pos
         if status:
             self[x][y] = status
         return self[x][y]
@@ -145,9 +147,7 @@ class Board(list):
     def __str__(self):
         cpy = self.rotated(switch_axis=False, switch_y=False)
         txt = "\n    "
-        txt += " ".join(
-            [letter_from_int(i) for i in range(cpy.boardsize)]
-        )
+        txt += " ".join([letter_from_int(i) for i in range(cpy.boardsize)])
         txt += "\n\n"
         for xorg in range(cpy.boardsize):
             x = cpy.boardsize - xorg - 1

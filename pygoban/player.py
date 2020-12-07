@@ -1,9 +1,10 @@
+import subprocess
 import time
 from threading import Thread
-import subprocess
-from . import status, logging
-from .coords import gtp_coords
-from .events import MovePlayed, CursorChanged
+
+from . import logging, status, InputMode
+from .coords import gtp_coords, array_indexes
+from .events import MovePlayed, Counted
 
 
 class Player:
@@ -25,7 +26,6 @@ class Player:
             self.timesettings.timer.cancel()
 
     def set_timesettings(self, timesettings):
-        print(self, "T", timesettings)
         self.timesettings = timesettings
 
     def _get_move(self):
@@ -57,13 +57,10 @@ class ConsolePlayer(Player):
             if event.result.next_player == self.color:
                 self.set_turn(event.result)
 
-        if self.timesettings:
-            self.update_time(event.move.color)
-
     def set_turn(self, result):
         try:
             move = self._get_move()
-            self.controller.handle_move(self.color, move)
+            self.controller.handle_gtp_move(self.color, move)
         except AssertionError:
             self.set_turn(result)
 
@@ -97,12 +94,15 @@ class GTPComm(Thread):
                 break
             res += nextline
 
-        logging.info("gtpcmd %s -> %s", self.cmd, res)
+        logging.info("gtpcmd(%s) %s -> %s", self.player, self.cmd, res)
+        if res.strip().startswith("?"):
+            logging.error("INAVLID(%s) %s -> %s", self.player, self.cmd, res)
+            self.player.controller.end("Exception {color}", self.player.color)
         if self.handle_output:
             res = res.lower()
             move = res.split("=")[-1].strip()
             if move:
-                self.player.controller.handle_move(self.player.color, move)
+                self.player.controller.handle_gtp_move(self.player.color, move)
 
 
 class GTPPlayer(Player):
@@ -121,7 +121,8 @@ class GTPPlayer(Player):
         )
         time.sleep(1)
         self.do_cmd("boardsize %s" % self.controller.infos["SZ"], False)
-        # self.do_cmd("fixed_handicap %s" % self.controller.game.handicap,  False)
+        if (handicap := int(self.controller.infos.get("HA", 0))) > 0:
+            self.do_cmd(f"fixed_handicap {handicap}", False)
 
     def set_timesettings(self, timesettings):
         self.timesettings = timesettings
@@ -139,15 +140,20 @@ class GTPPlayer(Player):
         super().end()
 
     def _get_move(self):
-        # self.controller.handle_move(self.color, "pass")
         self.do_cmd("genmove " + self.color.strval.lower())
 
     def handle_game_event(self, event):
         result = event.result
-        if not result.extra:
-            coords = gtp_coords(*result.move.pos, self.controller.infos["SZ"])
-            self.do_cmd(
-                "play %s %s" % (result.move.color.strval.lower(), coords), False
-            )
-        self.do_cmd("showboard", False)
-        self._get_move()
+        if isinstance(event, MovePlayed):
+            if not event.result.exception:
+                if result.move and result.move.pos and result.move.color != self.color:
+                    coords = gtp_coords(*result.move.pos, self.controller.infos["SZ"])
+                    self.do_cmd(
+                        "play %s %s" % (result.move.color.strval.lower(), coords), False
+                    )
+                    self.do_cmd("showboard", False)
+            if (
+                self.controller.input_mode == InputMode.PLAY
+                and result.next_player == self.color
+            ):
+                self._get_move()

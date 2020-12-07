@@ -1,4 +1,4 @@
-from . import board, move
+from . import board, move, GameResult
 
 
 class Event:
@@ -28,3 +28,16 @@ class MovesReseted(Event):
 
     def __str__(self):
         return f"Move reseted: {self.root}"
+
+
+class Counted(Event):
+    def __init__(self, result: GameResult, board: board.Board):
+        self.result = result
+        self.board = board
+
+
+class Ended(Event):
+    def __init__(self, reason, color, result):
+        self.reason = reason
+        self.color = color
+        self.result = result

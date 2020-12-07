@@ -1,5 +1,6 @@
-def letter_from_int(val):
-    return chr(65 + val)
+def letter_from_int(val, skip_i=False):
+    summand = 66 if val > 7 and skip_i else 65
+    return chr(summand + val)
 
 
 def char_to_int(char, skip_i=True):
@@ -18,7 +19,7 @@ def array_indexes(coords, boardsize):
 
 
 def gtp_coords(x, y, boardsize):
-    return "%s%s" % (letter_from_int(y), boardsize - x)
+    return "%s%s" % (letter_from_int(y, skip_i=True), boardsize - x)
 
 
 def sgf_to_pos(coord):

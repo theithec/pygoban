@@ -35,10 +35,13 @@ INFO_KEYS = (
 INT_KEYS = ("SZ", "HA")
 
 
-TR = "▲"
+# TR = "▲"
+TR = "△"
 
 MA = "X"
 
-CR = "●"
+# CR = "●"
+CR = "○"
 
-SQ = "■"
+# SQ = "■"
+SQ = "□"

@@ -1,4 +1,7 @@
 import configparser
+import enum
+from dataclasses import dataclass, field
+from typing import Dict
 import logging
 import os
 import sysconfig
@@ -20,3 +23,25 @@ def getconfig():
         config["GTP"] = {}
         writeconfig(config)
     return config
+
+
+@dataclass
+class Result:
+    pass
+
+
+@dataclass
+class GameResult(Result):
+    points: Dict = field(default_factory=dict)
+    prisoners: Dict = field(default_factory=dict)
+
+
+class InputMode(enum.Enum):
+    PLAY = "PLAY"
+    EDIT = "EDIT"
+    COUNT = "COUNT"
+    ENDED = "ENDED"
+
+
+END_BY_TIME = "{color}+T"
+END_BY_RESIGN = "{color}+R"
