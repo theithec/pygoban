@@ -80,9 +80,7 @@ class Intersection(QWidget):
 
     def paintEvent(self, _):
         """Draw"""
-        # print("repaintiiii")
-
-        if not self.controller.last_result:
+        if not self.controller.last_move_result:
             return
         painter = QPainter()
         painter.begin(self)
@@ -104,13 +102,20 @@ class Intersection(QWidget):
             painter.drawEllipse(hosp, hosp, hosz, hosz)
 
         for status in (BLACK, WHITE):
-            if self.coord in self.controller.last_result.move.extras.stones[status]:
+            if (
+                self.coord
+                in self.controller.last_move_result.cursor.extras.stones[status]
+            ):
                 self.status = status
 
         stone_img = self.stone_by_status.get(self.status)
-        if self.controller.last_result.move.color and self._hover and not stone_img:
+        if (
+            self.controller.last_move_result.cursor.color
+            and self._hover
+            and not stone_img
+        ):
             stone_img = self.stone_by_status.get(
-                STATUS[self.controller.last_result.next_player.intval + 2]
+                STATUS[self.controller.last_move_result.next_player.intval + 2]
             )
 
         if stone_img:
@@ -125,10 +130,12 @@ class Intersection(QWidget):
                 pixmap,
             )
         if self.controller.input_mode != InputMode.COUNT:
-            deco = self.controller.last_result.move.extras.decorations.get(self.coord)
+            deco = self.controller.last_move_result.cursor.extras.decorations.get(
+                self.coord
+            )
             if deco:
                 self.draw_char(painter, deco)
-            child = self.controller.last_result.move.children.get(self.coord)
+            child = self.controller.last_move_result.cursor.children.get(self.coord)
 
             if child:
                 stone_img = self.stone_by_status[

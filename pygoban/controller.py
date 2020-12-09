@@ -10,7 +10,7 @@ from .move import Move
 from .status import BLACK, WHITE, Status
 from .timesettings import PlayerTime, TimeSettings
 from .coords import array_indexes
-from .events import CursorChanged, MovesReseted, Counted, Ended
+from .events import CursorChanged, MovesReseted, Counted, Ended, Event
 from .sgf.writer import to_sgf
 
 
@@ -36,7 +36,8 @@ class Controller:
 
         self.timeout = False
         self.move_start = None
-        self.last_result: Optional[MoveResult] = None
+        self.last_move_result: Optional[Event] = None
+        self.count: Optional[Event] = None
         self.root = None
         self.input_mode = InputMode.PLAY
 
@@ -74,10 +75,11 @@ class Controller:
         raise NotImplementedError()
 
     def handle_game_event(self, event):
+        print("E", event)
         if isinstance(event, CursorChanged):
-            if not event.result.exception:
-                self.last_result: MoveResult = event.result
-                self.update_board(event.result, event.board)
+            if not event.exception:
+                self.last_move_result: MoveResult = event
+                self.update_board(event, event.board)
 
                 if self.timesettings:
                     self.update_time(event.result.move.color)
@@ -91,15 +93,11 @@ class Controller:
             self.update_moves(event.root)
 
         elif isinstance(event, Counted):
-            if self.input_mode == InputMode.PLAY:
-                self.input_mode = InputMode.COUNT
-            self.update_board(event.result, event.board)
+            self.last_count = event
+            self.update_board(event, event.board)
         elif isinstance(event, Ended):
-            import pudb
-
-            pudb.set_trace()
-            self.input_mode = InputMode.COUNT
-            self.update_board(event.result, None)
+            self.input_mode = InputMode.ENDED
+            self.update_board(event, None)
 
     def to_sgf(self):
         return to_sgf(self.infos, self.root)

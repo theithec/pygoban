@@ -19,9 +19,10 @@ from pygoban.status import BLACK, WHITE
 from pygoban.board import MoveResult
 from pygoban.player import Player
 from pygoban.sgf import CR, SQ, TR
-from pygoban import InputMode, Result
+from pygoban import InputMode, Result, events
 
-from . import btn_adder
+
+from . import btn_adder, gamewindow
 from .filedialog import filename_from_savedialog
 from .player import GuiPlayer
 from .tree import Tree
@@ -30,7 +31,7 @@ from .tree import Tree
 class Box(QGroupBox):
     def __init__(self, parent, **kwargs):
         super().__init__(parent)
-        self.controller = parent.controller
+        self.controller: "gamewindow.GameWindow" = parent.controller
         self.kwargs = kwargs
         self.init(**kwargs)
 
@@ -86,7 +87,7 @@ class PlayerBox(Box):
         self.timer.timeout.connect(self.clock_tick)
 
     def update_clock(self):
-        if self.player.color == self.controller.last_result.next_player:
+        if self.player.color == self.controller.last_move_result.next_player:
             self.set_clock(self.player.timesettings.nexttime())
         else:
             self.time_ended()
@@ -111,7 +112,6 @@ class GameBox(Box):
         self.setLayout(game_layout)
 
     def update_controlls(self, result):
-        print("RESULT", result, self.controller.input_mode)
         self.pass_btn.setEnabled(
             self.controller.input_mode == InputMode.PLAY
             and isinstance(
@@ -120,28 +120,45 @@ class GameBox(Box):
             )
         )
         self.resign_btn.setEnabled(self.controller.input_mode == InputMode.PLAY)
-        self.count_btn.setEnabled(self.controller.input_mode != InputMode.PLAY)
+        self.count_btn.setEnabled(self.controller.input_mode == InputMode.COUNT)
 
     def do_undo(self):
         self.controller.input_mode = InputMode.PLAY
-        if not self.controller.last_result.move.is_root:
+        if not self.controller.last_move_result.cursor.is_root:
             self.controller.callbacks["undo"]()
 
     def do_pass(self):
-        self.controller.callbacks["pass"](self.controller.last_result.next_player)
+        self.controller.callbacks["pass"](self.controller.last_move_result.next_player)
 
     def do_resign(self):
         if not self.controller.timeout or isinstance(
-            self.controller.players[self.controller.last_result.next_player], GuiPlayer
+            self.controller.players[self.controller.last_move_result.next_player],
+            GuiPlayer,
         ):
-            self.controller.callbacks["resign"](self.controller.last_result.next_player)
+            self.controller.callbacks["resign"](
+                self.controller.last_move_result.next_player
+            )
 
     def do_count(self):
+
         if self.controller.input_mode == InputMode.PLAY:
             self.controller.input_mode = InputMode.COUNT
-        else:
+        elif self.controller.input_mode == InputMode.COUNT:
             self.controller.input_mode = InputMode.ENDED
-        self.controller.callbacks["count"]()
+
+        if self.controller.input_mode == InputMode.ENDED:
+            result = self.controller.last_count
+            btotal = result.points[BLACK] + result.prisoners[BLACK]
+            wtotal = result.points[WHITE] + result.prisoners[WHITE]
+            color = BLACK if btotal > wtotal else WHITE
+            print("R", result, color)
+            print(btotal, wtotal)
+            msg = "{color}+%s" % str(max(wtotal, btotal) - min(wtotal, btotal))
+            self.update_controlls(self.controller.last_count)
+            self.controller.end(msg, color)
+            self.controller.input_mode = InputMode.EDIT
+        else:
+            self.controller.callbacks["count"]()
 
 
 class EditBox(Box):
@@ -175,13 +192,19 @@ class EditBox(Box):
         self.setLayout(box_layout)
 
     def update_controlls(self, result):
-        has_parent = isinstance(result, MoveResult) and bool(
-            result.move and result.move.parent
+        has_parent = (
+            self.controller.input_mode == InputMode.EDIT
+            and isinstance(result, events.CursorChanged)
+            and result.cursor
+            and result.cursor.parent
         )
         self.prev_move.setEnabled(has_parent)
         self.back_moves.setEnabled(has_parent)
-        has_children = isinstance(result, MoveResult) and bool(
-            result.move and len(result.move.children)
+        has_children = (
+            self.controller.input_mode == InputMode.EDIT
+            and isinstance(result, events.CursorChanged)
+            and result.cursor
+            and len(result.cursor.children)
         )
         self.next_move.setEnabled(has_children)
         self.forward_moves.setEnabled(has_children)
@@ -211,7 +234,7 @@ class EditBox(Box):
         self.controller.deco = "CHAR"
 
     def do_last_variation(self):
-        curr = self.controller.last_result.move
+        curr = self.controller.last_move_result.cursor
         while curr:
             if curr.parent and len(curr.parent.children) == 1:
                 curr = curr.parent
@@ -220,7 +243,7 @@ class EditBox(Box):
         self.controller.callbacks["set_cursor"](curr)
 
     def do_next_variation(self):
-        curr = self.controller.last_result.move
+        curr = self.controller.last_move_result.cursor
         while curr:
             if len(curr.children) == 1:
                 curr = list(curr.children.values())[0]
@@ -229,17 +252,19 @@ class EditBox(Box):
         self.controller.callbacks["set_cursor"](curr)
 
     def do_prev_move(self):
-        self.controller.callbacks["set_cursor"](self.controller.last_result.move.parent)
+        self.controller.callbacks["set_cursor"](
+            self.controller.last_move_result.cursor.parent
+        )
 
     def do_next_move(self):
         self.controller.callbacks["set_cursor"](
-            list(self.controller.last_result.move.children.values())[0]
+            list(self.controller.last_move_result.cursor.children.values())[0]
         )
 
 
 class Sidebar(QFrame):
 
-    game_signal = pyqtSignal(Result)
+    game_signal = pyqtSignal(events.Event)
 
     def __init__(self, parent, is_game=True, can_edit=True):
         super().__init__(parent)
@@ -298,11 +323,11 @@ class Sidebar(QFrame):
         for box in self.boxes:
             box.update_controlls(result)
 
-        if isinstance(result, MoveResult):
-            cmts = result.move.extras.comments or [""]
+        if isinstance(result, events.CursorChanged):
+            cmts = result.cursor.extras.comments or [""]
             self.comments.setText("\n".join(cmts))
 
             if result.is_new:
-                self.tree.add_move(result.move)
+                self.tree.add_move(result.cursor)
             else:
-                self.tree.set_cursor(result.move)
+                self.tree.set_cursor(result.cursor)

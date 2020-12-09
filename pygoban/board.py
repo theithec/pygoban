@@ -102,16 +102,19 @@ class Board(list):
 
     def result(self, move):
         """Result of a move (may be invalid)"""
-        # color: Status, pos: Tuple[int, int]):
         x, y = move.pos
         cpy = deepcopy(self)
         cpy[x][y] = move.color
         raw = cpy.analyze((x, y))
-        result = MoveResult(move=move, libs=raw[3], killed=raw[2], group=raw[1])
+        result = MoveResult(
+            move=move,
+            group=raw[1],
+            killed=raw[2],
+            libs=raw[3],
+        )
         return result
 
     def apply_result(self, result):
-        # self.pos(result.move.coord, result.move.color)
         pos = result.move.pos
         x, y = pos
         self[x][y] = result.move.color

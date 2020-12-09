@@ -1,43 +1,55 @@
-from . import board, move, GameResult
+from typing import Optional, Dict, Set
+from dataclasses import dataclass, field
+from . import board as board_, GameResult, move as move_, rulesets
+from .status import Status
 
 
+@dataclass
 class Event:
     pass
 
 
+@dataclass
 class MovePlayed(Event):
-    def __init__(self, result: board.MoveResult):
-        self.result = result
+    next_player: Optional[Status] = None
+    move: Optional[move_.Move] = None
+    extra: Optional[board_.StonelessReason] = None
+    is_new: bool = False
 
     def __str__(self):
-        return f"Move Played: {self.result}"
+        return f"Move Played: {self.move} Next: {self.next_player}"
 
 
+@dataclass
 class CursorChanged(Event):
-    def __init__(self, result: board.MoveResult, board: board.Board):
-        self.result = result
-        self.board = board
+    board: board_.Board
+    next_player: Optional[Status] = None
+    cursor: Optional[move_.Move] = None
+    is_new: bool = True
+    exception: Optional[rulesets.RuleViolation] = None
 
     def __str__(self):
-        return f"Cursor changed: {self.result}"
+        return f"Cursor changed: {self.cursor}"
 
 
 class MovesReseted(Event):
-    def __init__(self, root: move.Move):
+    def __init__(self, root: move_.Move):
         self.root = root
 
     def __str__(self):
         return f"Move reseted: {self.root}"
 
 
+@dataclass
 class Counted(Event):
-    def __init__(self, result: GameResult, board: board.Board):
-        self.result = result
-        self.board = board
+    board: board_.Board
+    points: Dict[Status, int] = field(default_factory=dict)
+    prisoners: Dict[Status, int] = field(default_factory=dict)
 
 
+@dataclass
 class Ended(Event):
-    def __init__(self, reason, color, result):
-        self.reason = reason
-        self.color = color
-        self.result = result
+    points: Dict[Status, int] = field(default_factory=dict)
+    prisoners: Dict[Status, int] = field(default_factory=dict)
+    color: Optional[Status] = None
+    msg: str = ""

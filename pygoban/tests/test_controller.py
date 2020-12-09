@@ -12,11 +12,9 @@ class MockedPlayer(Player):
     movegen = moves()
 
     def handle_game_event(self, event):
-        print("PAT", self.controller.last_result.move.get_path())
         try:
             if event.result.next_player == self.color:
                 move = next(self.movegen)
-                print("PLAY", move)
                 if move:
                     self.controller.handle_gtp_move(self.color, move)
         except StopIteration:

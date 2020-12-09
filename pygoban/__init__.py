@@ -34,6 +34,7 @@ class Result:
 class GameResult(Result):
     points: Dict = field(default_factory=dict)
     prisoners: Dict = field(default_factory=dict)
+    msg: str = ""  # {color}+%s"
 
 
 class InputMode(enum.Enum):

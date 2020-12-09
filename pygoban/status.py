@@ -36,3 +36,8 @@ DEAD_WHITE = Status(4, "w")
 BLACK_LIB = Status(5, "B")
 WHITE_LIB = Status(6, "W")
 STATUS = {int(sts): sts for sts in (KO, EMPTY, BLACK, WHITE, DEAD_BLACK, DEAD_WHITE)}
+
+
+def get_othercolor(color: Status):
+    assert color in (BLACK, WHITE, None)
+    return BLACK if not color or color == WHITE else WHITE
