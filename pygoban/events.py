@@ -15,6 +15,7 @@ class MovePlayed(Event):
     move: Optional[move_.Move] = None
     extra: Optional[board_.StonelessReason] = None
     is_new: bool = False
+    exception: Optional[rulesets.RuleViolation] = None
 
     def __str__(self):
         return f"Move Played: {self.move} Next: {self.next_player}"

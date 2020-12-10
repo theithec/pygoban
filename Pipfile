@@ -10,6 +10,7 @@ pytest-mock = "*"
 
 [packages]
 pyqt5 = "*"
+pytest-qt = "*"
 
 [requires]
 python_version = "3.8"

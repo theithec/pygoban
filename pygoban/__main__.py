@@ -45,6 +45,7 @@ def startgame(args: argparse.Namespace, init_gui: bool):
             players[col] = GTPPlayer(col, cmd=config["GTP"][cmd])
 
     defaults = {
+
         "SZ": args.boardsize or int(config["PYGOBAN"]["boardsize"]),
         "KM": args.komi or config["PYGOBAN"]["komi"],
         "RU": "default",
@@ -94,7 +95,8 @@ def startgame(args: argparse.Namespace, init_gui: bool):
     if init_gui:
         sys.exit(QAPP.exec_())
 
-    return game
+    # For testing
+    return game, controller
 
 
 def main():

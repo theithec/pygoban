@@ -59,7 +59,6 @@ class Game:
                 is_new=self.cursor.is_root,
             )
         )
-
     def _set_handicap(self):
         handicap = self.infos.get("HA")
         if not handicap:
@@ -166,6 +165,8 @@ class Game:
                 board=self.board,
             )
         )
+        #if not result.move:
+        #    result.move = Move(color=color)
         self.fire_event(
             MovePlayed(
                 **{
@@ -194,7 +195,7 @@ class Game:
     def pass_(self, color):
         if self.cursor.is_pass and self.cursor.parent and self.cursor.parent.is_pass:
             self.count()
-        result = self.test_move(Move(color, pos=None), apply_result=True)
+        result = self.test_move(Move(color, pos=None, parent=self.cursor), apply_result=True)
         self.fire_event(
             CursorChanged(
                 next_player=result.next_player,
@@ -203,7 +204,12 @@ class Game:
                 board=self.board,
             )
         )
-        self.fire_event(MovePlayed(result))
+        self.fire_event(MovePlayed(
+            next_player=result.next_player,
+            move=result.move,
+            extra = result.extra,
+            is_new=result.is_new
+        ))
 
     def undo(self):
         old_color = self.cursor.color

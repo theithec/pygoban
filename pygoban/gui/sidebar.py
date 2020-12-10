@@ -151,8 +151,6 @@ class GameBox(Box):
             btotal = result.points[BLACK] + result.prisoners[BLACK]
             wtotal = result.points[WHITE] + result.prisoners[WHITE]
             color = BLACK if btotal > wtotal else WHITE
-            print("R", result, color)
-            print(btotal, wtotal)
             msg = "{color}+%s" % str(max(wtotal, btotal) - min(wtotal, btotal))
             self.update_controlls(self.controller.last_count)
             self.controller.end(msg, color)

@@ -78,8 +78,6 @@ class GuiBoard(QWidget):
                 for y in range(self.boardsize):
                     pos = rotate(x, y, self.boardsize)
                     inter = self.intersections[pos]
-                    # print("xY", x,y, inter)
-                    # print( x * width + borderspace, y * width + borderspace, width, width)
                     inter.setGeometry(
                         x * width + borderspace, y * width + borderspace, width, width
                     )

@@ -143,14 +143,19 @@ class GTPPlayer(Player):
         self.do_cmd("genmove " + self.color.strval.lower())
 
     def handle_game_event(self, event):
-        result = event.result
+        result = event
+        #import pudb; pudb.set_trace()
         if isinstance(event, MovePlayed):
-            if not event.result.exception:
-                if result.move and result.move.pos and result.move.color != self.color:
-                    coords = gtp_coords(*result.move.pos, self.controller.infos["SZ"])
-                    self.do_cmd(
-                        "play %s %s" % (result.move.color.strval.lower(), coords), False
-                    )
+            if not result.exception:
+                if result.move  and result.move.color != self.color:
+                    if result.move.pos:
+                        coords = gtp_coords(*result.move.pos, self.controller.infos["SZ"])
+                        self.do_cmd(
+                            "play %s %s" % (result.move.color.strval.lower(), coords), False
+                        )
+                    else:
+                        pass
+
                     self.do_cmd("showboard", False)
             if (
                 self.controller.input_mode == InputMode.PLAY

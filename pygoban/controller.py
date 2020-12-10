@@ -75,15 +75,14 @@ class Controller:
         raise NotImplementedError()
 
     def handle_game_event(self, event):
-        print("E", event)
         if isinstance(event, CursorChanged):
             if not event.exception:
                 self.last_move_result: MoveResult = event
                 self.update_board(event, event.board)
 
                 if self.timesettings:
-                    self.update_time(event.result.move.color)
-                    self.players[event.result.next_player].timesettings.nexttime(
+                    self.update_time(event.cursor.color)
+                    self.players[event.next_player].timesettings.nexttime(
                         start_timer=True
                     )
                     self.move_start = datetime.datetime.now()

@@ -1,29 +1,23 @@
+import os
 from pygoban.__main__ import startgame, argparse
-from pygoban.player import Player
 from pygoban.coords import gtp_coords, array_indexes
+from . import MockedPlayer
 
 
-def moves():
-    for move in ("a1", "a2", "a3"):
-        yield move
 
+class MyMockedPlayer(MockedPlayer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.result = {"sgf": "B[ai];W[ah];B[ag]"}
+        self.callback = self.done
 
-class MockedPlayer(Player):
-    movegen = moves()
-
-    def handle_game_event(self, event):
-        try:
-            if event.result.next_player == self.color:
-                move = next(self.movegen)
-                if move:
-                    self.controller.handle_gtp_move(self.color, move)
-        except StopIteration:
-            return
-        # print("E", event, event.board)
+    def done(self, player):
+        sgf = self.controller.to_sgf().replace(os.linesep, "")
+        assert self.result["sgf"] in sgf
 
 
 def test_change_mode(mocker):
-    mocker.patch("pygoban.__main__.get_player_cls", return_value=MockedPlayer)
+    mocker.patch("pygoban.__main__.get_player_cls", return_value=MyMockedPlayer)
     args = argparse.Namespace(
         boardsize=9,
         nogui=True,
@@ -34,4 +28,4 @@ def test_change_mode(mocker):
         handicap=0,
         time=None,
     )
-    startgame(args, init_gui=False)
+    game, controller = startgame(args, init_gui=False)
