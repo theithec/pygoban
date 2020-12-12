@@ -42,7 +42,9 @@ class ConsolePlayer(Player):
     def _get_move(self):
         move = input(f"cmd {self.color}: ").strip()
         try:
-            valid = True  # move in ("resign", "undo", "pass") or self._game.array_indexes(move)
+            valid = move.lower() in ("resign", "undo", "pass") or array_indexes(
+                move, self.controller.infos["SZ"]
+            )
             if move.startswith("#"):
                 valid = False
         except (ValueError, IndexError):
@@ -54,15 +56,12 @@ class ConsolePlayer(Player):
 
     def handle_game_event(self, event):
         if isinstance(event, MovePlayed):
-            if event.result.next_player == self.color:
-                self.set_turn(event.result)
+            if event.next_player == self.color:
+                self.set_turn(event)
 
-    def set_turn(self, result):
-        try:
-            move = self._get_move()
-            self.controller.handle_gtp_move(self.color, move)
-        except AssertionError:
-            self.set_turn(result)
+    def set_turn(self, _event):
+        move = self._get_move()
+        self.controller.handle_gtp_move(self.color, move)
 
 
 class GTPComm(Thread):
@@ -144,19 +143,23 @@ class GTPPlayer(Player):
 
     def handle_game_event(self, event):
         result = event
-        #import pudb; pudb.set_trace()
         if isinstance(event, MovePlayed):
+            vertex = None
             if not result.exception:
-                if result.move  and result.move.color != self.color:
-                    if result.move.pos:
-                        coords = gtp_coords(*result.move.pos, self.controller.infos["SZ"])
-                        self.do_cmd(
-                            "play %s %s" % (result.move.color.strval.lower(), coords), False
-                        )
-                    else:
+                if result.move and result.move.color != self.color:
+                    if result.move.is_pass:
+                        vertex = "pass"
+                    elif result.move.is_empty:
                         pass
-
-                    self.do_cmd("showboard", False)
+                    else:
+                        vertex = gtp_coords(
+                            *result.move.pos, self.controller.infos["SZ"]
+                        )
+            if vertex:
+                self.do_cmd(
+                    "play %s %s" % (result.move.color.strval.lower(), vertex), False
+                )
+                # self.do_cmd("showboard", False)
             if (
                 self.controller.input_mode == InputMode.PLAY
                 and result.next_player == self.color

@@ -21,12 +21,12 @@ def test_gamewindow(qtbot):
         assert len(player.controller.guiboard.intersections) == 81
 
     cog = QontrolledGame(
-        infos= {
+        infos={
             "SZ": 9,
             "RU": "japanese",
         },
         moves=MOVES,
         callback=done,
-        controllercls=GameWindow
+        controllercls=GameWindow,
     )
     cog.start(qtbot)

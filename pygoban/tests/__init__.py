@@ -15,6 +15,7 @@ class MockedPlayer(Player):
     def moves(cls):
         for move in cls.MOVES:
             yield move
+
     movegen = None
 
     def __init__(self, *args, **kwargs):
@@ -40,17 +41,15 @@ class MockedPlayer(Player):
 
 class ControlledGame:
     playercls = MockedPlayer
+
     def __init__(self, infos, moves, callback, controllercls=None):
         self.game = Game(**infos)
-        callbacks = {
-            "get_prisoners": lambda: {BLACK: 0, WHITE: 0},
-            "play": self.game.play
-        }
         controller = GameWindow(
             black=self.playercls(color=BLACK),
             white=self.playercls(color=WHITE, callback=callback),
-            callbacks=callbacks,
-            infos=infos
+            callbacks=self.game.get_callbacks(),
+            infos=infos,
+            mode="PLAY"
         )
         self.game.add_listener(controller, event_classes=[CursorChanged, MovesReseted])
         for color in (BLACK, WHITE):

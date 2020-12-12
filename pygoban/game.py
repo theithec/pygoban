@@ -1,14 +1,14 @@
 from threading import Timer
 from typing import Dict, Tuple
 
-from .board import Board, StonelessReason, MoveResult
-from .move import Move
+from .board import Board, MoveResult
+from .move import Move, Empty
 from .rulesets import BaseRuleset, RuleViolation
 from .status import BLACK, WHITE, Status, get_othercolor
 from .events import MovePlayed, CursorChanged, MovesReseted, Counted, Ended
 from .counting import count
 from .sgf import INFO_KEYS
-from . import logging, GameResult, END_BY_RESIGN
+from . import logging, END_BY_RESIGN
 
 
 HANDICAPS: Dict[int, Tuple] = {2: ((3, 3), (15, 15))}
@@ -30,7 +30,7 @@ class Game:
         self.board = Board(int(infos["SZ"]))
         self.ruleset = BaseRuleset(self)
         self.prisoners = {BLACK: 0, WHITE: 0}
-        self.root = Move(color=None, pos=None)
+        self.root = Move(color=None, pos=Empty.FIRST_MOVE)
         self._cursor = self.root
         self.registrations = {}
 
@@ -55,10 +55,10 @@ class Game:
             MovePlayed(
                 next_player=self.nextcolor,
                 move=self.cursor,
-                extra=StonelessReason.FIRST_MOVE if self.cursor.is_root else None,
                 is_new=self.cursor.is_root,
             )
         )
+
     def _set_handicap(self):
         handicap = self.infos.get("HA")
         if not handicap:
@@ -80,17 +80,21 @@ class Game:
 
     def _set_cursor(self, move, no_fire=False):
         self._cursor = move
+        path = self.get_path()
         self.prisoners = {BLACK: 0, WHITE: 0}
         self.board = Board(self.board.boardsize)
         self._set_handicap()
-        path = self.get_path()
+        is_new = self._cursor == self.root
         self._cursor = self.root
         for pmove in path:
             self.test_move(pmove, apply_result=True)
         if not no_fire:
             self.fire_event(
                 CursorChanged(
-                    next_player=self.nextcolor, cursor=self.cursor, board=self.board
+                    next_player=self.nextcolor,
+                    cursor=self.cursor,
+                    board=self.board,
+                    is_new=is_new,
                 )
             )
 
@@ -101,52 +105,84 @@ class Game:
                 move = child
                 is_new = False
 
-        if move.pos:
+        if not move.is_empty:
             result = self.board.result(move)
         else:
-            extra = StonelessReason.PASS if move.is_pass else StonelessReason.ADD_STONES
-            result = MoveResult(
-                next_player=get_othercolor(self.nextcolor), move=move, extra=extra
-            )
+            result = MoveResult(next_player=get_othercolor(self.nextcolor), move=move)
             result.is_new = is_new
         result.move = move
-        result.next_player = result.next_player or get_othercolor(self.nextcolor)
+        result.next_player = result.next_player or get_othercolor(
+            self.nextcolor
+        )  # OLD cursor!
         if apply_result:
             self._apply_result(result)
-
         return result
 
     def _apply_result(self, result):
-        if result.move.pos and result.move.color:
+        move = result.move
+        if not move.is_empty and move.color:
             self.board.apply_result(result)
-            self.prisoners[result.move.color] += len(result.killed)
-        elif result.move.extras.has_stones():
+            self.prisoners[move.color] += len(result.killed)
+        elif move.is_pass:
+            if (
+                self.cursor.is_pass
+                and self.cursor.parent
+                and self.cursor.parent.is_pass
+            ):
+                result.next_player = None
+                self.count()
+        elif move.pos == Empty.RESIGN:
+            self.resign(move.color)
+        if move.extras.has_stones():
             for status in (BLACK, WHITE):
-                poss = result.move.extras.stones[status]
+                poss = move.extras.stones[status]
                 for pos in poss:
                     x, y = pos
                     self.board[x][y] = status
+        if not move.parent:
+            move.parent = self.cursor
 
-        if not result.move.parent:
-            result.move.parent = self.cursor
-        self._cursor = result.move
+        if not move.pos == Empty.UNDO:
+            self._cursor = result.move
 
     def get_path(self):
         return self.cursor.get_path()
 
     def tree(self, curr=None, level=1):
-        print("\t" * level, curr, " Parent: ", curr.parent if curr else "-")
+        print(
+            "\t" * level,
+            curr,
+            " Parent: ",
+            curr.parent if curr else "-",
+            "!CURSOR!" if curr == self.cursor else "",
+        )
         curr = curr or self.root
         children = curr.children
         if children:
             level += 1
-            for innerchildren in children.values():
-                for child in innerchildren:
-                    self.tree(child, level)
+            for child in children.values():
+                self.tree(child, level)
+
+    def get_callbacks(self):
+        return {
+            "play": self.play,
+            "get_prisoners": lambda: self.prisoners,
+            "set_cursor": self._set_cursor,
+            "toggle_status": self.toggle_status,
+            "count": self.count,
+        }
 
     def play(self, color: Status, pos):
+        # import pudb; pudb.set_trace()
         logging.info("Play %s %s", color, pos)
         move = Move(color, pos)
+        if pos == Empty.UNDO and self.cursor != self.root:
+            self.undo()
+            return
+
+        if pos == Empty.RESIGN:
+            self.resign(color)
+            return
         result = self.test_move(move)
         try:
             self.ruleset.validate(result)
@@ -157,21 +193,20 @@ class Game:
         if not result.exception:
             self._apply_result(result)
 
-        self.fire_event(
-            CursorChanged(
-                next_player=result.next_player,
-                cursor=result.move,
-                is_new=result.is_new,
-                board=self.board,
+        if not move.pos == Empty.UNDO:
+            self.fire_event(
+                CursorChanged(
+                    next_player=result.next_player,
+                    cursor=result.move,
+                    is_new=result.is_new,
+                    board=self.board,
+                )
             )
-        )
-        #if not result.move:
-        #    result.move = Move(color=color)
         self.fire_event(
             MovePlayed(
                 **{
                     key: getattr(result, key)
-                    for key in ("next_player", "move", "extra", "is_new")
+                    for key in ("next_player", "move", "is_new")
                 }
             )
         )
@@ -192,39 +227,22 @@ class Game:
                 self.board[x][y] = status
         self.count()
 
-    def pass_(self, color):
-        if self.cursor.is_pass and self.cursor.parent and self.cursor.parent.is_pass:
-            self.count()
-        result = self.test_move(Move(color, pos=None, parent=self.cursor), apply_result=True)
-        self.fire_event(
-            CursorChanged(
-                next_player=result.next_player,
-                cursor=result.move,
-                is_new=result.is_new,
-                board=self.board,
-            )
-        )
-        self.fire_event(MovePlayed(
-            next_player=result.next_player,
-            move=result.move,
-            extra = result.extra,
-            is_new=result.is_new
-        ))
-
     def undo(self):
         old_color = self.cursor.color
-        parent = self.cursor.parent
-        self._set_cursor(parent)
-        result = MovePlayed(
-            MoveResult(
-                next_player=old_color,
-                move=Move(color=self.cursor.color),
-                extra=StonelessReason.UNDO,
-                is_new=False,
-            )
-        )
-        self.fire_event(result)
+        curr = self.cursor
+        while (parent := curr.parent) :
+            if parent:
+                curr = parent
+            else:
+                break
+            if parent.is_empty and not parent.pos == Empty.FIRST_MOVE:
+                continue
+            break
+        if not curr.is_empty or curr.pos == Empty.FIRST_MOVE:
+            logging.info("UNDO. Set Cursor: %s", curr)
+            self._set_cursor(curr)
+        else:
+            logging.info("CAN NOT UNDO. Cursor: %s", self.cursor)
 
     def resign(self, color: Status):
-        res = GameResult(msg=END_BY_RESIGN)
         self.fire_event(Ended(msg=END_BY_RESIGN, color=get_othercolor(color)))

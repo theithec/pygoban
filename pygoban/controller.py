@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from .player import Player
 from . import logging, InputMode, END_BY_TIME
 from .game import MoveResult
-from .move import Move
+from .move import Move, Empty
 from .status import BLACK, WHITE, Status
 from .timesettings import PlayerTime, TimeSettings
 from .coords import array_indexes
@@ -22,6 +22,7 @@ class Controller:
         white: Player,
         callbacks: Dict,
         infos: Dict,
+        mode="PLAY",
         timesettings: TimeSettings = None,
     ):
         # self.game = game
@@ -39,6 +40,7 @@ class Controller:
         self.last_move_result: Optional[Event] = None
         self.count: Optional[Event] = None
         self.root = None
+        self.mode = mode
         self.input_mode = InputMode.PLAY
 
     def player_lost_by_overtime(self, player):
@@ -59,14 +61,14 @@ class Controller:
     def handle_gtp_move(self, color, move):
         if self.timeout:
             return
-        if move == "resign":
-            self.callbacks["resign"](color)
-        elif move == "pass":
-            self.callbacks["pass"](color)
-        elif move == "undo":
-            self.callbacks["undo"]()
-        elif move:
-            self.callbacks["play"](color, pos=array_indexes(move, self.infos["SZ"]))
+        if move in ("resign", "pass", "undo"):
+            pos = Empty[move.upper()]
+        else:
+            pos = array_indexes(move, self.infos["SZ"])
+        self.game_callback("play", color=color, pos=pos)
+
+    def game_callback(self, name, *args, **kwargs):
+        self.callbacks[name](*args, **kwargs)
 
     def update_moves(self, move: Move):
         pass
@@ -75,6 +77,7 @@ class Controller:
         raise NotImplementedError()
 
     def handle_game_event(self, event):
+        # print("HANDLE", event)
         if isinstance(event, CursorChanged):
             if not event.exception:
                 self.last_move_result: MoveResult = event
@@ -113,6 +116,8 @@ class Controller:
 
 class ConsoleController(Controller):
     def update_board(self, result, board=None):
+
+        print(result.board)
         print(
             "\n".join(
                 [

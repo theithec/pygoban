@@ -1,3 +1,4 @@
+import argparse
 import configparser
 import enum
 from dataclasses import dataclass, field
@@ -46,3 +47,23 @@ class InputMode(enum.Enum):
 
 END_BY_TIME = "{color}+T"
 END_BY_RESIGN = "{color}+R"
+
+
+def get_argparser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("sgf_file", nargs="?", default=None)
+    parser.add_argument("--nogui", action="store_true", help="Show GUI")
+    parser.add_argument("--komi", help="komi", type=float)
+    parser.add_argument("--black-name", help="Black Name")
+    parser.add_argument("--white-name", help="White Name")
+    parser.add_argument("--black-gtp", help="Black GTP")
+    parser.add_argument("--white-gtp", help="White GTP")
+    parser.add_argument("--handicap", help="Handicap", type=int, default=0)
+    parser.add_argument("--boardsize", help="Handicap", type=int)
+    parser.add_argument(
+        "--mode", help="Modus(play, edit)", choices=("PLAY", "EDIT"), default="PLAY"
+    )
+    parser.add_argument(
+        "--time", help="[maintime]:[byomi_time]:[byomi_num]:[byomi_stones]"
+    )
+    return parser

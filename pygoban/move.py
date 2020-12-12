@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Dict, List, Set, Tuple
-
+from typing import Dict, List, Set, Tuple, Union
+from enum import Enum
 from .status import Status, BLACK, WHITE
 
 
@@ -25,9 +25,21 @@ class MoveExtras:
         return self.stones[BLACK] or self.stones[WHITE]
 
 
+class Empty(Enum):
+    FIRST_MOVE = "first_move"
+    UNDO = "undo"
+    PASS = "pass"
+    ADD_STONES = "ADD_STONES"
+    RESIGN = "RESIGN"
+
+
 class Move:
     def __init__(
-        self, color: Status = None, pos: Tuple[int, int] = None, parent=None, **extras
+        self,
+        color: Status = None,
+        pos: Union[Tuple[int, int], Empty] = None,
+        parent=None,
+        **extras
     ):
         self.pos = pos
         self.color = color
@@ -50,15 +62,15 @@ class Move:
 
     @property
     def is_empty(self):
-        return not self.pos
+        return isinstance(self.pos, Empty)
 
     @property
     def is_pass(self):
-        return not self.pos and not self.extras.has_stones()
+        return self.pos == Empty.PASS
 
     @property
     def is_root(self):
-        return not self.color and not self.extras.has_stones()
+        return self.pos == Empty.FIRST_MOVE
 
     def real_children(self):
         return {k: v for (k, v) in self.children.values() if not v.is_empty}

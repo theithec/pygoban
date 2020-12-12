@@ -4,7 +4,7 @@ import argparse
 import signal
 import sys
 
-from . import getconfig
+from . import getconfig, get_argparser
 from .game import BLACK, WHITE, Game
 from .player import GTPPlayer
 from .sgf.reader import parse
@@ -45,7 +45,6 @@ def startgame(args: argparse.Namespace, init_gui: bool):
             players[col] = GTPPlayer(col, cmd=config["GTP"][cmd])
 
     defaults = {
-
         "SZ": args.boardsize or int(config["PYGOBAN"]["boardsize"]),
         "KM": args.komi or config["PYGOBAN"]["komi"],
         "RU": "default",
@@ -57,21 +56,12 @@ def startgame(args: argparse.Namespace, init_gui: bool):
     else:
         game = Game(HA=args.handicap, **defaults)
 
-    callbacks = {
-        "play": game.play,
-        "get_prisoners": lambda: game.prisoners,
-        "set_cursor": game._set_cursor,
-        "pass": game.pass_,
-        "undo": game.undo,
-        "resign": game.resign,
-        "toggle_status": game.toggle_status,
-        "count": game.count,
-    }
     controller_kwargs = dict(
         black=players[BLACK],
         white=players[WHITE],
-        callbacks=callbacks,
+        callbacks=game.get_callbacks(),
         infos=game.infos,
+        mode=args.mode,
     )
     if args.time:
         timekwargs = dict(
@@ -89,8 +79,9 @@ def startgame(args: argparse.Namespace, init_gui: bool):
 
     if not args.nogui:
         controller.setWindowTitle("Pygoban")
-        controller.show()
         controller.setMinimumSize(800, 600)
+        controller.show()
+        controller.activateWindow()
 
     if init_gui:
         sys.exit(QAPP.exec_())
@@ -100,19 +91,7 @@ def startgame(args: argparse.Namespace, init_gui: bool):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("sgf_file", nargs="?", default=None)
-    parser.add_argument("--nogui", action="store_true", help="Show GUI")
-    parser.add_argument("--komi", help="komi", type=float)
-    parser.add_argument("--black-name", help="Black Name")
-    parser.add_argument("--white-name", help="White Name")
-    parser.add_argument("--black-gtp", help="Black GTP")
-    parser.add_argument("--white-gtp", help="White GTP")
-    parser.add_argument("--handicap", help="Handicap", type=int, default=0)
-    parser.add_argument("--boardsize", help="Handicap", type=int)
-    parser.add_argument(
-        "--time", help="[maintime]:[byomi_time]:[byomi_num]:[byomi_stones]"
-    )
+    parser = get_argparser()
     args = parser.parse_args()
     if not args.nogui:
         from PyQt5.QtWidgets import QApplication

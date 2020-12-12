@@ -9,7 +9,7 @@ from pygoban.game import MoveResult
 from pygoban.move import Move
 from pygoban.status import BLACK, EMPTY, WHITE, Status
 from pygoban.rulesets import OccupiedViolation
-from pygoban import GameResult, InputMode, events
+from pygoban import InputMode, events
 
 from . import BASE_DIR, CenteredMixin
 from .guiboard import GuiBoard
@@ -22,12 +22,13 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
 
     gameended_signal = pyqtSignal(str)
 
-    def __init__(self, black, white, callbacks, infos, timesettings=None):
+    def __init__(self, black, white, callbacks, infos, mode, timesettings=None):
         super().__init__(
             black=black,
             white=white,
             callbacks=callbacks,
             infos=infos,
+            mode=mode,
             timesettings=timesettings,
         )
         self.guiboard = GuiBoard(self, int(infos["SZ"]))
@@ -51,14 +52,19 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
             # wtotal = result.points[WHITE] + result.prisoners[WHITE]
             # color = BLACK if btotal > wtotal else WHITE
         elif isinstance(result, events.Ended):
+            self.mode = "EDIT"
+            self.input_mode = InputMode.EDIT
             self.end(result.msg, result.color)
         self.sidebar.game_signal.emit(result)
         if board:
             self.guiboard.boardupdate_signal.emit(result, board)
+
         self.update()
 
     def update_moves(self, move: Move):
-        self.sidebar.tree.moves_signal.emit(move)
+        print("update movesSET CURSOR")
+        self.sidebar.editbox.tree.moves_signal.emit(move)
+        self.guiboard.repaint()
 
     def period_ended(self, player):
         if not self.timeout:

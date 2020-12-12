@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
 
 from pygoban.status import BLACK, WHITE
 from pygoban.board import MoveResult
+from pygoban.move import Empty
 from pygoban.player import Player
 from pygoban.sgf import CR, SQ, TR
 from pygoban import InputMode, Result, events
@@ -32,6 +33,7 @@ class Box(QGroupBox):
     def __init__(self, parent, **kwargs):
         super().__init__(parent)
         self.controller: "gamewindow.GameWindow" = parent.controller
+        self.events = kwargs.pop("events", [])
         self.kwargs = kwargs
         self.init(**kwargs)
 
@@ -124,19 +126,22 @@ class GameBox(Box):
 
     def do_undo(self):
         self.controller.input_mode = InputMode.PLAY
-        if not self.controller.last_move_result.cursor.is_root:
-            self.controller.callbacks["undo"]()
+        self.controller.game_callback(
+            "play", color=self.controller.last_move_result.next_player, pos=Empty.UNDO
+        )
 
     def do_pass(self):
-        self.controller.callbacks["pass"](self.controller.last_move_result.next_player)
+        self.controller.game_callback(
+            "play", self.controller.last_move_result.next_player, pos=Empty.PASS
+        )
 
     def do_resign(self):
         if not self.controller.timeout or isinstance(
             self.controller.players[self.controller.last_move_result.next_player],
             GuiPlayer,
         ):
-            self.controller.callbacks["resign"](
-                self.controller.last_move_result.next_player
+            self.controller.game_callback(
+                "play", self.controller.last_move_result.next_player, Empty.RESIGN
             )
 
     def do_count(self):
@@ -147,6 +152,7 @@ class GameBox(Box):
             self.controller.input_mode = InputMode.ENDED
 
         if self.controller.input_mode == InputMode.ENDED:
+            self.controller.mode = "EDIT"
             result = self.controller.last_count
             btotal = result.points[BLACK] + result.prisoners[BLACK]
             wtotal = result.points[WHITE] + result.prisoners[WHITE]
@@ -155,6 +161,7 @@ class GameBox(Box):
             self.update_controlls(self.controller.last_count)
             self.controller.end(msg, color)
             self.controller.input_mode = InputMode.EDIT
+            self.controller.sidebar.game_signal.emit(self.controller.last_count)
         else:
             self.controller.callbacks["count"]()
 
@@ -167,6 +174,7 @@ class EditBox(Box):
         self.prev_move = add_dirbutton("<", self.do_prev_move)
         self.next_move = add_dirbutton(">", self.do_next_move)
         self.forward_moves = add_dirbutton(">>", self.do_next_variation)
+        self.tree = Tree(self, self.tree_click)
 
         deco_layout = QHBoxLayout()
         add_decobutton = btn_adder(deco_layout)
@@ -186,13 +194,12 @@ class EditBox(Box):
         box_layout = QFormLayout()
         box_layout.addRow(btns_layout)
         box_layout.addRow(group)
-
+        box_layout.addRow(self.tree)
         self.setLayout(box_layout)
 
     def update_controlls(self, result):
-        has_parent = (
+        has_parent = bool(
             self.controller.input_mode == InputMode.EDIT
-            and isinstance(result, events.CursorChanged)
             and result.cursor
             and result.cursor.parent
         )
@@ -200,12 +207,19 @@ class EditBox(Box):
         self.back_moves.setEnabled(has_parent)
         has_children = (
             self.controller.input_mode == InputMode.EDIT
-            and isinstance(result, events.CursorChanged)
             and result.cursor
             and len(result.cursor.children)
         )
         self.next_move.setEnabled(has_children)
         self.forward_moves.setEnabled(has_children)
+        if isinstance(result, events.CursorChanged) and not result.cursor.is_root:
+            if result.is_new:
+                self.tree.add_move(result.cursor)
+            else:
+                self.tree.set_cursor(result.cursor)
+
+    def tree_click(self, item, _col=None):
+        self.controller.callbacks["set_cursor"](item)
 
     def toggle_deco(self, checked):
         self.controller.input_mode = InputMode.EDIT if checked else InputMode.PLAY
@@ -283,13 +297,11 @@ class Sidebar(QFrame):
                 PlayerBox(self, player=self.controller.players[color])
             )
         if is_game:
-            self.add_box(GameBox(self))
+            self.gamebox = self.add_box(GameBox(self))
 
         if can_edit:
-            self.add_box(EditBox(self))
+            self.editbox = self.add_box(EditBox(self, events=[events.CursorChanged]))
 
-        self.tree = Tree(self, self.tree_click)
-        self.layout.addRow(self.tree)
         self.comments = QTextEdit()
         self.comments.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.layout.addRow(self.comments)
@@ -314,18 +326,12 @@ class Sidebar(QFrame):
         with open(name, "w") as fileobj:
             fileobj.write(self.controller.to_sgf())
 
-    def tree_click(self, item, _col=None):
-        self.controller.callbacks["set_cursor"](item)
-
-    def update_controlls(self, result):
+    def update_controlls(self, event):
+        self.editbox.setVisible(self.controller.mode == "EDIT")
+        self.gamebox.setVisible(self.controller.mode == "PLAY")
         for box in self.boxes:
-            box.update_controlls(result)
-
-        if isinstance(result, events.CursorChanged):
-            cmts = result.cursor.extras.comments or [""]
+            if not box.events or event.__class__ in box.events:
+                box.update_controlls(event)
+        if isinstance(event, events.CursorChanged):
+            cmts = event.cursor.extras.comments or [""]
             self.comments.setText("\n".join(cmts))
-
-            if result.is_new:
-                self.tree.add_move(result.cursor)
-            else:
-                self.tree.set_cursor(result.cursor)

@@ -41,6 +41,8 @@ class BaseRuleset:
                 % (str(result.move.color), str(self.game.nextcolor))
             )
 
+        if result.move.is_empty:
+            return
         x, y = result.move.pos
         bxy = self.game.board[x][y]
         if bxy != EMPTY:

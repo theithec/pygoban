@@ -5,6 +5,7 @@ from pygoban.controller import Controller
 from pygoban.player import Player
 from pygoban.rulesets import BaseRuleset, RuleViolation, KoViolation, OccupiedViolation
 from pygoban.coords import gtp_coords
+from pygoban.move import Empty
 
 
 class BaseGameTest(unittest.TestCase):
@@ -130,7 +131,7 @@ class GameTest(BaseGameTest):
 
     def test_pass(self):
         self.game.play(BLACK, (0, 1))
-        self.game.pass_(WHITE)
+        self.game.play(WHITE, Empty.PASS)
         self.game.play(BLACK, (0, 2))
 
 

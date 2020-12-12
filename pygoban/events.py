@@ -1,6 +1,6 @@
-from typing import Optional, Dict, Set
+from typing import Optional, Dict
 from dataclasses import dataclass, field
-from . import board as board_, GameResult, move as move_, rulesets
+from . import board as board_, move as move_, rulesets
 from .status import Status
 
 
@@ -11,10 +11,9 @@ class Event:
 
 @dataclass
 class MovePlayed(Event):
-    next_player: Optional[Status] = None
-    move: Optional[move_.Move] = None
-    extra: Optional[board_.StonelessReason] = None
+    move: move_.Move
     is_new: bool = False
+    next_player: Optional[Status] = None
     exception: Optional[rulesets.RuleViolation] = None
 
     def __str__(self):
@@ -26,11 +25,8 @@ class CursorChanged(Event):
     board: board_.Board
     next_player: Optional[Status] = None
     cursor: Optional[move_.Move] = None
-    is_new: bool = True
+    is_new: bool = False
     exception: Optional[rulesets.RuleViolation] = None
-
-    def __str__(self):
-        return f"Cursor changed: {self.cursor}"
 
 
 class MovesReseted(Event):

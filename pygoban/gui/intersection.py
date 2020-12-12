@@ -110,7 +110,8 @@ class Intersection(QWidget):
 
         stone_img = self.stone_by_status.get(self.status)
         if (
-            self.controller.last_move_result.cursor.color
+            self.controller.last_move_result.next_player
+            and self.controller.last_move_result.cursor.color
             and self._hover
             and not stone_img
         ):

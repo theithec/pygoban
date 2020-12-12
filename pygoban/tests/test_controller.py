@@ -1,8 +1,8 @@
 import os
 from pygoban.__main__ import startgame, argparse
+from pygoban import get_argparser
 from pygoban.coords import gtp_coords, array_indexes
 from . import MockedPlayer
-
 
 
 class MyMockedPlayer(MockedPlayer):
@@ -27,5 +27,6 @@ def test_change_mode(mocker):
         sgf_file=None,
         handicap=0,
         time=None,
+        mode=None
     )
     game, controller = startgame(args, init_gui=False)

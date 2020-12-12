@@ -144,10 +144,10 @@ class Tree(QScrollArea):
         self.moves_signal.connect(self.update_moves)
 
     def add_move(self, move):
+        print("TREE. Add move", move)
         return self.canvas.add_move(move)
 
     def set_cursor(self, move: Move):
-        # print("SET CURSOR TREE", move)
         if node := self.canvas.nodes.get(id(move)):
             old = self.canvas.cursor
             self.canvas.cursor = node

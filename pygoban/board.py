@@ -1,18 +1,10 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Optional, Set, Tuple, Dict
 from .coords import letter_from_int
 from .move import Move
 from .status import EMPTY, Status
 from . import Result
-
-
-class StonelessReason(Enum):
-    FIRST_MOVE = "first_move"
-    UNDO = "undo"
-    PASS = "pass"
-    ADD_STONES = "ADD_STONES"
 
 
 @dataclass
@@ -22,7 +14,6 @@ class MoveResult(Result):
     libs: int = 0
     killed: Set[int] = field(default_factory=set)
     group: Set[int] = field(default_factory=set)
-    extra: Optional[StonelessReason] = None
     is_new: bool = True
     exception = None
 
