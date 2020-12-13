@@ -22,9 +22,9 @@ class MovePlayed(Event):
 
 @dataclass
 class CursorChanged(Event):
+    cursor: move_.Move
     board: board_.Board
     next_player: Optional[Status] = None
-    cursor: Optional[move_.Move] = None
     is_new: bool = False
     exception: Optional[rulesets.RuleViolation] = None
 
@@ -46,6 +46,7 @@ class Counted(Event):
 
 @dataclass
 class Ended(Event):
+    cursor: move_.Move
     points: Dict[Status, int] = field(default_factory=dict)
     prisoners: Dict[Status, int] = field(default_factory=dict)
     color: Optional[Status] = None

@@ -91,7 +91,7 @@ class TreeCanvas(QWidget):
             self.maxy = max(self.maxy, ypos)
             node.repaint()
             for index, child in enumerate(node.move.children.values()):
-                node = self.nodes.get(id(child))
+                node = self.nodes[id(child)]
                 if node:
                     _set(node, index + treex, treey + 1)
 
@@ -144,7 +144,6 @@ class Tree(QScrollArea):
         self.moves_signal.connect(self.update_moves)
 
     def add_move(self, move):
-        print("TREE. Add move", move)
         return self.canvas.add_move(move)
 
     def set_cursor(self, move: Move):

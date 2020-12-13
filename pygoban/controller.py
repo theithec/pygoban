@@ -77,7 +77,6 @@ class Controller:
         raise NotImplementedError()
 
     def handle_game_event(self, event):
-        # print("HANDLE", event)
         if isinstance(event, CursorChanged):
             if not event.exception:
                 self.last_move_result: MoveResult = event

@@ -44,17 +44,12 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
                 for color in (BLACK, WHITE):
                     self.sidebar.controls[color].timeupdate_signal.emit()
         elif isinstance(result, events.Counted):
-            # self.end(result.msg, color)
-            if self.input_mode == InputMode.PLAY:
-                self.input_mode = InputMode.COUNT
-            # if self.input_mode == InputMode.ENDED:
-            # btotal = result.points[BLACK] + result.prisoners[BLACK]
-            # wtotal = result.points[WHITE] + result.prisoners[WHITE]
-            # color = BLACK if btotal > wtotal else WHITE
+            self.input_mode = InputMode.COUNT
         elif isinstance(result, events.Ended):
             self.mode = "EDIT"
             self.input_mode = InputMode.EDIT
             self.end(result.msg, result.color)
+
         self.sidebar.game_signal.emit(result)
         if board:
             self.guiboard.boardupdate_signal.emit(result, board)
@@ -62,7 +57,6 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self.update()
 
     def update_moves(self, move: Move):
-        print("update movesSET CURSOR")
         self.sidebar.editbox.tree.moves_signal.emit(move)
         self.guiboard.repaint()
 
@@ -70,7 +64,16 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         if not self.timeout:
             self.sidebar.controls[player.color].timeupdate_signal.emit()
 
-    def inter_clicked(self, inter: Intersection):
+    def inter_rightclicked(self, inter: Intersection):
+        cursor = self.last_move_result.cursor
+        cursor.extras.decorations.pop(inter.coord, None)
+        for color in (BLACK, WHITE):
+            cursor.extras.stones[color].discard(inter.coord)
+        cursor.extras.empty.discard(inter.coord)
+        self.game_callback("set_cursor", self.last_move_result.cursor)
+
+    def inter_leftclicked(self, inter: Intersection):
+
         if self.input_mode == InputMode.PLAY:
             if not isinstance(
                 self.players[self.last_move_result.next_player], GuiPlayer
@@ -98,6 +101,13 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
             # for x, y in group:
             #    self.game.board[x][y] = status
             # self.count()
+        inter.repaint()
+
+    def inter_clicked(self, inter: Intersection, is_rightclick):
+        if is_rightclick:
+            self.inter_rightclicked(inter)
+        else:
+            self.inter_leftclicked(inter)
 
     def gameended_action(self, reason: str):
         msg = QMessageBox(self)

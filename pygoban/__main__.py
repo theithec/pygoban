@@ -32,7 +32,7 @@ def get_player_cls(nogui):
     return HumanPlayer
 
 
-def startgame(args: argparse.Namespace, init_gui: bool):
+def startgame(args: argparse.Namespace, init_gui: bool, root=None):
     config = getconfig()
     players = {}
     Controller = get_control_cls(args.nogui)
@@ -81,6 +81,8 @@ def startgame(args: argparse.Namespace, init_gui: bool):
     game.add_listener(controller, [CursorChanged, MovesReseted, Counted, Ended])
     for col in (BLACK, WHITE):
         game.add_listener(players[col], [MovePlayed, Counted])
+    if root:
+        game.root = root
     game.start()
 
     if not args.nogui:

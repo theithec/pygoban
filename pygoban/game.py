@@ -49,13 +49,14 @@ class Game:
         return get_othercolor(self.cursor.color)
 
     def start(self):
-        self._set_cursor(self.cursor)
+        is_new = self.cursor.is_root,
+        self._set_cursor(self.cursor, is_new=is_new)
         self.fire_event(MovesReseted(self.root))
         self.fire_event(
             MovePlayed(
                 next_player=self.nextcolor,
                 move=self.cursor,
-                is_new=self.cursor.is_root,
+                is_new=is_new,
             )
         )
 
@@ -78,13 +79,12 @@ class Game:
         for listener in listeners:
             Timer(0, lambda: listener.handle_game_event(event)).start()
 
-    def _set_cursor(self, move, no_fire=False):
+    def _set_cursor(self, move, no_fire=False, is_new=False):
         self._cursor = move
         path = self.get_path()
         self.prisoners = {BLACK: 0, WHITE: 0}
         self.board = Board(self.board.boardsize)
         self._set_handicap()
-        is_new = self._cursor == self.root
         self._cursor = self.root
         for pmove in path:
             self.test_move(pmove, apply_result=True)
@@ -141,7 +141,6 @@ class Game:
                     self.board[x][y] = status
         if not move.parent:
             move.parent = self.cursor
-
         if not move.pos == Empty.UNDO:
             self._cursor = result.move
 
@@ -173,7 +172,6 @@ class Game:
         }
 
     def play(self, color: Status, pos):
-        # import pudb; pudb.set_trace()
         logging.info("Play %s %s", color, pos)
         move = Move(color, pos)
         if pos == Empty.UNDO and self.cursor != self.root:
@@ -221,8 +219,9 @@ class Game:
             color = BLACK if btotal > wtotal else WHITE
             msg = "{color}+%s" % str(max(wtotal, btotal) - min(wtotal, btotal))
             event = Ended(
+                cursor=self.cursor,
                 msg=msg,
-                color=get_othercolor(color),
+                color=color,
                 points=result.points,
                 prisoners=result.prisoners)
         else:
@@ -255,4 +254,4 @@ class Game:
             logging.info("CAN NOT UNDO. Cursor: %s", self.cursor)
 
     def resign(self, color: Status):
-        self.fire_event(Ended(msg=END_BY_RESIGN, color=get_othercolor(color)))
+        self.fire_event(Ended(msg=END_BY_RESIGN, color=get_othercolor(color), cursor=self.cursor))

@@ -1,5 +1,6 @@
 # pylint: disable=invalid-name, arguments-differ
 # because qt and do_-commands and Box overloading
+from copy import copy
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from PyQt5.QtWidgets import (
     QAction,
@@ -20,7 +21,9 @@ from pygoban.board import MoveResult
 from pygoban.move import Empty
 from pygoban.player import Player
 from pygoban.sgf import CR, SQ, TR
-from pygoban import InputMode, Result, events
+from pygoban import InputMode, Result, events, get_argparser
+from pygoban.__main__ import startgame
+
 
 
 from . import btn_adder, gamewindow
@@ -126,10 +129,10 @@ class GameBox(Box):
     def update_controlls(self, result):
         self.pass_btn.setEnabled(
             self.controller.input_mode == InputMode.PLAY
-            and isinstance(
-                self.controller.players[result.next_player],
-                GuiPlayer,
-            )
+            and ((
+                isinstance(result, events.CursorChanged)
+                and isinstance(self.controller.players[result.next_player], GuiPlayer))
+                or True)
         )
         self.resign_btn.setEnabled(self.controller.input_mode == InputMode.PLAY)
         self.count_btn.setEnabled(self.controller.input_mode == InputMode.COUNT)
@@ -160,19 +163,6 @@ class GameBox(Box):
             self.controller.input_mode = InputMode.COUNT
         elif self.controller.input_mode == InputMode.COUNT:
             self.controller.input_mode = InputMode.ENDED
-
-        #if self.controller.input_mode == InputMode.ENDED:
-        #    self.controller.mode = "EDIT"
-        #    result = self.controller.last_count
-        #    btotal = result.points[BLACK] + result.prisoners[BLACK]
-        #    wtotal = result.points[WHITE] + result.prisoners[WHITE]
-        #    color = BLACK if btotal > wtotal else WHITE
-        #    msg = "{color}+%s" % str(max(wtotal, btotal) - min(wtotal, btotal))
-        #    self.update_controlls(self.controller.last_count)
-        #    self.controller.end(msg, color)
-        #    self.controller.input_mode = InputMode.EDIT
-        #    self.controller.sidebar.game_signal.emit(self.controller.last_count)
-        #else:
         self.controller.game_callback(
             "count",
             is_final=self.controller.input_mode == InputMode.ENDED)
@@ -210,18 +200,10 @@ class EditBox(Box):
         self.setLayout(box_layout)
 
     def update_controlls(self, result):
-        has_parent = bool(
-            self.controller.input_mode == InputMode.EDIT
-            and result.cursor
-            and result.cursor.parent
-        )
+        has_parent = bool(result.cursor and result.cursor.parent)
         self.prev_move.setEnabled(has_parent)
         self.back_moves.setEnabled(has_parent)
-        has_children = (
-            self.controller.input_mode == InputMode.EDIT
-            and result.cursor
-            and len(result.cursor.children)
-        )
+        has_children = (result.cursor and len(result.cursor.children))
         self.next_move.setEnabled(has_children)
         self.forward_moves.setEnabled(has_children)
         if isinstance(result, events.CursorChanged) and not result.cursor.is_root:
@@ -312,7 +294,7 @@ class Sidebar(QFrame):
             self.gamebox = self.add_box(GameBox(self))
 
         if can_edit:
-            self.editbox = self.add_box(EditBox(self, events=[events.CursorChanged]))
+            self.editbox = self.add_box(EditBox(self, events=[events.CursorChanged, events.Ended]))
 
         self.comments = QTextEdit()
         self.comments.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -331,12 +313,34 @@ class Sidebar(QFrame):
         menu = QMenu(self)
         menu.addAction(save_action)
         menu.addSeparator()
+        newwindow_action = QAction("Open in new window", self)
+        newwindow_action.triggered.connect(self.new_open)
+        menu.addAction(newwindow_action)
         return menu
 
     def save_as_file(self):
         name = filename_from_savedialog(self)
         with open(name, "w") as fileobj:
             fileobj.write(self.controller.to_sgf())
+
+    def new_open(self):
+        parser = get_argparser()
+        args = [None]
+        for col in (BLACK, WHITE):
+            pname = self.controller.players[col].name
+            args.append(f"--{str(col).lower()}-name={pname}")
+
+        for arg, key in (
+            ("boardsize", "SZ"),
+            ("komi", "KM"),
+        ):
+            val = self.controller.infos[key]
+            args.append(f"--{arg}={val}")
+        args.append("--mode=EDIT")
+        args = parser.parse_args(args)
+        c = startgame(args, init_gui=False, root=copy(self.controller.root))[1]
+        c.input_mode = InputMode.PLAY
+        c.sidebar.editbox.do_next_variation()
 
     def update_controlls(self, event):
         self.editbox.setVisible(self.controller.mode == "EDIT")
@@ -347,3 +351,4 @@ class Sidebar(QFrame):
         if isinstance(event, events.CursorChanged):
             cmts = event.cursor.extras.comments or [""]
             self.comments.setText("\n".join(cmts))
+

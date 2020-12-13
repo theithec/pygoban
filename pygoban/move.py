@@ -1,3 +1,4 @@
+from copy import copy
 from dataclasses import dataclass, field
 from typing import Dict, List, Set, Tuple, Union
 from enum import Enum
@@ -91,7 +92,19 @@ class Move:
                 self.parent.children.pop(self.pos, None)
 
     def __str__(self):
-        return ", ".join((str(self.pos) or "-", str(self.color), str(self.extras)))
+        return f"({str(id(self))}) " + ", ".join((str(self.pos) or "-", str(self.color), str(self.extras)))
 
     def __repr__(self):
         return str(self)
+
+    def __copy__(self):
+        """start with root!"""
+        move = self.__class__(color=self.color, pos=copy(self.pos))
+        move.extras = copy(self.extras)
+        move.children = {}
+        for child in self.children.values():
+            move.children[child.pos] = copy(child)
+            move.children[child.pos].parent = move
+        if move.is_root:
+            move._parent = None
+        return move
