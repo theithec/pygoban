@@ -59,9 +59,7 @@ class BaseRuleset:
 
     def set_result(self, groups=None):
         blibs = 0
-        wlibs = 0
-        blibs = 0
-        wlibs = 0
+        wlibs = float(self.game.infos["KM"])
         wdead = self.game.prisoners[BLACK]
         bdead = self.game.prisoners[WHITE]
         if groups:

@@ -37,22 +37,28 @@ def startgame(args: argparse.Namespace, init_gui: bool):
     players = {}
     Controller = get_control_cls(args.nogui)
     HumanPlayer = get_player_cls(args.nogui)
-
-    for col, cmd in ((BLACK, args.black_gtp), (WHITE, args.white_gtp)):
+    for col, name, cmd in (
+        (BLACK, args.black_name,  args.black_gtp),
+        (WHITE, args.white_name, args.white_gtp)
+    ):
         if not cmd:
-            players[col] = HumanPlayer(col)
+            players[col] = HumanPlayer(col, name=name)
         else:
-            players[col] = GTPPlayer(col, cmd=config["GTP"][cmd])
+            players[col] = GTPPlayer(col, name=name, cmd=config["GTP"][cmd])
 
     defaults = {
         "SZ": args.boardsize or int(config["PYGOBAN"]["boardsize"]),
         "KM": args.komi or config["PYGOBAN"]["komi"],
         "RU": "default",
+        "PB": args.black_name,
+        "PW": args.white_name,
     }
     if args.sgf_file:
         with open(args.sgf_file) as fileobj:
             sgftxt = fileobj.read()
             game = parse(sgftxt, defaults=defaults)
+            for color, key in ((BLACK, "PB"), (WHITE, "PW")):
+                players[color].name = game.infos.get(key, players[color].name)
     else:
         game = Game(HA=args.handicap, **defaults)
 

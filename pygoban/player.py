@@ -35,7 +35,7 @@ class Player:
         raise NotImplementedError()
 
     def __str__(self):
-        return f"{self.color}"
+        return f"{self.color}({self.name})"
 
 
 class ConsolePlayer(Player):

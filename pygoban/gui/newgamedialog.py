@@ -98,6 +98,8 @@ class NewGameDialog(QDialog):
             ptype = self.for_player[col]["conn_box"].currentText()
             if ptype != "human":
                 args.append(f"--{str(col).lower()}-gtp={ptype}")
+            pname = self.for_player[col]["name_edit"].text()
+            args.append(f"--{str(col).lower()}-name={pname}")
         for arg, box in (
             ("boardsize", self.size_box),
             ("handicap", self.handicap_box),

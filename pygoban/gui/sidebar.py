@@ -49,8 +49,18 @@ class PlayerBox(Box):
 
     def init(self, player: Player):
         self.player = player
+        self.setTitle(f"{self.player.color}: {self.player.name} ")
+        self.setStyleSheet("""PlayerBox{
+            margin-top: 2ex; /* leave space at the top for the title */
+
+            border-color: %s;
+            border-width : .5ex;
+            border-style: inset;
+            border-radius: 5px;
+            padding: 1px 18px 1px 3px;
+
+        }""" % ("white" if player.color == WHITE else "black"))
         player_layout = QFormLayout()
-        player_layout.addRow("Name:", QLabel(self.player.name))
         self.prisoners_label = QLabel(
             str(self.controller.callbacks["get_prisoners"]()[player.color])
         )
@@ -151,19 +161,21 @@ class GameBox(Box):
         elif self.controller.input_mode == InputMode.COUNT:
             self.controller.input_mode = InputMode.ENDED
 
-        if self.controller.input_mode == InputMode.ENDED:
-            self.controller.mode = "EDIT"
-            result = self.controller.last_count
-            btotal = result.points[BLACK] + result.prisoners[BLACK]
-            wtotal = result.points[WHITE] + result.prisoners[WHITE]
-            color = BLACK if btotal > wtotal else WHITE
-            msg = "{color}+%s" % str(max(wtotal, btotal) - min(wtotal, btotal))
-            self.update_controlls(self.controller.last_count)
-            self.controller.end(msg, color)
-            self.controller.input_mode = InputMode.EDIT
-            self.controller.sidebar.game_signal.emit(self.controller.last_count)
-        else:
-            self.controller.callbacks["count"]()
+        #if self.controller.input_mode == InputMode.ENDED:
+        #    self.controller.mode = "EDIT"
+        #    result = self.controller.last_count
+        #    btotal = result.points[BLACK] + result.prisoners[BLACK]
+        #    wtotal = result.points[WHITE] + result.prisoners[WHITE]
+        #    color = BLACK if btotal > wtotal else WHITE
+        #    msg = "{color}+%s" % str(max(wtotal, btotal) - min(wtotal, btotal))
+        #    self.update_controlls(self.controller.last_count)
+        #    self.controller.end(msg, color)
+        #    self.controller.input_mode = InputMode.EDIT
+        #    self.controller.sidebar.game_signal.emit(self.controller.last_count)
+        #else:
+        self.controller.game_callback(
+            "count",
+            is_final=self.controller.input_mode == InputMode.ENDED)
 
 
 class EditBox(Box):

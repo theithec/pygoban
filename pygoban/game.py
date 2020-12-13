@@ -212,12 +212,22 @@ class Game:
         )
         return result
 
-    def count(self):
+    def count(self, is_final=False):
         groups = count(self.board)
         result = self.ruleset.set_result(groups)
-        self.fire_event(
-            Counted(points=result.points, prisoners=result.prisoners, board=self.board)
-        )
+        if is_final:
+            btotal = result.points[BLACK] + result.prisoners[BLACK]
+            wtotal = result.points[WHITE] + result.prisoners[WHITE]
+            color = BLACK if btotal > wtotal else WHITE
+            msg = "{color}+%s" % str(max(wtotal, btotal) - min(wtotal, btotal))
+            event = Ended(
+                msg=msg,
+                color=get_othercolor(color),
+                points=result.points,
+                prisoners=result.prisoners)
+        else:
+            event = Counted(points=result.points, prisoners=result.prisoners, board=self.board)
+        self.fire_event(event)
 
     def toggle_status(self, pos):
         status = self.board.pos(pos).toggle_dead()
