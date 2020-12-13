@@ -49,7 +49,7 @@ class Game:
         return get_othercolor(self.cursor.color)
 
     def start(self):
-        is_new = self.cursor.is_root,
+        is_new = (self.cursor.is_root,)
         self._set_cursor(self.cursor, is_new=is_new)
         self.fire_event(MovesReseted(self.root))
         self.fire_event(
@@ -68,16 +68,18 @@ class Game:
         for pos in positions:
             self.board[pos[0]][pos[1]] = BLACK
 
-    def add_listener(self, instance, event_classes=None):
-        event_classes = event_classes or [MovePlayed]
+    def add_listener(self, instance, event_classes, wait=False):
         for event_class in event_classes:
             self.registrations.setdefault(event_class, [])
-            self.registrations[event_class].append(instance)
+            self.registrations[event_class].append((instance, wait))
 
     def fire_event(self, event):
         listeners = self.registrations.get(event.__class__, [])
-        for listener in listeners:
-            Timer(0, lambda: listener.handle_game_event(event)).start()
+        for listener, wait in listeners:
+            if wait:
+                listener.handle_game_event(event)
+            else:
+                Timer(0, lambda: listener.handle_game_event(event)).start()
 
     def _set_cursor(self, move, no_fire=False, is_new=False):
         self._cursor = move
@@ -176,11 +178,10 @@ class Game:
         move = Move(color, pos)
         if pos == Empty.UNDO and self.cursor != self.root:
             self.undo()
-            return
-
+            return None
         if pos == Empty.RESIGN:
             self.resign(color)
-            return
+            return None
         result = self.test_move(move)
         try:
             self.ruleset.validate(result)
@@ -223,9 +224,12 @@ class Game:
                 msg=msg,
                 color=color,
                 points=result.points,
-                prisoners=result.prisoners)
+                prisoners=result.prisoners,
+            )
         else:
-            event = Counted(points=result.points, prisoners=result.prisoners, board=self.board)
+            event = Counted(
+                points=result.points, prisoners=result.prisoners, board=self.board
+            )
         self.fire_event(event)
 
     def toggle_status(self, pos):
@@ -237,9 +241,8 @@ class Game:
         self.count()
 
     def undo(self):
-        old_color = self.cursor.color
         curr = self.cursor
-        while (parent := curr.parent) :
+        while (parent := curr.parent):
             if parent:
                 curr = parent
             else:
@@ -254,4 +257,6 @@ class Game:
             logging.info("CAN NOT UNDO. Cursor: %s", self.cursor)
 
     def resign(self, color: Status):
-        self.fire_event(Ended(msg=END_BY_RESIGN, color=get_othercolor(color), cursor=self.cursor))
+        self.fire_event(
+            Ended(msg=END_BY_RESIGN, color=get_othercolor(color), cursor=self.cursor)
+        )

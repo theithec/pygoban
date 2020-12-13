@@ -40,7 +40,7 @@ class Move:
         color: Status = None,
         pos: Union[Tuple[int, int], Empty] = None,
         parent=None,
-        **extras
+        **extras,
     ):
         self.pos = pos
         self.color = color
@@ -92,7 +92,9 @@ class Move:
                 self.parent.children.pop(self.pos, None)
 
     def __str__(self):
-        return f"({str(id(self))}) " + ", ".join((str(self.pos) or "-", str(self.color), str(self.extras)))
+        return f"({str(id(self))}) " + ", ".join(
+            (str(self.pos) or "-", str(self.color), str(self.extras))
+        )
 
     def __repr__(self):
         return str(self)

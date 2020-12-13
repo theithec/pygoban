@@ -64,7 +64,9 @@ class Intersection(QWidget):
             self.update()
 
     def mousePressEvent(self, event):
-        self.controller.inter_clicked(self, is_rightclick=event.button() == Qt.RightButton)
+        self.controller.inter_clicked(
+            self, is_rightclick=event.button() == Qt.RightButton
+        )
 
     def draw_char(self, painter, char):
         ctrl = self.controller

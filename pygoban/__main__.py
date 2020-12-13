@@ -35,14 +35,14 @@ def get_player_cls(nogui):
 def startgame(args: argparse.Namespace, init_gui: bool, root=None):
     config = getconfig()
     players = {}
-    Controller = get_control_cls(args.nogui)
-    HumanPlayer = get_player_cls(args.nogui)
+    controller_cls = get_control_cls(args.nogui)
+    player_cls = get_player_cls(args.nogui)
     for col, name, cmd in (
-        (BLACK, args.black_name,  args.black_gtp),
-        (WHITE, args.white_name, args.white_gtp)
+        (BLACK, args.black_name, args.black_gtp),
+        (WHITE, args.white_name, args.white_gtp),
     ):
         if not cmd:
-            players[col] = HumanPlayer(col, name=name)
+            players[col] = player_cls(col, name=name)
         else:
             players[col] = GTPPlayer(col, name=name, cmd=config["GTP"][cmd])
 
@@ -59,6 +59,7 @@ def startgame(args: argparse.Namespace, init_gui: bool, root=None):
             game = parse(sgftxt, defaults=defaults)
             for color, key in ((BLACK, "PB"), (WHITE, "PW")):
                 players[color].name = game.infos.get(key, players[color].name)
+        args.mode = "EDIT"
     else:
         game = Game(HA=args.handicap, **defaults)
 
@@ -77,8 +78,10 @@ def startgame(args: argparse.Namespace, init_gui: bool, root=None):
             )
         )
         controller_kwargs["timesettings"] = TimeSettings(**timekwargs)
-    controller = Controller(**controller_kwargs)
-    game.add_listener(controller, [CursorChanged, MovesReseted, Counted, Ended])
+    controller = controller_cls(**controller_kwargs)
+    game.add_listener(
+        controller, [CursorChanged, MovesReseted, Counted, Ended], wait=True
+    )
     for col in (BLACK, WHITE):
         game.add_listener(players[col], [MovePlayed, Counted])
     if root:

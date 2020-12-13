@@ -64,6 +64,10 @@ class TreeCanvas(QWidget):
             for child in move.children.values():
                 add(child)
 
+        if not self.root:
+            while move.parent:
+                move = move.parent
+            self.root = move
         add(move)
         self.set_moves(move)
 
@@ -141,7 +145,7 @@ class Tree(QScrollArea):
         self.canvas = TreeCanvas(parent=None, callback=callback)
         self.setMinimumSize(80, 80)
         self.setWidget(self.canvas)
-        self.moves_signal.connect(self.update_moves)
+        self.moves_signal.connect(self.add_move)
 
     def add_move(self, move):
         return self.canvas.add_move(move)
@@ -152,7 +156,3 @@ class Tree(QScrollArea):
             self.canvas.cursor = node
             self.canvas.cursor.repaint()
             old.repaint()
-
-    def update_moves(self, move: Move):
-        self.add_move(move)
-        self.canvas.set_moves(move)

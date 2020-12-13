@@ -5,11 +5,11 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QMessageBox
 
 from pygoban.controller import Controller
-from pygoban.game import MoveResult
 from pygoban.move import Move
 from pygoban.status import BLACK, EMPTY, WHITE, Status
 from pygoban.rulesets import OccupiedViolation
-from pygoban import InputMode, events
+from pygoban import InputMode
+from pygoban.events import Event, CursorChanged, Counted, Ended
 
 from . import BASE_DIR, CenteredMixin
 from .guiboard import GuiBoard
@@ -38,21 +38,21 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self._deco = None
         self.gameended_signal.connect(self.gameended_action)
 
-    def update_board(self, result: [events.Event], board):
-        if isinstance(result, events.CursorChanged):
-            if result.next_player and not self.timeout:
+    def update_board(self, event: [Event], board):
+        if isinstance(event, CursorChanged):
+            if event.next_player and not self.timeout:
                 for color in (BLACK, WHITE):
                     self.sidebar.controls[color].timeupdate_signal.emit()
-        elif isinstance(result, events.Counted):
+        elif isinstance(event, Counted):
             self.input_mode = InputMode.COUNT
-        elif isinstance(result, events.Ended):
+        elif isinstance(event, Ended):
             self.mode = "EDIT"
             self.input_mode = InputMode.EDIT
-            self.end(result.msg, result.color)
+            self.end(event.msg, event.color)
 
-        self.sidebar.game_signal.emit(result)
+        self.sidebar.game_signal.emit(event)
         if board:
-            self.guiboard.boardupdate_signal.emit(result, board)
+            self.guiboard.boardupdate_signal.emit(event, board)
 
         self.update()
 
@@ -129,7 +129,13 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         mindim = min(height, bwidth)
         sizeborder = self.guiboard.boardsize + 2
         mindim = int(mindim / sizeborder) * sizeborder
-        self.sidebar.setGeometry(mindim, 0, bwidth + cmin - mindim, height)
+        width = bwidth + cmin - mindim
+        left = mindim
+        MAX_WIDTH = 360
+        if width > MAX_WIDTH:
+            left += (width - MAX_WIDTH) / 2
+            width = MAX_WIDTH
+        self.sidebar.setGeometry(left, 0, width, height)
         self.guiboard.resize(mindim, mindim)
         self.center()
 

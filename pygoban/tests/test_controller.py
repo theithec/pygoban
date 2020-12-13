@@ -22,11 +22,13 @@ def test_change_mode(mocker):
         boardsize=9,
         nogui=True,
         black_gtp=None,
+        black_name="Black",
+        white_name="White",
         white_gtp=None,
         komi=0.5,
         sgf_file=None,
         handicap=0,
         time=None,
-        mode=None
+        mode=None,
     )
     game, controller = startgame(args, init_gui=False)

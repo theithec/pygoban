@@ -1,13 +1,14 @@
 from typing import Dict, List, Optional
 import re
 from pygoban.status import BLACK, WHITE
-from pygoban.move import Move
+from pygoban.move import Move, Empty
 from pygoban.game import Game
 from pygoban.coords import sgf_to_pos
+from pygoban import logging
 
 from . import INFO_KEYS, INT_KEYS, TR, MA, CR, SQ
 
-SGF_CMD_PATTERN = r"([A-Z]{1,2})((?:\[.*?(?<!\\)\])+).*"
+SGF_CMD_PATTERN = r"([A-Za-z]{1,9})((?:\[.*?(?<!\\)\][\n]?)+).*"
 
 
 def nonescaped_square_bracket_index(txt, from_index=0):
@@ -30,7 +31,6 @@ def split(txt):
             yield txt
             break
         tmp = txt[(searchindex or 0) : sim]
-        # if "bbb" in tmp: import pudb; pudb.set_trace()
 
         while True:
             try:
@@ -90,6 +90,7 @@ class Parser:
                 else:
                     self.game = self.game or Game(**self.infos)
                     self[f"do_{key.lower()}"](val)
+
                 part = part[match.span(2)[1] :]
             else:
                 char = part[0]
@@ -120,17 +121,19 @@ class Parser:
 
     def notsupported(self, name):
         def named(*args, **kwargs):
-            print("NOT SUPPORTED YET", name)
-            raise Exception("NOT SUPPORTED")
+            logging.warning("NOT SUPPORTED YET: %s %s %s", name, args, kwargs)
 
         return named
 
     def _play_move(self, color, pos, **extras):
         if pos or extras:
-            pos = sgf_to_pos(pos) if pos else None
+            if pos == "tt":
+                pos = Empty.PASS
+            else:
+                pos = sgf_to_pos(pos) if pos else None
             self.game.test_move(Move(color, pos, **extras), apply_result=True)
         else:
-            self.game.pass_(color)
+            self.game.test_move(Move(color, Empty.PASS, **extras), apply_result=True)
 
     def _do_deco(self, val, marker):
         parts = val.split("][")
@@ -172,7 +175,8 @@ class Parser:
     def _do_a(self, cmd, color):
         parts = cmd.split("][")
         coords = [sgf_to_pos(pos) for pos in parts]
-        self._play_move(None, None, stones={color: coords})
+        # self._play_move(None, None, stones={color: coords})
+        self.game.cursor.extras.stones[color] = coords
 
     def do_ab(self, cmd):
         self._do_a(cmd, BLACK)
@@ -185,12 +189,6 @@ class Parser:
         for pos in parts:
             coord = sgf_to_pos(pos)
             self.game.cursor.extras.empty.add(coord)
-
-    def do_st(self, cmd):
-        pass
-
-    def do_vw(self, cmd):
-        pass
 
     def __getitem__(self, name):
         if name.startswith("do_"):

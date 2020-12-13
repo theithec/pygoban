@@ -25,7 +25,6 @@ from pygoban import InputMode, Result, events, get_argparser
 from pygoban.__main__ import startgame
 
 
-
 from . import btn_adder, gamewindow
 from .filedialog import filename_from_savedialog
 from .player import GuiPlayer
@@ -53,16 +52,29 @@ class PlayerBox(Box):
     def init(self, player: Player):
         self.player = player
         self.setTitle(f"{self.player.color}: {self.player.name} ")
-        self.setStyleSheet("""PlayerBox{
+        self.setStyleSheet(
+            """PlayerBox {{
             margin-top: 2ex; /* leave space at the top for the title */
-
-            border-color: %s;
+            border-color: {0};
             border-width : .5ex;
             border-style: inset;
             border-radius: 5px;
             padding: 1px 18px 1px 3px;
 
-        }""" % ("white" if player.color == WHITE else "black"))
+        }}
+        PlayerBox::title {{
+            subcontrol-origin: margin;
+            subcontrol-position: top left; /* position at the top center */
+            padding: 0 3px;
+            border-color: {0};
+            border-width : .5ex;
+            border-style: inset;
+            border-radius: 5px;
+        }}
+        """.format(
+                "white" if player.color == WHITE else "black"
+            )
+        )
         player_layout = QFormLayout()
         self.prisoners_label = QLabel(
             str(self.controller.callbacks["get_prisoners"]()[player.color])
@@ -127,15 +139,17 @@ class GameBox(Box):
         self.setLayout(game_layout)
 
     def update_controlls(self, result):
-        self.pass_btn.setEnabled(
+        is_play = (
             self.controller.input_mode == InputMode.PLAY
-            and ((
-                isinstance(result, events.CursorChanged)
-                and isinstance(self.controller.players[result.next_player], GuiPlayer))
-                or True)
+            and self.controller.mode == "PLAY"
         )
-        self.resign_btn.setEnabled(self.controller.input_mode == InputMode.PLAY)
-        self.count_btn.setEnabled(self.controller.input_mode == InputMode.COUNT)
+        self.pass_btn.setEnabled(is_play)
+        self.undo_btn.setEnabled(is_play)
+        self.resign_btn.setEnabled(is_play)
+        self.count_btn.setEnabled(
+            self.controller.input_mode == InputMode.COUNT
+            or self.controller.mode == "EDIT"
+        )
 
     def do_undo(self):
         self.controller.input_mode = InputMode.PLAY
@@ -164,8 +178,8 @@ class GameBox(Box):
         elif self.controller.input_mode == InputMode.COUNT:
             self.controller.input_mode = InputMode.ENDED
         self.controller.game_callback(
-            "count",
-            is_final=self.controller.input_mode == InputMode.ENDED)
+            "count", is_final=self.controller.input_mode == InputMode.ENDED
+        )
 
 
 class EditBox(Box):
@@ -203,7 +217,7 @@ class EditBox(Box):
         has_parent = bool(result.cursor and result.cursor.parent)
         self.prev_move.setEnabled(has_parent)
         self.back_moves.setEnabled(has_parent)
-        has_children = (result.cursor and len(result.cursor.children))
+        has_children = result.cursor and len(result.cursor.children)
         self.next_move.setEnabled(has_children)
         self.forward_moves.setEnabled(has_children)
         if isinstance(result, events.CursorChanged) and not result.cursor.is_root:
@@ -294,7 +308,9 @@ class Sidebar(QFrame):
             self.gamebox = self.add_box(GameBox(self))
 
         if can_edit:
-            self.editbox = self.add_box(EditBox(self, events=[events.CursorChanged, events.Ended]))
+            self.editbox = self.add_box(
+                EditBox(self, events=[events.CursorChanged, events.Ended])
+            )
 
         self.comments = QTextEdit()
         self.comments.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -344,11 +360,10 @@ class Sidebar(QFrame):
 
     def update_controlls(self, event):
         self.editbox.setVisible(self.controller.mode == "EDIT")
-        self.gamebox.setVisible(self.controller.mode == "PLAY")
+        # self.gamebox.setVisible(self.controller.mode == "PLAY")
         for box in self.boxes:
             if not box.events or event.__class__ in box.events:
                 box.update_controlls(event)
         if isinstance(event, events.CursorChanged):
             cmts = event.cursor.extras.comments or [""]
             self.comments.setText("\n".join(cmts))
-

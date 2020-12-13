@@ -1,11 +1,11 @@
 import os
 from PyQt5.QtCore import QRect, Qt, pyqtSignal, QObject
 from PyQt5.QtWidgets import QWidget
-from pygoban.gui.gamewindow import GameWindow
 from pygoban.status import BLACK, WHITE
 from pygoban.player import Player
 from pygoban.events import CursorChanged, MovesReseted, MovePlayed
 from pygoban.game import Game
+from pygoban.controller import Controller
 
 
 class MockedPlayer(Player):
@@ -17,10 +17,12 @@ class MockedPlayer(Player):
             yield move
 
     movegen = None
+    tests_controller = None
 
     def __init__(self, *args, **kwargs):
         self.callback = kwargs.pop("callback", None)
         moves = kwargs.pop("moves", None)
+        self.__class__.movegen = None
         super().__init__(*args, **kwargs)
         if moves:
             self.__class__.MOVES = moves
@@ -36,27 +38,34 @@ class MockedPlayer(Player):
                 if move:
                     self.controller.handle_gtp_move(self.color, move)
         except StopIteration:
-            self.callback(self)
+            self.tests_controller.done(self)
 
 
 class ControlledGame:
     playercls = MockedPlayer
+    controllercls = Controller
 
     def __init__(self, infos, moves, callback, controllercls=None):
         self.game = Game(**infos)
-        controller = GameWindow(
+        self.controller = controllercls(
             black=self.playercls(color=BLACK),
-            white=self.playercls(color=WHITE, callback=callback),
+            white=self.playercls(color=WHITE),
             callbacks=self.game.get_callbacks(),
             infos=infos,
-            mode="PLAY"
+            mode="PLAY",
         )
-        self.game.add_listener(controller, event_classes=[CursorChanged, MovesReseted])
+        self.callback = callback
+        self.game.add_listener(
+            self.controller, event_classes=[CursorChanged, MovesReseted], wait=True
+        )
         for color in (BLACK, WHITE):
-            player = controller.players[color]
+            player = self.controller.players[color]
+            player.tests_controller = self
             self.game.add_listener(player, event_classes=[MovePlayed])
-            self.moves_done_signal = player.moves_done_signal
 
-    def start(self, qtbot):
-        with qtbot.waitSignal(self.moves_done_signal, timeout=3000):
-            self.game.start()
+    def start(self):
+        self.game.start()
+
+    def done(self, player):
+        self.callback(self)
+        # assert False

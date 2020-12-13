@@ -73,7 +73,7 @@ class Controller:
     def update_moves(self, move: Move):
         pass
 
-    def update_board(self, result: MoveResult, board):
+    def update_board(self, event: Event, board):
         raise NotImplementedError()
 
     def handle_game_event(self, event):
