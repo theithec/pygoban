@@ -25,7 +25,6 @@ class Controller:
         mode="PLAY",
         timesettings: TimeSettings = None,
     ):
-        # self.game = game
         self.players = {BLACK: black, WHITE: white}
         self.timesettings = timesettings
         self.callbacks = callbacks
@@ -92,7 +91,6 @@ class Controller:
             if not self.root:
                 self.root = event.root
             self.update_moves(event.root)
-
         elif isinstance(event, Counted):
             self.update_board(event, event.board)
         elif isinstance(event, Ended):

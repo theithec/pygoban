@@ -199,7 +199,7 @@ class Parser:
         return None
 
 
-def parse(sgftxt: str, defaults: Dict):
+def parse(sgftxt: str, defaults: Dict) -> Game:
     parser = Parser(sgftxt, defaults)
     parser.parse()
     return parser.game

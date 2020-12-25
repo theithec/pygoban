@@ -9,7 +9,10 @@ SYM_MAP = {TR: "TR", MA: "MA", CR: "CR", SQ: "SQ"}
 def _to_sgf(move: Move, boardsize, level=0, txt=""):
     if move.color:
         dist = "\t" * level
-        coord = pos_to_sgf(move.pos)
+        if not move.is_empty:
+            coord = pos_to_sgf(move.pos)
+        else:
+            coord = ""
         txt += f"\n{dist};{move.color.shortval}[{coord}]"
 
     for comment in move.extras.comments:

@@ -118,7 +118,7 @@ class GTPPlayer(Player):
         self.timesettings = timesettings
         ts = self.timesettings
         self.do_cmd(
-            f"time_settings {ts.maintime} {ts.byomi_time} {ts.byomi_stones}", False
+            f"time_settings {ts.maintime} {ts.byoyomi_time} {ts.byoyomi_stones}", False
         )
 
     def do_cmd(self, cmd, handle_output=True):

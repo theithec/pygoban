@@ -38,7 +38,10 @@ class MockedPlayer(Player):
                 if move:
                     self.controller.handle_gtp_move(self.color, move)
         except StopIteration:
-            self.tests_controller.done(self)
+            self.handle_moves_stopped()
+
+    def handle_moves_stopped(self):
+        pass
 
 
 class ControlledGame:
@@ -61,6 +64,7 @@ class ControlledGame:
         for color in (BLACK, WHITE):
             player = self.controller.players[color]
             player.tests_controller = self
+            print("PLAC", player.tests_controller)
             self.game.add_listener(player, event_classes=[MovePlayed])
 
     def start(self):

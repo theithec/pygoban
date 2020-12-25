@@ -21,7 +21,7 @@ from pygoban.move import Empty
 from pygoban.player import Player
 from pygoban.sgf import CR, SQ, TR
 from pygoban import InputMode, events, get_argparser
-from pygoban.__main__ import startgame
+from pygoban.startgame import startgame
 
 
 from . import btn_adder, gamewindow

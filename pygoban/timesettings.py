@@ -15,13 +15,13 @@ class _PlayerTimer(Timer):
 @dataclass
 class TimeSettings:
     maintime: int = 10
-    byomi_time: int = 5
-    byomi_num: int = 3
-    byomi_stones: int = 1
+    byoyomi_time: int = 5
+    byoyomi_num: int = 3
+    byoyomi_stones: int = 1
 
 
 @dataclass
-class Byomi:
+class Byoyomi:
     time: int = 0
     left: int = 0
     stones: int = 0
@@ -31,14 +31,14 @@ class PlayerTime:
     def __init__(self, player: Player, settings: TimeSettings):
         self.player = player
         self.maintime = settings.maintime
-        self.byomi = Byomi(
-            time=settings.byomi_time,
-            left=settings.byomi_num,
-            stones=settings.byomi_stones,
+        self.byoyomi = Byoyomi(
+            time=settings.byoyomi_time,
+            left=settings.byoyomi_num,
+            stones=settings.byoyomi_stones,
         )
 
-        self.byomi_time_org = settings.byomi_time
-        self.byomi_stones_org = settings.byomi_stones
+        self.byoyomi_time_org = settings.byoyomi_time
+        self.byoyomi_stones_org = settings.byoyomi_stones
         self.timer = None
 
     def cancel(self):
@@ -52,10 +52,10 @@ class PlayerTime:
         if self.maintime > 0:
             self.maintime = 0
         else:
-            self.byomi.left -= 1
+            self.byoyomi.left -= 1
 
-        if self.byomi.left > 0:
-            self.byomi.time = self.byomi_time_org
+        if self.byoyomi.left > 0:
+            self.byoyomi.time = self.byoyomi_time_org
             self.nexttime(start_timer=True)
         else:
             self.player.lost_by_overtime()
@@ -68,13 +68,13 @@ class PlayerTime:
             self.maintime -= used
             _next = self.maintime
         else:
-            self.byomi.stones -= 1
-            if self.byomi.stones > 0:
-                self.byomi.time -= used
+            self.byoyomi.stones -= 1
+            if self.byoyomi.stones > 0:
+                self.byoyomi.time -= used
             else:
-                self.byomi.time = self.byomi_time_org
-            if self.byomi.left > 0:
-                _next = self.byomi.time
+                self.byoyomi.time = self.byoyomi_time_org
+            if self.byoyomi.left > 0:
+                _next = self.byoyomi.time
         if start_timer:
             assert not self.timer or self.timer.finished.is_set(), "T " + str(
                 self.timer
@@ -83,4 +83,4 @@ class PlayerTime:
         return _next
 
     def __str__(self):
-        return "{maintime}:{byomi.left}x{byomi.time}".format(**vars(self))
+        return "{maintime}:{byoyomi.left}x{byoyomi.time}".format(**vars(self))

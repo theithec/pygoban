@@ -15,10 +15,7 @@ HANDICAPS: Dict[int, Tuple] = {2: ((3, 3), (15, 15))}
 HANDICAPS[3] = HANDICAPS[2] + ((15, 3),)
 HANDICAPS[4] = HANDICAPS[3] + ((3, 15),)
 HANDICAPS[5] = HANDICAPS[4] + ((9, 9),)
-HANDICAPS[6] = HANDICAPS[4] + (
-    (9, 3),
-    (9, 15),
-)
+HANDICAPS[6] = HANDICAPS[4] + ((9, 3), (9, 15),)
 HANDICAPS[7] = HANDICAPS[6] + ((9, 9),)
 HANDICAPS[8] = HANDICAPS[7] + ((3, 9),)
 HANDICAPS[9] = HANDICAPS[8] + ((15, 9),)
@@ -77,6 +74,7 @@ class Game:
         listeners = self.registrations.get(event.__class__, [])
         logging.debug("FIRE %s ->  %s", event.__class__, listeners)
         for listener, wait in listeners:
+            # wait = True
             if wait:
                 listener.handle_game_event(event)
             else:

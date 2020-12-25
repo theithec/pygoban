@@ -3,12 +3,15 @@ import configparser
 from collections import namedtuple
 import enum
 from dataclasses import dataclass, field
+import signal
 from typing import Dict
 import logging
 import os
 import sysconfig
 
 logging.basicConfig(level=logging.INFO)
+
+signal.signal(signal.SIGINT, signal.SIG_DFL)  # kill with <Ctrl-C>
 
 
 def writeconfig(config):
@@ -54,7 +57,7 @@ END_BY_RESIGN = "{color}+R"
 
 
 def get_argparser():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser("pygoban")
     parser.add_argument("sgf_file", nargs="?", default=None)
     parser.add_argument("--nogui", action="store_true", help="Show GUI")
     parser.add_argument("--komi", help="komi", type=float)
@@ -68,6 +71,6 @@ def get_argparser():
         "--mode", help="Modus(play, edit)", choices=("PLAY", "EDIT"), default="PLAY"
     )
     parser.add_argument(
-        "--time", help="[maintime]:[byomi_time]:[byomi_num]:[byomi_stones]"
+        "--time", help="[maintime]:[byoyomi_time]:[byoyomi_num]:[byoyomi_stones]"
     )
     return parser

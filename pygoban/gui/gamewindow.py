@@ -1,8 +1,10 @@
 # pylint: disable=invalid-name
 # because qt
+import os
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSignal, QTimer
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QMessageBox
+from PyQt5.QtMultimedia import QSound
 
 from pygoban.controller import Controller
 from pygoban.move import Move
@@ -21,6 +23,7 @@ from .sidebar import Sidebar
 class GameWindow(QMainWindow, Controller, CenteredMixin):
 
     gameended_signal = pyqtSignal(str)
+    movesound = QSound(os.path.join(BASE_DIR, "gui/sounds/stone.wav"))
 
     def __init__(self, black, white, callbacks, infos, mode, timesettings=None):
         super().__init__(
@@ -39,11 +42,18 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self._deco = None
         self.gameended_signal.connect(self.gameended_action)
 
-    def update_board(self, event: [Event], board):
+    def update_board(self, event: Event, board):
         if isinstance(event, CursorChanged):
             if event.next_player and not self.timeout:
                 for color in (BLACK, WHITE):
                     self.sidebar.controls[color].timeupdate_signal.emit()
+            if (
+                self.mode == "PLAY"
+                and self.input_mode == InputMode.PLAY
+                and not event.cursor.is_empty
+            ):
+                self.movesound.play()
+
         elif isinstance(event, Counted):
             self.input_mode = InputMode.COUNT
         elif isinstance(event, Ended):

@@ -1,9 +1,15 @@
 from PyQt5.QtCore import pyqtSignal, QObject
-from pygoban.tests import ControlledGame
+from pygoban.tests import ControlledGame, MockedPlayer
 from pygoban.gui.gamewindow import GameWindow
 
 
+class MockedGuiPlayer(MockedPlayer):
+    def handle_moves_stopped(self):
+        self.tests_controller.done(self)
+
+
 class QontrolledGame(QObject, ControlledGame):
+    playercls = MockedGuiPlayer
     moves_done_signal = pyqtSignal()
     controllercls = GameWindow
     timeout = 1000
