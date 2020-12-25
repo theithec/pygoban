@@ -17,11 +17,10 @@ from PyQt5.QtWidgets import (
 )
 
 from pygoban.status import BLACK, WHITE
-from pygoban.board import MoveResult
 from pygoban.move import Empty
 from pygoban.player import Player
 from pygoban.sgf import CR, SQ, TR
-from pygoban import InputMode, Result, events, get_argparser
+from pygoban import InputMode, events, get_argparser
 from pygoban.__main__ import startgame
 
 
@@ -34,7 +33,7 @@ from .tree import Tree
 class Box(QGroupBox):
     def __init__(self, parent, **kwargs):
         super().__init__(parent)
-        self.controller: "gamewindow.GameWindow" = parent.controller
+        self.controller: gamewindow.GameWindow = parent.controller
         self.events = kwargs.pop("events", [])
         self.kwargs = kwargs
         self.init(**kwargs)
@@ -56,7 +55,7 @@ class PlayerBox(Box):
             """PlayerBox {{
             margin-top: 2ex; /* leave space at the top for the title */
             border-color: {0};
-            border-width : .5ex;
+            border-width : 2px;
             border-style: inset;
             border-radius: 5px;
             padding: 1px 18px 1px 3px;
@@ -67,7 +66,7 @@ class PlayerBox(Box):
             subcontrol-position: top left; /* position at the top center */
             padding: 0 3px;
             border-color: {0};
-            border-width : .5ex;
+            border-width : 4px;
             border-style: inset;
             border-radius: 5px;
         }}
@@ -220,7 +219,7 @@ class EditBox(Box):
         has_children = result.cursor and len(result.cursor.children)
         self.next_move.setEnabled(has_children)
         self.forward_moves.setEnabled(has_children)
-        if isinstance(result, events.CursorChanged) and not result.cursor.is_root:
+        if isinstance(result, events.CursorChanged):  # and not result.cursor.is_root:
             if result.is_new:
                 self.tree.add_move(result.cursor)
             else:
@@ -356,13 +355,13 @@ class Sidebar(QFrame):
         args = parser.parse_args(args)
         c = startgame(args, init_gui=False, root=copy(self.controller.root))[1]
         c.input_mode = InputMode.PLAY
-        c.sidebar.editbox.do_next_variation()
+        # c.sidebar.editbox.do_next_variation()
 
     def update_controlls(self, event):
-        self.editbox.setVisible(self.controller.mode == "EDIT")
-        # self.gamebox.setVisible(self.controller.mode == "PLAY")
+        self.editbox.setVisible(self.controller.mode != "EDIT2")
+        self.gamebox.setVisible(self.controller.mode != "PLAY2")
         for box in self.boxes:
-            if not box.events or event.__class__ in box.events:
+            if box.isVisible() and not box.events or event.__class__ in box.events:
                 box.update_controlls(event)
         if isinstance(event, events.CursorChanged):
             cmts = event.cursor.extras.comments or [""]

@@ -82,7 +82,7 @@ class Parser:
             match = self.pattern.match(part)
             if match:
                 key, val = match.groups()
-                val = val[1:-1]
+                val = val.strip()[1:-1]
                 if key in INFO_KEYS:
                     if key in INT_KEYS:
                         val = int(val)

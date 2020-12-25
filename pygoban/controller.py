@@ -94,7 +94,6 @@ class Controller:
             self.update_moves(event.root)
 
         elif isinstance(event, Counted):
-            self.last_count = event
             self.update_board(event, event.board)
         elif isinstance(event, Ended):
             self.input_mode = InputMode.ENDED
@@ -114,9 +113,8 @@ class Controller:
 
 
 class ConsoleController(Controller):
-    def update_board(self, result, board=None):
-
-        print(result.board)
+    def update_board(self, event, board=None):
+        print(event.board)
         print(
             "\n".join(
                 [
@@ -125,8 +123,8 @@ class ConsoleController(Controller):
                 ]
             )
         )
-        if isinstance(result, MoveResult):
-            print("Last:", result, result.move)
+        if isinstance(event, MoveResult):
+            print("Last:", event, event.move)
         if self.timesettings:
             print("Time Black", self.players[BLACK].timesettings)
             print("Time White", self.players[WHITE].timesettings)

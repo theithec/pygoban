@@ -6,7 +6,7 @@ from .move import Move, Empty
 from .rulesets import BaseRuleset, RuleViolation
 from .status import BLACK, WHITE, Status, get_othercolor
 from .events import MovePlayed, CursorChanged, MovesReseted, Counted, Ended
-from .counting import count
+from .counting import counted_groups
 from .sgf import INFO_KEYS
 from . import logging, END_BY_RESIGN
 
@@ -49,7 +49,7 @@ class Game:
         return get_othercolor(self.cursor.color)
 
     def start(self):
-        is_new = (self.cursor.is_root,)
+        is_new = self.cursor.is_root
         self._set_cursor(self.cursor, is_new=is_new)
         self.fire_event(MovesReseted(self.root))
         self.fire_event(
@@ -66,7 +66,7 @@ class Game:
             return
         positions = HANDICAPS.get(handicap, tuple())
         for pos in positions:
-            self.board[pos[0]][pos[1]] = BLACK
+            self.board.pos(pos, BLACK)
 
     def add_listener(self, instance, event_classes, wait=False):
         for event_class in event_classes:
@@ -75,6 +75,7 @@ class Game:
 
     def fire_event(self, event):
         listeners = self.registrations.get(event.__class__, [])
+        logging.debug("FIRE %s ->  %s", event.__class__, listeners)
         for listener, wait in listeners:
             if wait:
                 listener.handle_game_event(event)
@@ -186,7 +187,7 @@ class Game:
         try:
             self.ruleset.validate(result)
         except RuleViolation as err:
-            # logging.info("RuleViolation: %s", err)
+            logging.info("RuleViolation: %s", err)
             result.exception = err
             result.next_player = color
         if not result.exception:
@@ -212,7 +213,7 @@ class Game:
         return result
 
     def count(self, is_final=False):
-        groups = count(self.board)
+        groups = counted_groups(self.board)
         result = self.ruleset.set_result(groups)
         if is_final:
             btotal = result.points[BLACK] + result.prisoners[BLACK]
@@ -242,7 +243,7 @@ class Game:
 
     def undo(self):
         curr = self.cursor
-        while (parent := curr.parent):
+        while (parent := curr.parent) :
             if parent:
                 curr = parent
             else:

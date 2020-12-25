@@ -14,6 +14,8 @@ from .events import MovePlayed, CursorChanged, MovesReseted, Counted, Ended
 signal.signal(signal.SIGINT, signal.SIG_DFL)  # kill with <Ctrl-C>
 
 QAPP = None
+GAME_WINDOWS = []
+"""No usage but avoiding garbage collection"""
 
 
 def get_control_cls(nogui):
@@ -52,6 +54,7 @@ def startgame(args: argparse.Namespace, init_gui: bool, root=None):
         "RU": "default",
         "PB": args.black_name,
         "PW": args.white_name,
+        "GN": "-".join([players[col].name for col in (BLACK, WHITE)]),
     }
     if args.sgf_file:
         with open(args.sgf_file) as fileobj:
@@ -86,14 +89,14 @@ def startgame(args: argparse.Namespace, init_gui: bool, root=None):
         game.add_listener(players[col], [MovePlayed, Counted])
     if root:
         game.root = root
-    game.start()
 
     if not args.nogui:
-        controller.setWindowTitle("Pygoban")
         controller.setMinimumSize(800, 600)
         controller.show()
         controller.activateWindow()
+        GAME_WINDOWS.append(controller)
 
+    game.start()
     if init_gui:
         sys.exit(QAPP.exec_())
 

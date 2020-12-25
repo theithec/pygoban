@@ -9,7 +9,7 @@ SYM_MAP = {TR: "TR", MA: "MA", CR: "CR", SQ: "SQ"}
 def _to_sgf(move: Move, boardsize, level=0, txt=""):
     if move.color:
         dist = "\t" * level
-        coord = pos_to_sgf(move.pos, boardsize)
+        coord = pos_to_sgf(move.pos)
         txt += f"\n{dist};{move.color.shortval}[{coord}]"
 
     for comment in move.extras.comments:
@@ -19,10 +19,10 @@ def _to_sgf(move: Move, boardsize, level=0, txt=""):
     for key, value in move.extras.decorations.items():
         if cmd := SYM_MAP.get(value):
             collect.setdefault(cmd, [])
-            collect[cmd].append(pos_to_sgf(key, boardsize))
+            collect[cmd].append(pos_to_sgf(key))
         else:
             collect.setdefault("LB", [])
-            collect["LB"].append(pos_to_sgf(key, boardsize) + ":" + value)
+            collect["LB"].append(pos_to_sgf(key) + ":" + value)
     for key, value in collect.items():
         if cmd in SYM_MAP.values():
             txt += cmd + "[" + "][".join(value) + "]"

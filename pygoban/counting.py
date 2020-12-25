@@ -1,5 +1,5 @@
 from typing import Dict
-from .status import STATUS, Status, BLACK, BLACK_LIB, EMPTY, WHITE, WHITE_LIB
+from .status import Status, BLACK, BLACK_LIB, EMPTY, WHITE, WHITE_LIB
 
 
 def check(x, y, board, checked, group=None):
@@ -13,16 +13,16 @@ def check(x, y, board, checked, group=None):
             group["owner"] = status
         elif group["owner"] != status:
             group["owner"] = False
-    for adj in board._adjacent_ins((x, y)):
-        ax, ay = adj
-        if (ax, ay) in checked:
+    for adj in board.adjacent_ins((x, y)):
+        adx, ady = adj
+        if (adx, ady) in checked:
             continue
         if status == EMPTY or status.is_owned():
-            check(ax, ay, board, checked, group)
+            check(adx, ady, board, checked, group)
     return group
 
 
-def count(board):
+def counted_groups(board):
     groups = []
     boardrange = range(board.boardsize)
     checked = set()
@@ -51,4 +51,3 @@ def count(board):
                 prisoners[owner] += 1
                 points[owner] += 1
     return groups
-    # return GameResult(points=points, prisoners=prisoners)

@@ -7,7 +7,7 @@ from pygoban.status import (
     DEAD_BLACK,
     DEAD_WHITE,
 )
-from pygoban import GameResult
+from pygoban import GameResult, move
 
 
 class RuleViolation(Exception):
@@ -34,7 +34,6 @@ class BaseRuleset:
         self.game = game
 
     def validate(self, result):
-
         if not self.game.nextcolor == result.move.color:
             raise RuleViolation(
                 "Wrong player %s %s"
@@ -47,12 +46,16 @@ class BaseRuleset:
         bxy = self.game.board[x][y]
         if bxy != EMPTY:
             raise OccupiedViolation(f"Not empty: {result} BUT {bxy}")
-        if not result.libs and not result.killed and not result.extra == "pass":
+        if (
+            not result.libs
+            and not result.killed
+            and not result.move.pos == move.Empty.PASS
+        ):
             raise NoLibsViolation(f"No liberties: {result}")
 
         if (x, y) == self.ko:
             raise KoViolation(f"Invalid Ko: {result}")
-        if result.libs == 1 and len(result.killed) == 1:
+        if len(result.libs) == 1 and result.libs == result.killed:
             self.ko = list(result.killed)[0]
         else:
             self.ko = None

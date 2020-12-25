@@ -86,7 +86,7 @@ class Move:
         path.reverse()
         return path[1:]
 
-    def __del__(self):
+    def __del__2(self):
         if self.parent:
             if len(self.parent.children) == 1:
                 self.parent.children.pop(self.pos, None)
@@ -104,7 +104,12 @@ class Move:
         move = self.__class__(color=self.color, pos=copy(self.pos))
         move.extras = copy(self.extras)
         move.children = {}
+        # dont copy last pass moves
+        # if move.is_root and len(path) >2 and  path[-1].is_pass and path[-2].is_pass:
+        #    path = path[:-3]
         for child in self.children.values():
+            if not child.children and child.is_pass:
+                continue
             move.children[child.pos] = copy(child)
             move.children[child.pos].parent = move
         if move.is_root:

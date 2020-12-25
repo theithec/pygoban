@@ -1,5 +1,6 @@
 import argparse
 import configparser
+from collections import namedtuple
 import enum
 from dataclasses import dataclass, field
 from typing import Dict
@@ -24,6 +25,9 @@ def getconfig():
         config["GTP"] = {}
         writeconfig(config)
     return config
+
+
+Pos = namedtuple("Pos", ["x", "y"])
 
 
 @dataclass

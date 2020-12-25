@@ -26,7 +26,7 @@ def sgf_to_pos(coord):
     return char_to_int(coord[1], False), char_to_int(coord[0], False)
 
 
-def pos_to_sgf(coord, boardsize):
+def pos_to_sgf(coord):
     x = letter_from_int(coord[0])
     y = letter_from_int(coord[1])
     return f"{y}{x}".lower()

@@ -47,8 +47,9 @@ class Intersection(QWidget):
 
     @is_current.setter
     def is_current(self, _is_current):
-        if self.parent().current_in:
-            self.parent().current_in._is_current = False
+        current_in = self.parent().current_in
+        if current_in:
+            current_in._is_current = False
         self._is_current = _is_current
         self.parent().current_in = self if _is_current else None
         self.update()

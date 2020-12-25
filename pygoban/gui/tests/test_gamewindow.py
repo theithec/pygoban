@@ -10,6 +10,7 @@ def _test_gamewindow(qtbot, moves, done):
         infos={
             "SZ": 9,
             "RU": "japanese",
+            "GN": "testgame",
         },
         moves=moves,
         callback=done,

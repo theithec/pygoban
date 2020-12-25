@@ -1,8 +1,6 @@
 import argparse
 from collections import OrderedDict
 
-from pygoban import getconfig
-from pygoban.status import BLACK, WHITE
 from PyQt5.QtCore import QCoreApplication
 from PyQt5.QtWidgets import (
     QCheckBox,
@@ -13,6 +11,10 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QPushButton,
 )
+
+from pygoban import getconfig
+from pygoban.status import BLACK, WHITE
+
 
 _translate = QCoreApplication.translate
 

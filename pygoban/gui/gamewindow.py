@@ -1,12 +1,12 @@
 # pylint: disable=invalid-name
 # because qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QTimer
 from PyQt5.QtWidgets import QMainWindow, QMessageBox
 
 from pygoban.controller import Controller
 from pygoban.move import Move
-from pygoban.status import BLACK, EMPTY, WHITE, Status
+from pygoban.status import BLACK, EMPTY, WHITE, Status, get_othercolor
 from pygoban.rulesets import OccupiedViolation
 from pygoban import InputMode
 from pygoban.events import Event, CursorChanged, Counted, Ended
@@ -35,6 +35,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self.sidebar = Sidebar(self)
 
         self.setWindowIcon(QIcon(f"{BASE_DIR}/gui/imgs/icon.png"))
+        self.setWindowTitle(self.infos["GN"])
         self._deco = None
         self.gameended_signal.connect(self.gameended_action)
 
@@ -47,7 +48,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
             self.input_mode = InputMode.COUNT
         elif isinstance(event, Ended):
             self.mode = "EDIT"
-            self.input_mode = InputMode.EDIT
+            self.input_mode = InputMode.PLAY
             self.end(event.msg, event.color)
 
         self.sidebar.game_signal.emit(event)
@@ -73,14 +74,14 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self.game_callback("set_cursor", self.last_move_result.cursor)
 
     def inter_leftclicked(self, inter: Intersection):
-
         if self.input_mode == InputMode.PLAY:
-            if not isinstance(
-                self.players[self.last_move_result.next_player], GuiPlayer
-            ):
+            color = self.last_move_result.next_player
+            if not color:
+                color = get_othercolor(self.last_move_result.cursor.color)
+            if color and not isinstance(self.players[color], GuiPlayer):
                 return
             try:
-                self.callbacks["play"](self.last_move_result.next_player, inter.coord)
+                self.callbacks["play"](color, inter.coord)
             except OccupiedViolation as err:
                 print(err)
         elif self.input_mode == InputMode.EDIT:
@@ -97,10 +98,6 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         elif self.input_mode == InputMode.COUNT and inter.status != EMPTY:
             x, y = inter.coord
             self.callbacks["toggle_status"]((x, y))  # , findkilled=False)[1]
-            # status = inter.status.toggle_dead()
-            # for x, y in group:
-            #    self.game.board[x][y] = status
-            # self.count()
         inter.repaint()
 
     def inter_clicked(self, inter: Intersection, is_rightclick):
@@ -138,6 +135,10 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self.sidebar.setGeometry(left, 0, width, height)
         self.guiboard.resize(mindim, mindim)
         self.center()
+
+    def closeEvent(self, event):
+        for player in self.players.values():
+            player.end()
 
     @property
     def deco(self):

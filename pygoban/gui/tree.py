@@ -33,8 +33,10 @@ class MoveNode(QLabel):
         painter.begin(self)
         if self == self.parent().cursor:
             painter.setBrush(Qt.red)
-            painter.drawEllipse(3, 3, 25, 25)
+            painter.setPen(Qt.red)
+            painter.drawEllipse(4, 4, 22, 22)
         painter.setBrush(Qt.black if self.move.color == BLACK else Qt.white)
+        painter.setPen(Qt.black if self.move.color == BLACK else Qt.white)
         painter.drawEllipse(5, 5, 20, 20)
         painter.end()
         super().paintEvent(event)
@@ -148,7 +150,8 @@ class Tree(QScrollArea):
         self.moves_signal.connect(self.add_move)
 
     def add_move(self, move):
-        return self.canvas.add_move(move)
+        self.canvas.add_move(move)
+        self.ensureWidgetVisible(self.canvas.cursor)
 
     def set_cursor(self, move: Move):
         if node := self.canvas.nodes.get(id(move)):
@@ -156,3 +159,5 @@ class Tree(QScrollArea):
             self.canvas.cursor = node
             self.canvas.cursor.repaint()
             old.repaint()
+        # print("POS", self.canvas.cursor.pos())
+        self.ensureWidgetVisible(self.canvas.cursor)

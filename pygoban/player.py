@@ -28,12 +28,6 @@ class Player:
     def set_timesettings(self, timesettings):
         self.timesettings = timesettings
 
-    def _get_move(self):
-        raise NotImplementedError()
-
-    def set_turn(self, result):
-        raise NotImplementedError()
-
     def __str__(self):
         return f"{self.color}({self.name})"
 
@@ -55,13 +49,9 @@ class ConsolePlayer(Player):
         return move
 
     def handle_game_event(self, event):
-        if isinstance(event, MovePlayed):
-            if event.next_player == self.color:
-                self.set_turn(event)
-
-    def set_turn(self, _event):
-        move = self._get_move()
-        self.controller.handle_gtp_move(self.color, move)
+        if isinstance(event, MovePlayed) and event.next_player == self.color:
+            move = self._get_move()
+            self.controller.handle_gtp_move(self.color, move)
 
 
 class GTPComm(Thread):
@@ -95,7 +85,7 @@ class GTPComm(Thread):
 
         logging.info("gtpcmd(%s) %s -> %s", self.player, self.cmd, res)
         if res.strip().startswith("?"):
-            logging.error("INAVLID(%s) %s -> %s", self.player, self.cmd, res)
+            logging.error("INVALID(%s) %s -> %s", self.player, self.cmd, res)
             self.player.controller.end("Exception {color}", self.player.color)
         if self.handle_output:
             res = res.lower()
@@ -108,6 +98,7 @@ class GTPPlayer(Player):
     def __init__(self, *args, **kwargs):
         self.command = kwargs.pop("cmd")
         super().__init__(*args, **kwargs)
+        self.process = None
 
     def set_controller(self, controller):
         super().set_controller(controller)

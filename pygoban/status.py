@@ -1,3 +1,6 @@
+# from enum import IntFlag
+
+
 class Status:
     def __init__(self, intval, strval, shortval=None):
         self.intval = intval
@@ -21,10 +24,14 @@ class Status:
         return STATUS[self.intval + (2 if self.intval < 3 else -2)]
 
     def is_empty(self):
-        return self == EMPTY or self == BLACK_LIB or self == WHITE_LIB
+        return self in (EMPTY, BLACK_LIB, WHITE_LIB)
 
     def is_owned(self):
         return self in (DEAD_BLACK, DEAD_WHITE, BLACK_LIB, WHITE_LIB)
+
+    def __deepcopy__(self, *_args):
+        """Every status object is a singelton"""
+        return self
 
 
 KO = Status(-1, "Ko", "?")
