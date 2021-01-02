@@ -1,6 +1,7 @@
 # pylint: disable=invalid-name, arguments-differ
 # because qt and do_-commands and Box overloading
 from copy import copy
+from typing import Any, Optional, overload
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from PyQt5.QtWidgets import (
     QAction,
@@ -38,7 +39,7 @@ class Box(QGroupBox):
         self.kwargs = kwargs
         self.init(**kwargs)
 
-    def init(self):
+    def init(self, **kwargs):
         raise NotImplementedError()
 
 
@@ -48,12 +49,12 @@ class PlayerBox(Box):
     timer = None
     seconds = None
 
-    def init(self, player: Player):
+    def init(self, player: Player):  # mypy: ignore
         self.player = player
         self.setTitle(f"{self.player.color}: {self.player.name} ")
         self.setStyleSheet(
             """PlayerBox {{
-            margin-top: 2ex; /* leave space at the top for the title */
+            margin-top: 4ex; /* leave space at the top for the title */
             border-color: {0};
             border-width : 2px;
             border-style: inset;
@@ -219,14 +220,9 @@ class EditBox(Box):
         has_children = result.cursor and len(result.cursor.children)
         self.next_move.setEnabled(has_children)
         self.forward_moves.setEnabled(has_children)
-        if isinstance(result, events.CursorChanged):  # and not result.cursor.is_root:
-            if result.is_new:
-                self.tree.add_move(result.cursor)
-            else:
-                self.tree.set_cursor(result.cursor)
 
-    def tree_click(self, item, _col=None):
-        self.controller.callbacks["set_cursor"](item)
+    def tree_click(self, move, _col=None):
+        self.controller.callbacks["set_cursor"](move)
 
     def toggle_deco(self, checked):
         self.controller.input_mode = InputMode.EDIT if checked else InputMode.PLAY

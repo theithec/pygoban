@@ -11,6 +11,8 @@ def _to_sgf(move: Move, boardsize, level=0, txt=""):
         dist = "\t" * level
         if not move.is_empty:
             coord = pos_to_sgf(move.pos)
+        elif move.pos == Empty.UNDO:
+            return txt, level
         else:
             coord = ""
         txt += f"\n{dist};{move.color.shortval}[{coord}]"

@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from threading import Timer
-from .player import Player
 
-from . import logging
+from .player import Player
+from . import loggingr
 
 
 class _PlayerTimer(Timer):

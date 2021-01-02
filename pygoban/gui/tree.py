@@ -9,12 +9,9 @@ from pygoban.status import BLACK
 
 class MoveNode(QLabel):
 
-    WIDTH = 30
-    HEIGHT = 30
+    WIDTH = 38
 
     def __init__(self, parent, move: Move):
-        self.treex = 0
-        self.treey = 0
         super().__init__(parent)
         self.move = move
         self.setStyleSheet(
@@ -25,8 +22,8 @@ class MoveNode(QLabel):
         self.child_index = (
             list(move.parent.children.values()).index(move) if move.parent else None
         )
-        self.setMinimumSize(self.WIDTH, self.HEIGHT)
-        self.setMaximumSize(self.WIDTH, self.HEIGHT)
+        self.setMinimumSize(self.WIDTH, self.WIDTH)
+        self.setMaximumSize(self.WIDTH, self.WIDTH)
 
     def paintEvent(self, event):
         painter = QPainter()
@@ -34,14 +31,15 @@ class MoveNode(QLabel):
         if self == self.parent().cursor:
             painter.setBrush(Qt.red)
             painter.setPen(Qt.red)
-            painter.drawEllipse(4, 4, 22, 22)
+            painter.drawEllipse(7, 7, 24, 24)
         painter.setBrush(Qt.black if self.move.color == BLACK else Qt.white)
         painter.setPen(Qt.black if self.move.color == BLACK else Qt.white)
-        painter.drawEllipse(5, 5, 20, 20)
+        painter.drawEllipse(8, 8, 22, 22)
         painter.end()
         super().paintEvent(event)
 
     def mousePressEvent(self, _event):
+        # import pudb; pudb.set_trace()
         self.parent().callback(self.move)
 
 
@@ -71,71 +69,60 @@ class TreeCanvas(QWidget):
                 move = move.parent
             self.root = move
         add(move)
-        self.set_moves(move)
+        self.set_moves()
 
-    def set_moves(self, move):
-        # cnt = 0
+    def set_moves(self):
         alreade_used = set()
 
         def _set(node, treex, treey):
             node.show()
             while (
                 xpos := (MoveNode.WIDTH * treex),
-                ypos := (MoveNode.HEIGHT * treey),
+                ypos := (MoveNode.WIDTH * treey),
             ) in alreade_used:
                 treex += 1
             alreade_used.add((xpos, ypos))
             node.treex = treex
             node.treey = treey
-            # super(QLabel, node).move(xpos, ypos)
-            node.setGeometry(xpos, ypos, node.WIDTH, node.HEIGHT)
-            # nonlocal cnt
-            # if cnt % 100 == 0:
-            #     print("C2", cnt)
-            # cnt += 1
+            node.setGeometry(xpos, ypos, node.WIDTH, node.WIDTH)
             self.maxx = max(self.maxx, xpos)
             self.maxy = max(self.maxy, ypos)
-            node.repaint()
             for index, child in enumerate(node.move.children.values()):
                 node = self.nodes[id(child)]
                 if node:
                     _set(node, index + treex, treey + 1)
 
-        if move.parent:
-            parent = self.nodes[id(move.parent)]
-            _set(parent, parent.treex, parent.treey)
-        else:
-            node = self.nodes[id(move)]
-            _set(node, 1, 1)
+        _set(self.root, 1, 1)
         self.resize(self.maxx + 40, self.maxy + 40)
-        self.repaint()
 
     def paintEvent(self, event):
-        def centered(pos):
-            return QPoint(pos.x() + 15, pos.y() + 15)
+        super().paintEvent(event)
+        visible_rect = self.visibleRegion().rects()[0]
 
-        def con(node):
-            if node.child_index is not None:
+        def centered(pos):
+            return QPoint(pos.x() + 19, pos.y() + 19)
+
+        def conn(node):
+            pos = node.pos()
+            if visible_rect.contains(pos) and node.child_index is not None:
                 painter.drawLine(
-                    centered(node.pos()),
+                    centered(pos),
                     centered(self.nodes[id(node.move.parent)].pos()),
                 )
-            for child in node.move.children.values():
-                con(self.nodes[id(child)])
 
-        super().paintEvent(event)
+            if (
+                pos.y() < visible_rect.y() + visible_rect.height()
+                and pos.x() < visible_rect.x() + visible_rect.width()
+            ):
+                for child in node.move.children.values():
+                    conn(self.nodes[id(child)])
+
         painter = QPainter()
         painter.begin(self)
         painter.setBrush(Qt.black)
-
         if self.root:
-            con(self.root)
+            conn(self.root)
         painter.end()
-
-    def resizeEvent(self, _event):
-        # print("CanvasRESIZEE", event)
-        if self.root:
-            self.set_moves(self.cursor.move)
 
 
 class Tree(QScrollArea):
@@ -147,17 +134,15 @@ class Tree(QScrollArea):
         self.canvas = TreeCanvas(parent=None, callback=callback)
         self.setMinimumSize(80, 80)
         self.setWidget(self.canvas)
-        self.moves_signal.connect(self.add_move)
-
-    def add_move(self, move):
-        self.canvas.add_move(move)
-        self.ensureWidgetVisible(self.canvas.cursor)
+        self.moves_signal.connect(self.set_cursor)
 
     def set_cursor(self, move: Move):
         if node := self.canvas.nodes.get(id(move)):
             old = self.canvas.cursor
             self.canvas.cursor = node
-            self.canvas.cursor.repaint()
-            old.repaint()
-        # print("POS", self.canvas.cursor.pos())
+            self.canvas.repaint()
+            self.ensureWidgetVisible(self.canvas.cursor)
+        else:
+            self.canvas.add_move(move)
+
         self.ensureWidgetVisible(self.canvas.cursor)

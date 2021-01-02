@@ -5,7 +5,7 @@ from .board import Board, MoveResult
 from .move import Move, Empty
 from .rulesets import BaseRuleset, RuleViolation
 from .status import BLACK, WHITE, Status, get_othercolor
-from .events import MovePlayed, CursorChanged, MovesReseted, Counted, Ended
+from .events import CursorChanged, Counted, Ended
 from .counting import counted_groups
 from .sgf import INFO_KEYS
 from . import logging, END_BY_RESIGN
@@ -15,7 +15,10 @@ HANDICAPS: Dict[int, Tuple] = {2: ((3, 3), (15, 15))}
 HANDICAPS[3] = HANDICAPS[2] + ((15, 3),)
 HANDICAPS[4] = HANDICAPS[3] + ((3, 15),)
 HANDICAPS[5] = HANDICAPS[4] + ((9, 9),)
-HANDICAPS[6] = HANDICAPS[4] + ((9, 3), (9, 15),)
+HANDICAPS[6] = HANDICAPS[4] + (
+    (9, 3),
+    (9, 15),
+)
 HANDICAPS[7] = HANDICAPS[6] + ((9, 9),)
 HANDICAPS[8] = HANDICAPS[7] + ((3, 9),)
 HANDICAPS[9] = HANDICAPS[8] + ((15, 9),)
@@ -48,14 +51,6 @@ class Game:
     def start(self):
         is_new = self.cursor.is_root
         self._set_cursor(self.cursor, is_new=is_new)
-        self.fire_event(MovesReseted(self.root))
-        self.fire_event(
-            MovePlayed(
-                next_player=self.nextcolor,
-                move=self.cursor,
-                is_new=is_new,
-            )
-        )
 
     def _set_handicap(self):
         handicap = self.infos.get("HA")
@@ -80,7 +75,7 @@ class Game:
             else:
                 Timer(0, lambda: listener.handle_game_event(event)).start()
 
-    def _set_cursor(self, move, no_fire=False, is_new=False):
+    def _set_cursor(self, move, is_new=False):
         self._cursor = move
         path = self.get_path()
         self.prisoners = {BLACK: 0, WHITE: 0}
@@ -89,15 +84,14 @@ class Game:
         self._cursor = self.root
         for pmove in path:
             self.test_move(pmove, apply_result=True)
-        if not no_fire:
-            self.fire_event(
-                CursorChanged(
-                    next_player=self.nextcolor,
-                    cursor=self.cursor,
-                    board=self.board,
-                    is_new=is_new,
-                )
+        self.fire_event(
+            CursorChanged(
+                next_player=self.nextcolor,
+                cursor=self.cursor,
+                board=self.board,
+                is_new=is_new,
             )
+        )
 
     def test_move(self, move, apply_result=False):
         is_new = True
@@ -200,14 +194,6 @@ class Game:
                     board=self.board,
                 )
             )
-        self.fire_event(
-            MovePlayed(
-                **{
-                    key: getattr(result, key)
-                    for key in ("next_player", "move", "is_new")
-                }
-            )
-        )
         return result
 
     def count(self, is_final=False):

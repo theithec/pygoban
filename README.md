@@ -24,7 +24,6 @@ are not my work:
 TODO
 -----
 
-- Sound
 - More sgf commands
 - Better gtp time support
 - Settings Gui (Button does not do anything yet)

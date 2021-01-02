@@ -4,20 +4,8 @@ from . import board as board_, move as move_, rulesets
 from .status import Status
 
 
-@dataclass
 class Event:
     pass
-
-
-@dataclass
-class MovePlayed(Event):
-    move: move_.Move
-    is_new: bool = False
-    next_player: Optional[Status] = None
-    exception: Optional[rulesets.RuleViolation] = None
-
-    def __str__(self):
-        return f"Move Played: {self.move} Next: {self.next_player}"
 
 
 @dataclass
@@ -28,13 +16,8 @@ class CursorChanged(Event):
     is_new: bool = False
     exception: Optional[rulesets.RuleViolation] = None
 
-
-class MovesReseted(Event):
-    def __init__(self, root: move_.Move):
-        self.root = root
-
     def __str__(self):
-        return f"Move reseted: {self.root}"
+        return f"Cursor Changed: {self.cursor} is_new: {self.is_new} next_player={self.next_player}"
 
 
 @dataclass

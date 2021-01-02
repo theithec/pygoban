@@ -1,17 +1,21 @@
 # pylint: disable=invalid-name
 # because qt
 import os
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QMainWindow, QMessageBox
-from PyQt5.QtMultimedia import QSound
+from typing import Dict, Optional
 
-from pygoban.controller import Controller
-from pygoban.move import Move
-from pygoban.status import BLACK, EMPTY, WHITE, Status, get_othercolor
-from pygoban.rulesets import OccupiedViolation
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtGui import QIcon
+from PyQt5.QtMultimedia import QSound
+from PyQt5.QtWidgets import QMainWindow, QMessageBox
+
 from pygoban import InputMode
-from pygoban.events import Event, CursorChanged, Counted, Ended
+from pygoban.controller import Controller
+from pygoban.events import Event, Counted, CursorChanged, Ended
+from pygoban.player import Player
+from pygoban.rulesets import OccupiedViolation
+from pygoban.status import BLACK, EMPTY, WHITE, Status, get_othercolor
+from pygoban.timesettings import TimeSettings
+from pygoban.game import MoveResult
 
 from . import BASE_DIR, CenteredMixin
 from .guiboard import GuiBoard
@@ -25,7 +29,15 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
     gameended_signal = pyqtSignal(str)
     movesound = QSound(os.path.join(BASE_DIR, "gui/sounds/stone.wav"))
 
-    def __init__(self, black, white, callbacks, infos, mode, timesettings=None):
+    def __init__(
+        self,
+        black: Player,
+        white: Player,
+        callbacks: Dict,
+        infos: Dict,
+        mode: str,
+        timesettings: TimeSettings = None,
+    ):
         super().__init__(
             black=black,
             white=white,
@@ -59,17 +71,19 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         elif isinstance(event, Ended):
             self.mode = "EDIT"
             self.input_mode = InputMode.PLAY
+            assert event.color
             self.end(event.msg, event.color)
 
         self.sidebar.game_signal.emit(event)
         if board:
             self.guiboard.boardupdate_signal.emit(event, board)
+        self.sidebar.editbox.tree.moves_signal.emit(event.cursor)
 
         self.update()
 
-    def update_moves(self, move: Move):
-        self.sidebar.editbox.tree.moves_signal.emit(move)
-        self.guiboard.repaint()
+    # def update_moves(self, result: MoveResult):
+    #     # self.sidebar.editbox.tree.moves_signal.emit(move)
+    #     self.guiboard.repaint()
 
     def period_ended(self, player):
         if not self.timeout:
@@ -90,10 +104,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
                 color = get_othercolor(self.last_move_result.cursor.color)
             if color and not isinstance(self.players[color], GuiPlayer):
                 return
-            try:
-                self.callbacks["play"](color, inter.coord)
-            except OccupiedViolation as err:
-                print(err)
+            self.callbacks["play"](color, inter.coord)
         elif self.input_mode == InputMode.EDIT:
             if self._deco in (BLACK, WHITE):
                 self.last_move_result.cursor.extras.stones[self._deco].add(inter.coord)

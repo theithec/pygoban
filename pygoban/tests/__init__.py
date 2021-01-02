@@ -3,7 +3,7 @@ from PyQt5.QtCore import QRect, Qt, pyqtSignal, QObject
 from PyQt5.QtWidgets import QWidget
 from pygoban.status import BLACK, WHITE
 from pygoban.player import Player
-from pygoban.events import CursorChanged, MovesReseted, MovePlayed
+from pygoban.events import CursorChanged, MovesReseted
 from pygoban.game import Game
 from pygoban.controller import Controller
 
@@ -26,9 +26,6 @@ class MockedPlayer(Player):
         super().__init__(*args, **kwargs)
         if moves:
             self.__class__.MOVES = moves
-
-    def moves_done(self):
-        pass
 
     def handle_game_event(self, event):
         self.__class__.movegen = self.__class__.movegen or self.moves()
@@ -59,17 +56,16 @@ class ControlledGame:
         )
         self.callback = callback
         self.game.add_listener(
-            self.controller, event_classes=[CursorChanged, MovesReseted], wait=True
+            self.controller, event_classes=[CursorChanged], wait=True
         )
         for color in (BLACK, WHITE):
             player = self.controller.players[color]
             player.tests_controller = self
             print("PLAC", player.tests_controller)
-            self.game.add_listener(player, event_classes=[MovePlayed])
+            self.game.add_listener(player, event_classes=[CursorChanged])
 
     def start(self):
         self.game.start()
 
     def done(self, player):
         self.callback(self)
-        # assert False

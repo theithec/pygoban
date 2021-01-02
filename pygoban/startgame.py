@@ -2,14 +2,16 @@
 # because qt is optional, global is forQApp
 import argparse
 import sys
+from typing import Any
 
 from . import getconfig, get_argparser
 from .game import BLACK, WHITE, Game
 from .player import GTPPlayer
 from .sgf.reader import parse
 from .timesettings import TimeSettings
-from .events import MovePlayed, CursorChanged, MovesReseted, Counted, Ended
-QAPP = None
+from .events import CursorChanged, Counted, Ended
+
+QAPP: Any = None
 GAME_WINDOWS = []
 """No usage but avoiding garbage collection"""
 
@@ -78,11 +80,9 @@ def startgame(args: argparse.Namespace, init_gui: bool, root=None):
         )
         controller_kwargs["timesettings"] = TimeSettings(**timekwargs)
     controller = controller_cls(**controller_kwargs)
-    game.add_listener(
-        controller, [CursorChanged, MovesReseted, Counted, Ended], wait=True
-    )
+    game.add_listener(controller, [CursorChanged, Counted, Ended], wait=True)
     for col in (BLACK, WHITE):
-        game.add_listener(players[col], [MovePlayed, Counted])
+        game.add_listener(players[col], [CursorChanged, Counted])
     if root:
         game.root = root
 
@@ -98,6 +98,7 @@ def startgame(args: argparse.Namespace, init_gui: bool, root=None):
 
     # For testing
     return game, controller
+
 
 def startpygoban():
     parser = get_argparser()

@@ -1,5 +1,5 @@
 import os
-from pygoban.__main__ import startgame, argparse
+from pygoban import startgame, argparse
 from pygoban import get_argparser
 from pygoban.coords import gtp_coords, array_indexes
 from . import MockedPlayer
@@ -17,7 +17,7 @@ class MyMockedPlayer(MockedPlayer):
 
 
 def test_change_mode(mocker):
-    mocker.patch("pygoban.__main__.get_player_cls", return_value=MyMockedPlayer)
+    mocker.patch("pygoban.startgame.get_player_cls", return_value=MyMockedPlayer)
     args = argparse.Namespace(
         boardsize=9,
         nogui=True,
@@ -31,4 +31,4 @@ def test_change_mode(mocker):
         time=None,
         mode=None,
     )
-    game, controller = startgame(args, init_gui=False)
+    game, controller = startgame.startgame(args, init_gui=False)

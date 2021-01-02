@@ -4,7 +4,7 @@ from threading import Thread
 
 from . import logging, status, InputMode
 from .coords import gtp_coords, array_indexes
-from .events import MovePlayed, Counted
+from .events import CursorChanged, Counted
 
 
 class Player:
@@ -49,7 +49,7 @@ class ConsolePlayer(Player):
         return move
 
     def handle_game_event(self, event):
-        if isinstance(event, MovePlayed) and event.next_player == self.color:
+        if isinstance(event, CursorChanged) and event.next_player == self.color:
             move = self._get_move()
             self.controller.handle_gtp_move(self.color, move)
 
@@ -134,21 +134,21 @@ class GTPPlayer(Player):
 
     def handle_game_event(self, event):
         result = event
-        if isinstance(event, MovePlayed):
+        if isinstance(event, CursorChanged):
             vertex = None
             if not result.exception:
-                if result.move and result.move.color != self.color:
-                    if result.move.is_pass:
+                if result.cursor and result.cursor.color != self.color:
+                    if result.cursor.is_pass:
                         vertex = "pass"
-                    elif result.move.is_empty:
+                    elif result.cursor.is_empty:
                         pass
                     else:
                         vertex = gtp_coords(
-                            *result.move.pos, self.controller.infos["SZ"]
+                            *result.cursor.pos, self.controller.infos["SZ"]
                         )
             if vertex:
                 self.do_cmd(
-                    "play %s %s" % (result.move.color.strval.lower(), vertex), False
+                    "play %s %s" % (result.cursor.color.strval.lower(), vertex), False
                 )
                 # self.do_cmd("showboard", False)
             if (

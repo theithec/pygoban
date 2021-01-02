@@ -18,7 +18,6 @@ class BaseGameTest(unittest.TestCase):
         color = color or self.game.nextcolor
         result = self.game.play(color=color, pos=(x, y))
         if result.exception is not None:
-            print("RAISE", result.exception)
             raise result.exception
 
     def play_moves(self, moves):

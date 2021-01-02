@@ -10,7 +10,7 @@ from .move import Move, Empty
 from .status import BLACK, WHITE, Status
 from .timesettings import PlayerTime, TimeSettings
 from .coords import array_indexes
-from .events import CursorChanged, MovesReseted, Counted, Ended, Event
+from .events import CursorChanged, Counted, Ended
 from .sgf.writer import to_sgf
 
 
@@ -36,8 +36,8 @@ class Controller:
 
         self.timeout = False
         self.move_start = None
-        self.last_move_result: Optional[Event] = None
-        self.count: Optional[Event] = None
+        self.last_move_result: Optional[CursorChanged] = None
+        self.count: Optional[Counted] = None
         self.root = None
         self.mode = mode
         self.input_mode = InputMode.PLAY
@@ -69,28 +69,25 @@ class Controller:
     def game_callback(self, name, *args, **kwargs):
         self.callbacks[name](*args, **kwargs)
 
-    def update_moves(self, move: Move):
-        pass
+    # def update_moves(self, event):
+    #    pass
 
-    def update_board(self, event: Event, board):
+    def update_board(self, event: CursorChanged, board):
         raise NotImplementedError()
 
     def handle_game_event(self, event):
         if isinstance(event, CursorChanged):
-            if not event.exception:
-                self.last_move_result: MoveResult = event
-                self.update_board(event, event.board)
+            self.last_move_result: MoveResult = event
+            if event.cursor.is_root:
+                self.root = event.cursor
+            self.update_board(event, event.board)
 
-                if self.timesettings:
+            if self.timesettings:
+                if event.cursor.color:
                     self.update_time(event.cursor.color)
-                    self.players[event.next_player].timesettings.nexttime(
-                        start_timer=True
-                    )
-                    self.move_start = datetime.datetime.now()
-        elif isinstance(event, MovesReseted):
-            if not self.root:
-                self.root = event.root
-            self.update_moves(event.root)
+                self.players[event.next_player].timesettings.nexttime(start_timer=True)
+                self.move_start = datetime.datetime.now()
+
         elif isinstance(event, Counted):
             self.update_board(event, event.board)
         elif isinstance(event, Ended):
