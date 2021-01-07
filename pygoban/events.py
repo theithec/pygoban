@@ -29,7 +29,6 @@ class Counted(Event):
 
 @dataclass
 class Ended(Event):
-    cursor: move_.Move
     points: Dict[Status, int] = field(default_factory=dict)
     prisoners: Dict[Status, int] = field(default_factory=dict)
     color: Optional[Status] = None

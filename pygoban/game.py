@@ -167,7 +167,8 @@ class Game:
         }
 
     def play(self, color: Status, pos):
-        logging.info("Play %s %s", color, pos)
+        print()
+        logging.info("\n\nPlay %s %s", color, pos)
         move = Move(color, pos)
         if pos == Empty.UNDO and self.cursor != self.root:
             self.undo()
@@ -205,7 +206,6 @@ class Game:
             color = BLACK if btotal > wtotal else WHITE
             msg = "{color}+%s" % str(max(wtotal, btotal) - min(wtotal, btotal))
             event = Ended(
-                cursor=self.cursor,
                 msg=msg,
                 color=color,
                 points=result.points,
@@ -227,7 +227,7 @@ class Game:
 
     def undo(self):
         curr = self.cursor
-        while (parent := curr.parent) :
+        while parent := curr.parent:
             if parent:
                 curr = parent
             else:
@@ -242,6 +242,4 @@ class Game:
             logging.info("CAN NOT UNDO. Cursor: %s", self.cursor)
 
     def resign(self, color: Status):
-        self.fire_event(
-            Ended(msg=END_BY_RESIGN, color=get_othercolor(color), cursor=self.cursor)
-        )
+        self.fire_event(Ended(msg=END_BY_RESIGN, color=get_othercolor(color)))

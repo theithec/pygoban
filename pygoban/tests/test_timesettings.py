@@ -10,18 +10,21 @@ def test_ts1():
     player.controller = Mock()
     tst = PlayerTime(player, TimeSettings(maintime=60, byoyomi_time=30, byoyomi_num=3))
     assert tst.nexttime() == 60
-    assert tst.nexttime(25) == 35
-    assert tst.byoyomi.left == 3
+    tst.subtract(25)
+    assert tst.nexttime() == 35
+    assert tst.byoyomi.periods_left == 3
     tst.period_ended()
     assert tst.maintime == 0
-    assert tst.byoyomi.left == 3
+    assert tst.byoyomi.periods_left == 3
     assert tst.nexttime() == 30
-    assert tst.nexttime(20) == 30
-    assert tst.byoyomi.left == 3
+    tst.subtract(20)
+    assert tst.nexttime() == 30
+    assert tst.byoyomi.periods_left == 3
     tst.period_ended()
-    assert tst.byoyomi.left == 2
-    assert tst.nexttime(20) == 30
-    assert tst.byoyomi.left == 2
+    assert tst.byoyomi.periods_left == 2
+    tst.subtract(20)
+    assert tst.nexttime() == 30
+    assert tst.byoyomi.periods_left == 2
     tst.period_ended()
-    assert tst.byoyomi.left == 1
-    tst.cancel()
+    assert tst.byoyomi.periods_left == 1
+    tst.cancel_timer()

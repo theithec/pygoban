@@ -5,14 +5,6 @@ from enum import Enum
 from .status import Status, BLACK, WHITE
 
 
-class MoveList(list):
-    """sgf-like output"""
-
-    def __str__(self):
-        items = [str(item) for item in self]
-        return "(ml:%s)" % " ".join(items)
-
-
 @dataclass
 class MoveExtras:
     comments: List[str] = field(default_factory=list)
@@ -72,9 +64,6 @@ class Move:
     @property
     def is_root(self):
         return self.pos == Empty.FIRST_MOVE
-
-    def real_children(self):
-        return {k: v for (k, v) in self.children.values() if not v.is_empty}
 
     def get_path(self):
         path = []

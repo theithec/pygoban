@@ -1,9 +1,8 @@
-import os
 from PyQt5.QtCore import QRect, Qt, pyqtSignal, QObject
 from PyQt5.QtWidgets import QWidget
 from pygoban.status import BLACK, WHITE
 from pygoban.player import Player
-from pygoban.events import CursorChanged, MovesReseted
+from pygoban.events import CursorChanged
 from pygoban.game import Game
 from pygoban.controller import Controller
 

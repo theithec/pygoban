@@ -1,7 +1,7 @@
 # pylint: disable=invalid-name, arguments-differ
 # because qt and do_-commands and Box overloading
 from copy import copy
-from typing import Any, Optional, overload
+from typing import Any, Optional
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from PyQt5.QtWidgets import (
     QAction,
@@ -23,6 +23,7 @@ from pygoban.player import Player
 from pygoban.sgf import CR, SQ, TR
 from pygoban import InputMode, events, get_argparser
 from pygoban.startgame import startgame
+from pygoban.events import CursorChanged
 
 
 from . import btn_adder, gamewindow
@@ -32,24 +33,23 @@ from .tree import Tree
 
 
 class Box(QGroupBox):
-    def __init__(self, parent, **kwargs):
+    def __init__(self, parent, **kwargs: Any):
         super().__init__(parent)
         self.controller: gamewindow.GameWindow = parent.controller
-        self.events = kwargs.pop("events", [])
         self.kwargs = kwargs
         self.init(**kwargs)
 
-    def init(self, **kwargs):
+    def init(self, **kwargs: Any):
         raise NotImplementedError()
 
 
 class PlayerBox(Box):
-    timeupdate_signal = pyqtSignal()
-    timeended_signal = pyqtSignal()
+    clock_update_signal = pyqtSignal(int)
+    clock_stop_signal = pyqtSignal(int)
     timer = None
-    seconds = None
+    _seconds = 0
 
-    def init(self, player: Player):  # mypy: ignore
+    def init(self, player: Player):  # type: ignore
         self.player = player
         self.setTitle(f"{self.player.color}: {self.player.name} ")
         self.setStyleSheet(
@@ -81,23 +81,25 @@ class PlayerBox(Box):
         )
         player_layout.addRow("Prisoners:", self.prisoners_label)
         if self.controller.timesettings:
+            hlayout = QHBoxLayout()
             self.clock = QLCDNumber()
-            self.seconds = player.timesettings.nexttime()
-            self.clock.display(self.seconds_to_str())
-            player_layout.addRow(self.clock)
+            self.byoyomi_label = QLabel("")
+            self.clock.display(self.seconds_to_str(0))
+            hlayout.addWidget(self.clock)
+            hlayout.addWidget(self.byoyomi_label)
+            player_layout.addRow(hlayout)
+            self.clock_update_signal.connect(self.set_clockdisplay)
+            self.clock_stop_signal.connect(self.stop_clockdisplay)
+            self.update_byoyomi_label()
 
         self.setLayout(player_layout)
-        if self.controller.timesettings:
-            self.timeended_signal.connect(self.time_ended)
-            self.timeupdate_signal.connect(self.update_clock)
 
     def update_controlls(self, _result):
         self.prisoners_label.setText(
             str(self.controller.callbacks["get_prisoners"]()[self.player.color])
         )
 
-    def seconds_to_str(self):
-        seconds = self.seconds
+    def seconds_to_str(self, seconds):
         hours = int(seconds / 360) if seconds >= 360 else 0
         seconds -= hours * 360
         minutes = int(seconds / 60) if seconds >= 60 else 0
@@ -105,27 +107,43 @@ class PlayerBox(Box):
         txt = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         return txt
 
-    def set_clock(self, seconds):
-        self.seconds = seconds
-        self.time_ended()
-        self.timer = QTimer(self)
-        self.timer.start(1000)
-        self.clock.display(self.seconds_to_str())
-        self.timer.timeout.connect(self.clock_tick)
+    def update_byoyomi_label(self):
+        if self.controller.timesettings.byoyomi_stones > 1:
+            txt = (
+                f"  {self.player.clock.byoyomi.stones_left} S"
+                if self.player.clock.maintime == 0
+                else " - "
+            )
+        if self.controller.timesettings.byoyomi_num > 1:
+            txt = (
+                f" {self.player.clock.byoyomi.periods_left} B"
+                if self.player.clock.maintime == 0
+                else " - "
+            )
+        self.byoyomi_label.setText(txt)
 
-    def update_clock(self):
-        if self.player.color == self.controller.last_move_result.next_player:
-            self.set_clock(self.player.timesettings.nexttime())
+    def set_clockdisplay(self, seconds):
+        self.stop_clockdisplay(seconds)
+        self._seconds = seconds
+        if seconds > 0:
+            self.timer = QTimer(self)
+            self.timer.start(1000)
+            self.clock.display(self.seconds_to_str(seconds))
+            self.timer.timeout.connect(self.clockdisplay_tick)
         else:
-            self.time_ended()
+            self.clock.display("00:00")
+            self.timer = None
 
-    def time_ended(self):
+    def stop_clockdisplay(self, seconds):
         if self.timer:
             self.timer.stop()
+        self.clock.display(self.seconds_to_str(seconds))
+        self.update_byoyomi_label()
 
-    def clock_tick(self):
-        self.seconds -= 1
-        self.clock.display(self.seconds_to_str())
+    def clockdisplay_tick(self):
+        self._seconds -= 1
+        txt = self.seconds_to_str(self._seconds)
+        self.clock.display(txt)
 
 
 class GameBox(Box):
@@ -138,7 +156,7 @@ class GameBox(Box):
         self.count_btn = add_gamebutton("Count", self.do_count)
         self.setLayout(game_layout)
 
-    def update_controlls(self, result):
+    def update_controlls(self, _result):
         is_play = (
             self.controller.input_mode == InputMode.PLAY
             and self.controller.mode == "PLAY"
@@ -163,7 +181,7 @@ class GameBox(Box):
         )
 
     def do_resign(self):
-        if not self.controller.timeout or isinstance(
+        if isinstance(
             self.controller.players[self.controller.last_move_result.next_player],
             GuiPlayer,
         ):
@@ -214,12 +232,13 @@ class EditBox(Box):
         self.setLayout(box_layout)
 
     def update_controlls(self, result):
-        has_parent = bool(result.cursor and result.cursor.parent)
-        self.prev_move.setEnabled(has_parent)
-        self.back_moves.setEnabled(has_parent)
-        has_children = result.cursor and len(result.cursor.children)
-        self.next_move.setEnabled(has_children)
-        self.forward_moves.setEnabled(has_children)
+        if isinstance(result, CursorChanged):
+            has_parent = bool(result.cursor and result.cursor.parent)
+            self.prev_move.setEnabled(has_parent)
+            self.back_moves.setEnabled(has_parent)
+            has_children = result.cursor and len(result.cursor.children)
+            self.next_move.setEnabled(has_children)
+            self.forward_moves.setEnabled(has_children)
 
     def tree_click(self, move, _col=None):
         self.controller.callbacks["set_cursor"](move)
@@ -303,9 +322,7 @@ class Sidebar(QFrame):
             self.gamebox = self.add_box(GameBox(self))
 
         if can_edit:
-            self.editbox = self.add_box(
-                EditBox(self, events=[events.CursorChanged, events.Ended])
-            )
+            self.editbox = self.add_box(EditBox(self))
 
         self.comments = QTextEdit()
         self.comments.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -354,10 +371,10 @@ class Sidebar(QFrame):
         # c.sidebar.editbox.do_next_variation()
 
     def update_controlls(self, event):
-        self.editbox.setVisible(self.controller.mode != "EDIT2")
-        self.gamebox.setVisible(self.controller.mode != "PLAY2")
+        self.editbox.setVisible(self.controller.mode == "EDIT")
+        self.gamebox.setVisible(self.controller.mode == "PLAY")
         for box in self.boxes:
-            if box.isVisible() and not box.events or event.__class__ in box.events:
+            if box.isVisible():
                 box.update_controlls(event)
         if isinstance(event, events.CursorChanged):
             cmts = event.cursor.extras.comments or [""]

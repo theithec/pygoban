@@ -1,17 +1,22 @@
+from __future__ import annotations
 import subprocess
 import time
 from threading import Thread
+from typing import Optional, TYPE_CHECKING
 
 from . import logging, status, InputMode
 from .coords import gtp_coords, array_indexes
 from .events import CursorChanged, Counted
+
+if TYPE_CHECKING:
+    from pygoban.timesettings import TimeSettings
 
 
 class Player:
     def __init__(self, color: status.Status, name=None):
         self.color = color
         self.name = name or str(color)
-        self.timesettings = None
+        self.clock: Optional[TimeSettings] = None
         self.controller = None
 
     def lost_by_overtime(self):
@@ -22,11 +27,11 @@ class Player:
         self.controller = controller
 
     def end(self):
-        if self.timesettings and self.timesettings.timer:
-            self.timesettings.timer.cancel()
+        if self.clock and self.clock.timer:
+            self.clock.timer.cancel()
 
-    def set_timesettings(self, timesettings):
-        self.timesettings = timesettings
+    def set_clock(self, clock):
+        self.clock = clock
 
     def __str__(self):
         return f"{self.color}({self.name})"
@@ -114,11 +119,11 @@ class GTPPlayer(Player):
         if (handicap := int(self.controller.infos.get("HA", 0))) > 0:
             self.do_cmd(f"fixed_handicap {handicap}", False)
 
-    def set_timesettings(self, timesettings):
-        self.timesettings = timesettings
-        ts = self.timesettings
+    def set_clock(self, clock):
+        self.clock = clock
         self.do_cmd(
-            f"time_settings {ts.maintime} {ts.byoyomi_time} {ts.byoyomi_stones}", False
+            cmd=f"clock {clock.maintime} {clock.byoyomi_time} {clock.byoyomi_stones}",
+            handle_output=False,
         )
 
     def do_cmd(self, cmd, handle_output=True):

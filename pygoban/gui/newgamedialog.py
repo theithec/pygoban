@@ -63,8 +63,8 @@ class NewGameDialog(QDialog):
         self.time_edits = OrderedDict(
             (
                 ("Main time", QLineEdit("")),
-                ("Num Byoyomi", QLineEdit("")),
                 ("Byoyomi Time", QLineEdit("")),
+                ("Num Byoyomi", QLineEdit("")),
                 ("Byoyomi Stones", QLineEdit("")),
             )
         )

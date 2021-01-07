@@ -1,5 +1,5 @@
 from typing import Dict
-from pygoban.move import Move
+from pygoban.move import Move, Empty
 from pygoban.coords import pos_to_sgf
 from . import INFO_KEYS, TR, MA, CR, SQ
 

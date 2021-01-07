@@ -12,10 +12,8 @@ from pygoban import InputMode
 from pygoban.controller import Controller
 from pygoban.events import Event, Counted, CursorChanged, Ended
 from pygoban.player import Player
-from pygoban.rulesets import OccupiedViolation
-from pygoban.status import BLACK, EMPTY, WHITE, Status, get_othercolor
+from pygoban.status import BLACK, EMPTY, WHITE, Status
 from pygoban.timesettings import TimeSettings
-from pygoban.game import MoveResult
 
 from . import BASE_DIR, CenteredMixin
 from .guiboard import GuiBoard
@@ -55,16 +53,28 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self.gameended_signal.connect(self.gameended_action)
 
     def update_board(self, event: Event, board):
+
+        if self.timesettings:
+            for color in (BLACK, WHITE):
+                clock = self.players[color].clock
+                nexttime = clock.nexttime()  # type: ignore
+                self.sidebar.controls[color].clock_stop_signal.emit(nexttime)
         if isinstance(event, CursorChanged):
-            if event.next_player and not self.timeout:
-                for color in (BLACK, WHITE):
-                    self.sidebar.controls[color].timeupdate_signal.emit()
+            if self.timesettings:
+                if (color := event.cursor.color) in (BLACK, WHITE):  # type: ignore
+                    self.sidebar.controls[color].clock_stop_signal.emit(
+                        self.players[color].clock.nexttime()  # type: ignore
+                    )
+                self.sidebar.controls[event.next_player].clock_update_signal.emit(
+                    self.players[event.next_player].clock.nexttime()  # type: ignore
+                )
             if (
                 self.mode == "PLAY"
                 and self.input_mode == InputMode.PLAY
                 and not event.cursor.is_empty
             ):
                 self.movesound.play()
+            self.sidebar.editbox.tree.moves_signal.emit(event.cursor)
 
         elif isinstance(event, Counted):
             self.input_mode = InputMode.COUNT
@@ -77,19 +87,24 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self.sidebar.game_signal.emit(event)
         if board:
             self.guiboard.boardupdate_signal.emit(event, board)
-        self.sidebar.editbox.tree.moves_signal.emit(event.cursor)
-
         self.update()
 
-    # def update_moves(self, result: MoveResult):
-    #     # self.sidebar.editbox.tree.moves_signal.emit(move)
-    #     self.guiboard.repaint()
-
     def period_ended(self, player):
-        if not self.timeout:
-            self.sidebar.controls[player.color].timeupdate_signal.emit()
+        super().period_ended(player)
+        if not self.ended:
+            self.sidebar.controls[player.color].clock_update_signal.emit(
+                player.clock.nexttime()
+            )
+
+    def player_lost_by_overtime2(self, player):
+        for color in (BLACK, WHITE):
+            clock = self.players[color].clock
+            nexttime = clock.nexttime()  # type: ignore
+            self.sidebar.controls[color].clock_stop_signal.emit(nexttime)
+        super().player_lost_by_overtime(player)
 
     def inter_rightclicked(self, inter: Intersection):
+        assert self.last_move_result
         cursor = self.last_move_result.cursor
         cursor.extras.decorations.pop(inter.coord, None)
         for color in (BLACK, WHITE):
@@ -98,13 +113,14 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self.game_callback("set_cursor", self.last_move_result.cursor)
 
     def inter_leftclicked(self, inter: Intersection):
+        assert self.last_move_result
         if self.input_mode == InputMode.PLAY:
             color = self.last_move_result.next_player
             if not color:
-                color = get_othercolor(self.last_move_result.cursor.color)
+                color = self.last_move_result.next_player
             if color and not isinstance(self.players[color], GuiPlayer):
                 return
-            self.callbacks["play"](color, inter.coord)
+            self._play(color, inter.coord)
         elif self.input_mode == InputMode.EDIT:
             if self._deco in (BLACK, WHITE):
                 self.last_move_result.cursor.extras.stones[self._deco].add(inter.coord)
@@ -134,8 +150,11 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         msg.show()
 
     def end(self, reason: str, color: Status):
-        for color_ in (BLACK, WHITE):
-            self.sidebar.controls[color_].timeended_signal.emit()
+        if self.timesettings:
+            for color_ in (BLACK, WHITE):
+                self.sidebar.controls[color_].clock_stop_signal.emit(
+                    self.players[color_].clock.nexttime()  # type: ignore
+                )
         super().end(reason, color)
         self.gameended_signal.emit(reason.format(color=color))
 
@@ -157,7 +176,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         self.guiboard.resize(mindim, mindim)
         self.center()
 
-    def closeEvent(self, event):
+    def closeEvent(self, _event):
         for player in self.players.values():
             player.end()
 
