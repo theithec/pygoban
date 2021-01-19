@@ -7,7 +7,7 @@ from .player import Player
 from . import logging, InputMode, END_BY_TIME
 from .game import MoveResult
 from .move import Empty
-from .status import BLACK, WHITE, Status
+from .status import BLACK, WHITE, Status, get_othercolor
 from .timesettings import PlayerTime, TimeSettings
 from .coords import array_indexes
 from .events import CursorChanged, Counted, Ended
@@ -43,7 +43,7 @@ class Controller:
         self.ended = False
 
     def player_lost_by_overtime(self, player):
-        self.end(END_BY_TIME, player.color)
+        self.end(END_BY_TIME, get_othercolor(player.color))
 
     def handle_rule_exception(self, exception):
         logging.info(str(exception))
@@ -98,6 +98,7 @@ class Controller:
         return to_sgf(self.infos, self.root)
 
     def end(self, reason: str, color: Status):
+        self.infos["RE"] = f"{color.shortval}+{reason}"
         logging.info("END: %s", reason.format(color=color))
         self.ended = True
         for player in self.players.values():

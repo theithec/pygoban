@@ -19,10 +19,6 @@ class Player:
         self.clock: Optional[TimeSettings] = None
         self.controller = None
 
-    def lost_by_overtime(self):
-        self.end()
-        self.controller.player_lost_by_overtime(self)
-
     def set_controller(self, controller):
         self.controller = controller
 

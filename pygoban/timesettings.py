@@ -61,7 +61,7 @@ class PlayerTime:
                 self.start_timer()
             else:
                 self.byoyomi.time_left = 0
-                self.player.lost_by_overtime()
+                self.player.controller.player_lost_by_overtime(self.player)
         self.player.controller.period_ended(self.player)
         logging.info("Timeperiod ended %s", self.player)
 
