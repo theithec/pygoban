@@ -1,3 +1,4 @@
+import mock
 from PyQt5.QtCore import QRect, Qt, pyqtSignal, QObject
 from PyQt5.QtWidgets import QWidget
 from pygoban.status import BLACK, WHITE
@@ -5,6 +6,12 @@ from pygoban.player import Player
 from pygoban.events import CursorChanged
 from pygoban.game import Game
 from pygoban.controller import Controller
+import pygoban.startgame
+from pygoban import get_argparser
+from PyQt5.QtWidgets import QApplication
+
+
+pygoban.startgame.QAPP = QApplication([])
 
 
 class MockedPlayer(Player):
@@ -43,7 +50,6 @@ class MockedPlayer(Player):
 class ControlledGame:
     playercls = MockedPlayer
     controllercls = Controller
-
     def __init__(self, infos, moves, callback, controllercls=None):
         self.game = Game(**infos)
         self.controller = controllercls(
@@ -60,7 +66,6 @@ class ControlledGame:
         for color in (BLACK, WHITE):
             player = self.controller.players[color]
             player.tests_controller = self
-            print("PLAC", player.tests_controller)
             self.game.add_listener(player, event_classes=[CursorChanged])
 
     def start(self):

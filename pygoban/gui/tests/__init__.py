@@ -3,6 +3,7 @@ from pygoban.tests import ControlledGame, MockedPlayer
 from pygoban.gui.gamewindow import GameWindow, Controller
 
 
+
 class MockedGuiPlayer(MockedPlayer):
     def handle_moves_stopped(self):
         self.tests_controller.done(self)
@@ -18,8 +19,10 @@ class QontrolledGame(QObject, ControlledGame):
         with qtbot.waitSignal(
             self.moves_done_signal, timeout=self.timeout
         ):  # as blocker:
+            # qtbot.addWidget(self.controller)
             self.game.start()
 
     def done(self, player):
         self.callback(self)
         self.moves_done_signal.emit()
+
