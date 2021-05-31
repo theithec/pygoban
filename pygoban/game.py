@@ -1,15 +1,14 @@
 from threading import Timer
 from typing import Dict, Tuple
 
+from . import END_BY_RESIGN, logging
 from .board import Board, MoveResult
-from .move import Move, Empty
-from .rulesets import BaseRuleset, RuleViolation
-from .status import BLACK, WHITE, Status, get_othercolor
-from .events import CursorChanged, Counted, Ended
 from .counting import counted_groups
+from .events import Counted, CursorChanged, Ended
+from .move import Empty, Move
+from .rulesets import BaseRuleset, RuleViolation
 from .sgf import INFO_KEYS
-from . import logging, END_BY_RESIGN
-
+from .status import BLACK, WHITE, Status, get_othercolor
 
 HANDICAPS: Dict[int, Tuple] = {2: ((3, 3), (15, 15))}
 HANDICAPS[3] = HANDICAPS[2] + ((15, 3),)
@@ -67,7 +66,7 @@ class Game:
 
     def fire_event(self, event):
         listeners = self.registrations.get(event.__class__, [])
-        logging.debug("FIRE %s ->  %s", event.__class__, listeners)
+        logging.debug("FIRE %s ->  %s", str(event), listeners)
         for listener, wait in listeners:
             # wait = True
             if wait:
@@ -75,7 +74,7 @@ class Game:
             else:
                 Timer(0, lambda: listener.handle_game_event(event)).start()
 
-    def _set_cursor(self, move, is_new=False):
+    def _set_cursor(self, move, is_new=False, empty=False):
         self._cursor = move
         path = self.get_path()
         self.prisoners = {BLACK: 0, WHITE: 0}
@@ -90,6 +89,7 @@ class Game:
                 cursor=self.cursor,
                 board=self.board,
                 is_new=is_new,
+                empty=empty,
             )
         )
 
@@ -170,31 +170,34 @@ class Game:
         print()
         logging.info("\n\nPlay %s %s", color, pos)
         move = Move(color, pos)
-        if pos == Empty.UNDO and self.cursor != self.root:
-            self.undo()
-            return None
         if pos == Empty.RESIGN:
             self.resign(color)
             return None
-        result = self.test_move(move)
-        try:
-            self.ruleset.validate(result)
-        except RuleViolation as err:
-            logging.info("RuleViolation: %s", err)
-            result.exception = err
-            result.next_player = color
-        if not result.exception:
-            self._apply_result(result)
+        if pos == Empty.UNDO:
+            if self.cursor.parent:
+                self.undo()
+            else:
+                logging.info("Can not undo. No parent")
+            return None
+        else:
+            result = self.test_move(move)
+            try:
+                self.ruleset.validate(result)
+            except RuleViolation as err:
+                logging.info("RuleViolation: %s", err)
+                result.exception = err
+                result.next_player = color
+            if not result.exception:
+                self._apply_result(result)
 
-        if not move.pos == Empty.UNDO:
-            self.fire_event(
-                CursorChanged(
-                    next_player=result.next_player,
-                    cursor=result.move,
-                    is_new=result.is_new,
-                    board=self.board,
-                )
+        self.fire_event(
+            CursorChanged(
+                next_player=result.next_player,
+                cursor=result.move,
+                is_new=result.is_new,
+                board=self.board,
             )
+        )
         return result
 
     def count(self, is_final=False):
@@ -227,6 +230,7 @@ class Game:
 
     def undo(self):
         curr = self.cursor
+        logging.debug("UNDO0.  %s", str(curr))
         while parent := curr.parent:
             if parent:
                 curr = parent
@@ -237,9 +241,9 @@ class Game:
             break
         if not curr.is_empty or curr.pos == Empty.FIRST_MOVE:
             logging.info("UNDO. Set Cursor: %s", curr)
-            self._set_cursor(curr)
+            self._set_cursor(curr, empty=Empty.UNDO)
         else:
             logging.info("CAN NOT UNDO. Cursor: %s", self.cursor)
 
     def resign(self, color: Status):
-        self.fire_event(Ended(msg=END_BY_RESIGN, color=get_othercolor(color)))
+        self.fire_event(Ended(msg=END_BY_RESIGN, color=color))

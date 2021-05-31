@@ -1,8 +1,9 @@
 # pylint: disable=import-outside-toplevel, global-statement
-# because qt is optional, global is forQApp
+# because qt is optional, global is for QApp
 import argparse
 import sys
 from typing import Any
+import logging
 
 from . import getconfig, get_argparser
 from .game import BLACK, WHITE, Game
@@ -44,14 +45,14 @@ def startgame(args: argparse.Namespace, init_gui: bool, root=None):
         if not cmd:
             players[col] = player_cls(col, name=name)
         else:
-            players[col] = GTPPlayer(col, name=name, cmd=config["GTP"][cmd])
+            players[col] = GTPPlayer(col, name=name or cmd, cmd=config["GTP"][cmd])
 
     defaults = {
         "SZ": args.boardsize or int(config["PYGOBAN"]["boardsize"]),
         "KM": args.komi or config["PYGOBAN"]["komi"],
         "RU": "default",
-        "PB": args.black_name,
-        "PW": args.white_name,
+        "PB": players[BLACK].name,
+        "PW": players[WHITE].name,
         "GN": "-".join([players[col].name for col in (BLACK, WHITE)]),
     }
     if args.sgf_file:

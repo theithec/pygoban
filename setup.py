@@ -1,4 +1,3 @@
-
 import setuptools
 
 with open("README.md", "r") as fobj:
@@ -14,20 +13,20 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/theithec/pygoban",
     packages=setuptools.find_packages(exclude=("tests",)),
-    #include_package_data=True,
+    # include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)"
         "Operating System :: OS Independent",
-        "Environment :: X11 Applications :: Qt"
+        "Environment :: X11 Applications :: Qt",
     ],
-    python_requires='>=3.8',
+    python_requires=">=3.8",
     install_requires=[
-        'pyqt5>=5.15.2',
+        "pyqt5>=5.15.2",
     ],
     entry_points={
         "console_scripts": [
             "pygoban=pygoban.startgame:startpygoban",
         ]
-    }
+    },
 )

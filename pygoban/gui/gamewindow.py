@@ -14,6 +14,7 @@ from pygoban.events import Event, Counted, CursorChanged, Ended
 from pygoban.player import Player
 from pygoban.status import BLACK, EMPTY, WHITE, Status
 from pygoban.timesettings import TimeSettings
+from pygoban.move import Empty
 
 from . import BASE_DIR, CenteredMixin
 from .guiboard import GuiBoard
@@ -60,6 +61,8 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
                 nexttime = clock.nexttime()  # type: ignore
                 self.sidebar.controls[color].clock_stop_signal.emit(nexttime)
         if isinstance(event, CursorChanged):
+            if event.cursor.pos == Empty.UNDO:
+                return
             if self.timesettings:
                 if (color := event.cursor.color) in (BLACK, WHITE):  # type: ignore
                     self.sidebar.controls[color].clock_stop_signal.emit(

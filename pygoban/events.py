@@ -1,6 +1,7 @@
 from typing import Optional, Dict
 from dataclasses import dataclass, field
 from . import board as board_, move as move_, rulesets
+from .move import Empty
 from .status import Status
 
 
@@ -15,9 +16,10 @@ class CursorChanged(Event):
     next_player: Optional[Status] = None
     is_new: bool = False
     exception: Optional[rulesets.RuleViolation] = None
+    empty: Optional[Empty] = None
 
     def __str__(self):
-        return f"Cursor Changed: {self.cursor} is_new: {self.is_new} next_player={self.next_player}"
+        return f"Cursor Changed: {self.cursor} is_new: {self.is_new} next_player={self.next_player}, empty={self.empty}"
 
 
 @dataclass

@@ -3,7 +3,6 @@ from pygoban.tests import ControlledGame, MockedPlayer
 from pygoban.gui.gamewindow import GameWindow, Controller
 
 
-
 class MockedGuiPlayer(MockedPlayer):
     def handle_moves_stopped(self):
         self.tests_controller.done(self)
@@ -25,4 +24,3 @@ class QontrolledGame(QObject, ControlledGame):
     def done(self, player):
         self.callback(self)
         self.moves_done_signal.emit()
-

@@ -36,7 +36,6 @@ class Controller:
 
         self.move_start = None
         self.last_move_result: Optional[CursorChanged] = None
-        # self.count: Optional[Counted] = None
         self.root = None
         self.mode = mode
         self.input_mode = InputMode.PLAY
@@ -80,7 +79,7 @@ class Controller:
 
     def handle_game_event(self, event):
         if isinstance(event, CursorChanged):
-            self.last_move_result: MoveResult = event
+            self.last_move_result = event
             if event.cursor.is_root:
                 self.root = event.cursor
             if self.timesettings:

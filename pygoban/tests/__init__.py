@@ -50,6 +50,7 @@ class MockedPlayer(Player):
 class ControlledGame:
     playercls = MockedPlayer
     controllercls = Controller
+
     def __init__(self, infos, moves, callback, controllercls=None):
         self.game = Game(**infos)
         self.controller = controllercls(

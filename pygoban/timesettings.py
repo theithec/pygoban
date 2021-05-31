@@ -73,7 +73,6 @@ class PlayerTime:
         assert not self.timer or self.timer.finished.is_set(), "T " + str(self.timer)
         self.timer = _PlayerTimer(self.nexttime(), self.period_ended)
 
-    # def subtract_from_now(self, timestamp):
     def subtract(self, seconds: int):
         if self.maintime > 0:
             self.maintime -= seconds

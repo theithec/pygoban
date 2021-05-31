@@ -1,12 +1,14 @@
 from __future__ import annotations
+
 import subprocess
 import time
 from threading import Thread
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-from . import logging, status, InputMode
-from .coords import gtp_coords, array_indexes
-from .events import CursorChanged, Counted
+from . import InputMode, logging, status
+from .coords import array_indexes, gtp_coords
+from .events import CursorChanged
+from .move import Empty
 
 if TYPE_CHECKING:
     from pygoban.timesettings import TimeSettings
@@ -64,6 +66,8 @@ class GTPComm(Thread):
         self.start()
 
     def run(self):
+
+        logging.debug("gtpcmd0(%s) %ss", self.player, self.cmd)
         if not self.player.process.pid:
             return
 
@@ -124,6 +128,7 @@ class GTPPlayer(Player):
 
     def do_cmd(self, cmd, handle_output=True):
         GTPComm(self, cmd, handle_output=handle_output).join()
+        # GTPComm(self, "showboard" , handle_output=False).join()
 
     def end(self):
         self.do_cmd("quit", False)
@@ -134,26 +139,41 @@ class GTPPlayer(Player):
         self.do_cmd("genmove " + self.color.strval.lower())
 
     def handle_game_event(self, event):
-        result = event
-        if isinstance(event, CursorChanged):
-            vertex = None
-            if not result.exception:
-                if result.cursor and result.cursor.color != self.color:
-                    if result.cursor.is_pass:
-                        vertex = "pass"
-                    elif result.cursor.is_empty:
-                        pass
-                    else:
-                        vertex = gtp_coords(
-                            *result.cursor.pos, self.controller.infos["SZ"]
-                        )
-            if vertex:
-                self.do_cmd(
-                    "play %s %s" % (result.cursor.color.strval.lower(), vertex), False
-                )
-                # self.do_cmd("showboard", False)
-            if (
-                self.controller.input_mode == InputMode.PLAY
-                and result.next_player == self.color
-            ):
-                self._get_move()
+        if (
+            event.exception
+            or not isinstance(event, CursorChanged)
+            or not event.cursor
+            or event.cursor.color == self.color
+        ):
+            return
+
+        vertex = None
+        if event.cursor.is_pass:
+            vertex = "pass"
+        # elif event.cursor.is_empty:
+        #    print("C", event.cursor)
+        #    pass
+        elif event.empty == Empty.UNDO:
+            self.do_cmd("undo")
+            self.do_cmd("undo")
+            self.controller.handle_gtp_move(self.color, "undo")
+        #    vertex = "pass"
+        #    #    print("C", result.cursor)
+        # self.do_cmd("undo")
+        # self.controller.handle_gtp_move(self.color, "pass")
+        elif not isinstance(event.cursor.pos, Empty) and not event.empty:
+            vertex = gtp_coords(*event.cursor.pos, self.controller.infos["SZ"])
+        if vertex:
+            self.do_cmd(
+                "play %s %s" % (event.cursor.color.strval.lower(), vertex), False
+            )
+            # self.do_cmd("showboard", False)
+        if (
+            event.empty != Empty.UNDO
+            and self.controller.input_mode == InputMode.PLAY
+            and event.next_player == self.color
+        ):
+            self._get_move()
+        # else:
+        #    if event.empty == Empty.UNDO:
+        #        self.controller.handle_gtp_move(self.color, "pass")
