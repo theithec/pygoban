@@ -1,6 +1,7 @@
 # pylint: disable=invalid-name
 # because qt
 import os
+from enum import Enum
 from typing import Dict, Optional
 
 from PyQt5.QtCore import pyqtSignal
@@ -23,6 +24,10 @@ from .player import GuiPlayer
 from .sidebar import Sidebar
 
 
+class GuiMode(Enum):
+    edit = "edit"
+    play = "play"
+
 class GameWindow(QMainWindow, Controller, CenteredMixin):
 
     gameended_signal = pyqtSignal(str)
@@ -34,7 +39,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         white: Player,
         callbacks: Dict,
         infos: Dict,
-        mode: str,
+        gui_mode: GuiMode = GuiMode.play,
         timesettings: TimeSettings = None,
         input_mode: InputMode = None
     ):
@@ -43,10 +48,10 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
             white=white,
             callbacks=callbacks,
             infos=infos,
-            mode=mode,
             timesettings=timesettings,
             input_mode=input_mode
         )
+        self.gui_mode = gui_mode
         self.guiboard = GuiBoard(self, int(infos["SZ"]))
         self.sidebar = Sidebar(self)
 
@@ -75,7 +80,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
                     self.players[event.next_player].clock.nexttime()  # type: ignore
                 )
             if (
-                self.mode == "PLAY"
+                self.gui_mode == GuiMode.play
                 and self.input_mode == InputMode.PLAY
                 and not event.cursor.is_empty
             ):
@@ -85,7 +90,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         elif isinstance(event, Counted):
             self.input_mode = InputMode.COUNT
         elif isinstance(event, Ended):
-            self.mode = "EDIT"
+            self.gui_mode = GuiMode.edit
             self.input_mode = InputMode.PLAY
             assert event.color
             self.end(event.msg, event.color)

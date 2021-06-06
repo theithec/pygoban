@@ -161,14 +161,14 @@ class GameBox(Box):
     def update_controlls(self, _result):
         is_play = (
             self.controller.input_mode == InputMode.PLAY
-            and self.controller.mode == "PLAY"
+            and self.controller.gui_mode == gamewindow.GuiMode.play
         )
         self.pass_btn.setEnabled(is_play)
         self.undo_btn.setEnabled(is_play)
         self.resign_btn.setEnabled(is_play)
         self.count_btn.setEnabled(
             self.controller.input_mode == InputMode.COUNT
-            or self.controller.mode == "EDIT"
+            or self.controller.gui_mode == gamewindow.GuiMode.edit
         )
 
     def do_undo(self):
@@ -377,8 +377,8 @@ class Sidebar(QFrame):
         assist(cmd="gnugo", orig=self.controller)
 
     def update_controlls(self, event):
-        self.editbox.setVisible(self.controller.mode == "EDIT")
-        self.gamebox.setVisible(self.controller.mode == "PLAY")
+        self.editbox.setVisible(self.controller.gui_mode == gamewindow.GuiMode.edit)
+        self.gamebox.setVisible(self.controller.gui_mode == gamewindow.GuiMode.play)
         for box in self.boxes:
             if box.isVisible():
                 box.update_controlls(event)

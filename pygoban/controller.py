@@ -22,7 +22,7 @@ class Controller:
         white: Player,
         callbacks: Dict,
         infos: Dict,
-        mode="PLAY",
+        #mode="PLAY",
         input_mode=InputMode.PLAY,
         timesettings: TimeSettings = None,
     ):
@@ -35,7 +35,7 @@ class Controller:
         self.move_start = None
         self.last_move_result: Optional[CursorChanged] = None
         self.root = None
-        self.mode = mode
+        #self.mode = mode
         self.input_mode = input_mode
         print("i2", self.input_mode)
         self.assistents: Dict[str, Controller] = {}

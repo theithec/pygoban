@@ -46,7 +46,6 @@ def initgame(
     sgf_file=None,
     handicap=None,
     time=None,
-    mode=None,
     input_mode=InputMode.PLAY,
     extra_controller_kwargs: Optional[Dict] = None
     # **kwargs
@@ -66,7 +65,6 @@ def initgame(
             game = parse(sgftxt, defaults=defaults)
             for color, key in ((BLACK, "PB"), (WHITE, "PW")):
                 players[color].name = game.infos.get(key, players[color].name)
-        mode = "EDIT"
     else:
         game = Game(HA=handicap, **defaults)
 
@@ -75,7 +73,6 @@ def initgame(
         white=players[WHITE],
         callbacks=game.get_callbacks(),
         infos=game.infos,
-        mode=mode,
         input_mode=input_mode
     )
     if time:
@@ -141,7 +138,6 @@ def startgame(
         handicap=handicap,
         time=time,
         controller_cls=get_control_cls(nogui),
-        mode=mode
     )
 
     game.start()
