@@ -112,5 +112,5 @@ class NewGameDialog(QDialog):
             timestr = ":".join([edit.text() for edit in self.time_edits.values()])
             args.append(f"--time=" + timestr)
         args = self.parser.parse_args(args)
-        self.starter_callback(args, init_gui=False)
+        self.starter_callback(**vars(args), init_gui=False)
         self.close()

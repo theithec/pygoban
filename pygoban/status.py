@@ -45,6 +45,6 @@ WHITE_LIB = Status(6, "W")
 STATUS = {int(sts): sts for sts in (KO, EMPTY, BLACK, WHITE, DEAD_BLACK, DEAD_WHITE)}
 
 
-def get_othercolor(color: Status):
+def get_othercolor(color: Status) -> Status:
     assert color in (BLACK, WHITE, None)
     return BLACK if not color or color == WHITE else WHITE

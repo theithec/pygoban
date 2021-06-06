@@ -17,13 +17,15 @@ from PyQt5.QtWidgets import (
     QTextEdit,
 )
 
-from pygoban.status import BLACK, WHITE
+from pygoban.status import BLACK, WHITE, get_othercolor
 from pygoban.move import Empty
-from pygoban.player import Player
+from pygoban.player import Player, PassingPlayer
 from pygoban.sgf import CR, SQ, TR
 from pygoban import InputMode, events, get_argparser
-from pygoban.startgame import startgame
+from pygoban.startgame import initgame, startgame
 from pygoban.events import CursorChanged
+from pygoban.controller import Controller
+from pygoban.assistence import assist
 
 
 from . import btn_adder, gamewindow
@@ -342,7 +344,8 @@ class Sidebar(QFrame):
         menu.addAction(save_action)
         menu.addSeparator()
         newwindow_action = QAction("Open in new window", self)
-        newwindow_action.triggered.connect(self.new_open)
+        newwindow_action.triggered.connect(self.assistence)
+        #newwindow_action.triggered.connect(self.new_open)
         menu.addAction(newwindow_action)
         return menu
 
@@ -369,6 +372,9 @@ class Sidebar(QFrame):
         c = startgame(args, init_gui=False, root=copy(self.controller.root))[1]
         c.input_mode = InputMode.PLAY
         # c.sidebar.editbox.do_next_variation()
+
+    def assistence(self):
+        assist(cmd="gnugo", orig=self.controller)
 
     def update_controlls(self, event):
         self.editbox.setVisible(self.controller.mode == "EDIT")

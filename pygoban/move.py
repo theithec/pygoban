@@ -9,6 +9,7 @@ from .status import Status, BLACK, WHITE
 class MoveExtras:
     comments: List[str] = field(default_factory=list)
     decorations: Dict[str, str] = field(default_factory=dict)
+    # TODO combine/toggle
     stones: Dict = field(default_factory=lambda: {BLACK: set(), WHITE: set()})
     empty: Set[str] = field(default_factory=set)
     nr = 1
@@ -20,10 +21,9 @@ class MoveExtras:
 
 class Empty(Enum):
     FIRST_MOVE = "first_move"
-    UNDO = "undo"
     PASS = "pass"
-    ADD_STONES = "ADD_STONES"
-    RESIGN = "RESIGN"
+    RESIGN = "resign"
+    UNDO = "undo"
 
 
 class Move:

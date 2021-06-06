@@ -23,23 +23,27 @@ class Controller:
         callbacks: Dict,
         infos: Dict,
         mode="PLAY",
+        input_mode=InputMode.PLAY,
         timesettings: TimeSettings = None,
     ):
+        print("i1")
         self.players = {BLACK: black, WHITE: white}
         self.timesettings = timesettings
         self.callbacks = callbacks
         self.infos = infos
-        for player in self.players.values():
-            player.set_controller(self)
-            if self.timesettings:
-                player.set_clock(PlayerTime(player, self.timesettings))
 
         self.move_start = None
         self.last_move_result: Optional[CursorChanged] = None
         self.root = None
         self.mode = mode
-        self.input_mode = InputMode.PLAY
+        self.input_mode = input_mode
+        print("i2", self.input_mode)
+        self.assistents: Dict[str, Controller] = {}
         self.ended = False
+        for player in self.players.values():
+            player.set_controller(self)
+            if self.timesettings:
+                player.set_clock(PlayerTime(player, self.timesettings))
 
     def player_lost_by_overtime(self, player):
         self.end(END_BY_TIME, get_othercolor(player.color))
@@ -109,7 +113,7 @@ class Controller:
 
 class ConsoleController(Controller):
     def update_board(self, event, board=None):
-        print(event.board)
+        #print(event.board)
         print(
             "\n".join(
                 [

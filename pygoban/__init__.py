@@ -9,7 +9,7 @@ import logging
 import os
 import sysconfig
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)  # kill with <Ctrl-C>
 

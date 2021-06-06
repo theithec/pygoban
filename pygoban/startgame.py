@@ -1,16 +1,18 @@
 # pylint: disable=import-outside-toplevel, global-statement
 # because qt is optional, global is for QApp
 import argparse
-import sys
-from typing import Any
 import logging
+import sys
+from typing import Any, Dict, Optional
 
-from . import getconfig, get_argparser
-from .game import BLACK, WHITE, Game
-from .player import GTPPlayer
+from . import get_argparser, getconfig, InputMode
+from .events import Counted, CursorChanged, Ended, Undo
+from .status import Status, BLACK, WHITE
+from .game import Game
+from .player import Player, GTPPlayer
 from .sgf.reader import parse
 from .timesettings import TimeSettings
-from .events import CursorChanged, Counted, Ended
+from .controller import Controller as _Controller
 
 QAPP: Any = None
 GAME_WINDOWS = []
@@ -22,6 +24,7 @@ def get_control_cls(nogui):
         from .controller import ConsoleController as Controller
     else:
         from .gui.gamewindow import GameWindow as Controller
+    print("C", Controller, nogui)
     return Controller
 
 
@@ -33,65 +36,113 @@ def get_player_cls(nogui):
     return HumanPlayer
 
 
-def startgame(args: argparse.Namespace, init_gui: bool, root=None):
+def initgame(
+    controller_cls: _Controller,
+    players: Dict[Status, Player],
+    boardsize=None,
+    komi=None,
+    root=None,
+    nogui=False,
+    sgf_file=None,
+    handicap=None,
+    time=None,
+    mode=None,
+    input_mode=InputMode.PLAY,
+    extra_controller_kwargs: Optional[Dict] = None
+    # **kwargs
+):
     config = getconfig()
-    players = {}
-    controller_cls = get_control_cls(args.nogui)
-    player_cls = get_player_cls(args.nogui)
-    for col, name, cmd in (
-        (BLACK, args.black_name, args.black_gtp),
-        (WHITE, args.white_name, args.white_gtp),
-    ):
-        if not cmd:
-            players[col] = player_cls(col, name=name)
-        else:
-            players[col] = GTPPlayer(col, name=name or cmd, cmd=config["GTP"][cmd])
-
     defaults = {
-        "SZ": args.boardsize or int(config["PYGOBAN"]["boardsize"]),
-        "KM": args.komi or config["PYGOBAN"]["komi"],
+        "SZ": boardsize or int(config["PYGOBAN"]["boardsize"]),
+        "KM": komi or config["PYGOBAN"]["komi"],
         "RU": "default",
         "PB": players[BLACK].name,
         "PW": players[WHITE].name,
         "GN": "-".join([players[col].name for col in (BLACK, WHITE)]),
     }
-    if args.sgf_file:
-        with open(args.sgf_file) as fileobj:
+    if sgf_file:
+        with open(sgf_file) as fileobj:
             sgftxt = fileobj.read()
             game = parse(sgftxt, defaults=defaults)
             for color, key in ((BLACK, "PB"), (WHITE, "PW")):
                 players[color].name = game.infos.get(key, players[color].name)
-        args.mode = "EDIT"
+        mode = "EDIT"
     else:
-        game = Game(HA=args.handicap, **defaults)
+        game = Game(HA=handicap, **defaults)
 
     controller_kwargs = dict(
         black=players[BLACK],
         white=players[WHITE],
         callbacks=game.get_callbacks(),
         infos=game.infos,
-        mode=args.mode,
+        mode=mode,
+        input_mode=input_mode
     )
-    if args.time:
+    if time:
         timekwargs = dict(
             zip(
                 ("maintime", "byoyomi_time", "byoyomi_num", "byoyomi_stones"),
-                [int(arg) for arg in args.time.split(":")],
+                [int(arg) for arg in time.split(":")],
             )
         )
         controller_kwargs["timesettings"] = TimeSettings(**timekwargs)
+    if extra_controller_kwargs:
+        controller_kwargs.update(extra_controller_kwargs)
     controller = controller_cls(**controller_kwargs)
-    game.add_listener(controller, [CursorChanged, Counted, Ended], wait=True)
+    game.add_listener(controller, [CursorChanged, Undo, Counted, Ended], wait=True)
     for col in (BLACK, WHITE):
-        game.add_listener(players[col], [CursorChanged, Counted])
+        game.add_listener(players[col], [CursorChanged, Undo, Counted])
     if root:
         game.root = root
 
-    if not args.nogui:
+    if not nogui:
         controller.setMinimumSize(800, 600)
         controller.show()
         controller.activateWindow()
         GAME_WINDOWS.append(controller)
+
+    return game, controller
+
+
+def startgame(
+    boardsize=None,
+    komi=None,
+    black_name=None,
+    white_name=None,
+    white_gtp=None,
+    black_gtp=None,
+    root=None,
+    init_gui=False,
+    nogui=False,
+    sgf_file=None,
+    handicap=None,
+    time=None,
+    mode=None
+    # **kwargs
+):
+
+    players = {}
+    config = getconfig()
+    player_cls = get_player_cls(nogui)
+    for col, name, cmd in (
+        (BLACK, black_name, black_gtp),
+        (WHITE, white_name, white_gtp),
+    ):
+        if not cmd:
+            players[col] = player_cls(col, name=name)
+        else:
+            players[col] = GTPPlayer(col, name=name or cmd, cmd=config["GTP"][cmd])
+    game, controller = initgame(
+        boardsize=boardsize,
+        komi=komi,
+        root=root,
+        players=players,
+        sgf_file=sgf_file,
+        handicap=handicap,
+        time=time,
+        controller_cls=get_control_cls(nogui),
+        mode=mode
+    )
 
     game.start()
     if init_gui:
@@ -115,6 +166,6 @@ def startpygoban():
             win = StartWindow(parser, starter_callback=startgame)
             win.show()
             sys.exit(QAPP.exec_())
-        startgame(args, init_gui=True)
+        startgame(**vars(args), init_gui=True)
     else:
-        startgame(args, init_gui=False)
+        startgame(**vars(args), init_gui=False)

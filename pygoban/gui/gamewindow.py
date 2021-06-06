@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox
 
 from pygoban import InputMode
 from pygoban.controller import Controller
-from pygoban.events import Event, Counted, CursorChanged, Ended
+from pygoban.events import Event, Counted, CursorChanged, Ended, Undo
 from pygoban.player import Player
 from pygoban.status import BLACK, EMPTY, WHITE, Status
 from pygoban.timesettings import TimeSettings
@@ -36,6 +36,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         infos: Dict,
         mode: str,
         timesettings: TimeSettings = None,
+        input_mode: InputMode = None
     ):
         super().__init__(
             black=black,
@@ -44,6 +45,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
             infos=infos,
             mode=mode,
             timesettings=timesettings,
+            input_mode=input_mode
         )
         self.guiboard = GuiBoard(self, int(infos["SZ"]))
         self.sidebar = Sidebar(self)
@@ -60,9 +62,10 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
                 clock = self.players[color].clock
                 nexttime = clock.nexttime()  # type: ignore
                 self.sidebar.controls[color].clock_stop_signal.emit(nexttime)
-        if isinstance(event, CursorChanged):
-            if event.cursor.pos == Empty.UNDO:
-                return
+        if isinstance(event, Undo):
+            pass
+            self.update()
+        elif isinstance(event, CursorChanged):
             if self.timesettings:
                 if (color := event.cursor.color) in (BLACK, WHITE):  # type: ignore
                     self.sidebar.controls[color].clock_stop_signal.emit(
