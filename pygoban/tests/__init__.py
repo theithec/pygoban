@@ -58,7 +58,6 @@ class ControlledGame:
             white=self.playercls(color=WHITE),
             callbacks=self.game.get_callbacks(),
             infos=infos,
-            mode="PLAY",
         )
         self.callback = callback
         self.game.add_listener(

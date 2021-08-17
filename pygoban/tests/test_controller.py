@@ -29,6 +29,5 @@ def test_change_mode(mocker):
         sgf_file=None,
         handicap=0,
         time=None,
-        mode=None,
     )
     game, controller = startgame.startgame(args, init_gui=False)

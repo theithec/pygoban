@@ -14,31 +14,45 @@ from .events import CursorChanged, Counted, Ended
 from .sgf.writer import to_sgf
 
 
-# pylint: disable=no-self-use
-class Controller:
+class GameListenerMixin:
+    def handle_game_event(self, event):
+        if isinstance(event, CursorChanged):
+            self.last_move_result = event
+            if event.cursor.is_root:
+                self.root = event.cursor
+            self.update_time(event)
+            self.update_board(event, event.board)
+
+        elif isinstance(event, Counted):
+            self.update_board(event, event.board)
+
+        elif isinstance(event, Ended):
+            self.input_mode = InputMode.ENDED
+            self.update_board(event, None)
+
+    def update_board(self, event: CursorChanged, board):
+        raise NotImplementedError()
+
+
+class ControllerMixin(GameListenerMixin):
     def __init__(
         self,
         black: Player,
         white: Player,
         callbacks: Dict,
         infos: Dict,
-        #mode="PLAY",
         input_mode=InputMode.PLAY,
         timesettings: TimeSettings = None,
     ):
-        print("i1")
         self.players = {BLACK: black, WHITE: white}
         self.timesettings = timesettings
         self.callbacks = callbacks
         self.infos = infos
-
         self.move_start = None
         self.last_move_result: Optional[CursorChanged] = None
         self.root = None
-        #self.mode = mode
         self.input_mode = input_mode
-        print("i2", self.input_mode)
-        self.assistents: Dict[str, Controller] = {}
+        self.assistents: Dict[str, ControllerMixin] = {}
         self.ended = False
         for player in self.players.values():
             player.set_controller(self)
@@ -52,13 +66,15 @@ class Controller:
         logging.info(str(exception))
 
     def update_time(self, event):
+        if not self.timesettings:
+            return
         self.move_start = self.move_start or datetime.datetime.now()
         if (color := event.cursor.color) in (BLACK, WHITE):
             self.players[color].clock.subtract(
                 (datetime.datetime.now() - self.move_start).seconds
             )
             self.players[color].clock.cancel_timer()
-        time.sleep(0.2)
+        # time.sleep(0.2)
         self.move_start = datetime.datetime.now()
         self.players[event.next_player].clock.start_timer()
 
@@ -72,30 +88,11 @@ class Controller:
     def game_callback(self, name, *args, **kwargs):
         self.callbacks[name](*args, **kwargs)
 
-    def update_board(self, event: CursorChanged, board):
-        raise NotImplementedError()
-
     def period_ended(self, player):
         self.move_start = datetime.datetime.now()
 
     def _play(self, color, pos):
         self.game_callback("play", color=color, pos=pos)
-
-    def handle_game_event(self, event):
-        if isinstance(event, CursorChanged):
-            self.last_move_result = event
-            if event.cursor.is_root:
-                self.root = event.cursor
-            if self.timesettings:
-                self.update_time(event)
-            self.update_board(event, event.board)
-
-        elif isinstance(event, Counted):
-            self.update_board(event, event.board)
-
-        elif isinstance(event, Ended):
-            self.input_mode = InputMode.ENDED
-            self.update_board(event, None)
 
     def to_sgf(self):
         return to_sgf(self.infos, self.root)
@@ -111,9 +108,9 @@ class Controller:
         sys.exit()
 
 
-class ConsoleController(Controller):
+class ConsoleController(ControllerMixin):
     def update_board(self, event, board=None):
-        #print(event.board)
+        # print(event.board)
         print(
             "\n".join(
                 [

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Dict, Optional
 
 from . import board as board_
@@ -11,20 +12,23 @@ class Event:
     exception: Optional[rulesets.RuleViolation] = None
 
 
+class Reset(Enum):
+    UNDO = "UNDO"
+    ANY = "ANY"
+
+
 @dataclass
 class CursorChanged(Event):
     cursor: move_.Move
     board: board_.Board
     next_player: Optional[Status] = None
-    is_new: bool = False
+    reset: Optional[Reset] = None
 
     def __str__(self):
-        return f"{self.__class__.__name__}: {self.cursor} is_new: {self.is_new} next_player={self.next_player}"
-
-
-@dataclass
-class Undo(CursorChanged):
-    is_new = True
+        return (
+            f"{self.__class__.__name__}: {self.cursor} next_player={self.next_player} "
+            f"{self.reset}"
+        )
 
 
 @dataclass

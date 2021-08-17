@@ -4,7 +4,7 @@ from typing import Dict, Tuple
 from . import END_BY_RESIGN, logging
 from .board import Board, MoveResult
 from .counting import counted_groups
-from .events import Counted, CursorChanged, Ended, Undo
+from .events import Counted, CursorChanged, Ended, Reset
 from .move import Empty, Move
 from .rulesets import BaseRuleset, RuleViolation
 from .sgf import INFO_KEYS
@@ -26,6 +26,7 @@ HANDICAPS[9] = HANDICAPS[8] + ((15, 9),)
 class Game:
     def __init__(self, **infos):
         self.infos = {k: v for k in INFO_KEYS if (v := infos.get(k))}
+        print("iii", infos["SZ"])
         self.board = Board(int(infos["SZ"]))
         self.ruleset = BaseRuleset(self)
         self.prisoners = {BLACK: 0, WHITE: 0}
@@ -48,8 +49,7 @@ class Game:
         return get_othercolor(self.cursor.color)
 
     def start(self):
-        is_new = self.cursor.is_root
-        self._set_cursor(self.cursor, is_new=is_new)
+        self._set_cursor(self.cursor)
 
     def _set_handicap(self):
         handicap = self.infos.get("HA")
@@ -68,13 +68,13 @@ class Game:
         listeners = self.registrations.get(event.__class__, [])
         logging.debug("FIRE %s ->  %s", str(event), listeners)
         for listener, wait in listeners:
-            # wait = True
+            wait = False
             if wait:
                 listener.handle_game_event(event)
             else:
                 Timer(0, lambda: listener.handle_game_event(event)).start()
 
-    def _set_cursor(self, move, is_new=False, fire_event=True):
+    def _set_cursor(self, move, reset=None):
         self._cursor = move
         path = self.get_path()
         self.prisoners = {BLACK: 0, WHITE: 0}
@@ -83,14 +83,13 @@ class Game:
         self._cursor = self.root
         for pmove in path:
             self.test_move(pmove, apply_result=True)
-        if fire_event:
-            event = CursorChanged(
-                next_player=self.nextcolor,
-                cursor=self.cursor,
-                board=self.board,
-                is_new=is_new,
-            )
-            self.fire_event(event)
+        event = CursorChanged(
+            next_player=self.nextcolor,
+            cursor=self.cursor,
+            board=self.board,
+            reset=reset,
+        )
+        self.fire_event(event)
 
     def test_move(self, move, apply_result=False):
         is_new = True
@@ -105,7 +104,9 @@ class Game:
             result = MoveResult(next_player=get_othercolor(self.nextcolor), move=move)
             result.is_new = is_new
         result.move = move
-        result.next_player = result.next_player or get_othercolor(self.nextcolor)  # OLD cursor!
+        result.next_player = result.next_player or get_othercolor(
+            self.nextcolor
+        )  # OLD cursor!
         if apply_result:
             self._apply_result(result)
         return result
@@ -116,7 +117,11 @@ class Game:
             self.board.apply_result(result)
             self.prisoners[move.color] += len(result.killed)
         elif move.is_pass:
-            if self.cursor.is_pass and self.cursor.parent and self.cursor.parent.is_pass:
+            if (
+                self.cursor.is_pass
+                and self.cursor.parent
+                and self.cursor.parent.is_pass
+            ):
                 result.next_player = None
                 self.count()
         elif move.pos == Empty.RESIGN:
@@ -186,7 +191,6 @@ class Game:
                 CursorChanged(
                     next_player=result.next_player,
                     cursor=result.move,
-                    is_new=result.is_new,
                     board=self.board,
                 )
             )
@@ -208,7 +212,9 @@ class Game:
                 prisoners=result.prisoners,
             )
         else:
-            event = Counted(points=result.points, prisoners=result.prisoners, board=self.board)
+            event = Counted(
+                points=result.points, prisoners=result.prisoners, board=self.board
+            )
         self.fire_event(event)
 
     def toggle_status(self, pos):
@@ -232,13 +238,7 @@ class Game:
             break
         if not curr.is_empty or curr.pos == Empty.FIRST_MOVE:
             logging.info("UNDO. Set Cursor: %s", curr)
-            self._set_cursor(curr, fire_event=False)
-            event = Undo(
-                cursor=self.cursor,
-                board=self.board,
-                next_player=get_othercolor(self.cursor.color)
-            )
-            self.fire_event(event)
+            self._set_cursor(curr, reset=Reset.UNDO)
         else:
             logging.info("CAN NOT UNDO. Cursor: %s", self.cursor)
 

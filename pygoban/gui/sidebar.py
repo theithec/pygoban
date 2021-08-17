@@ -24,7 +24,6 @@ from pygoban.sgf import CR, SQ, TR
 from pygoban import InputMode, events, get_argparser
 from pygoban.startgame import initgame, startgame
 from pygoban.events import CursorChanged
-from pygoban.controller import Controller
 from pygoban.assistence import assist
 
 
@@ -344,8 +343,8 @@ class Sidebar(QFrame):
         menu.addAction(save_action)
         menu.addSeparator()
         newwindow_action = QAction("Open in new window", self)
-        newwindow_action.triggered.connect(self.assistence)
-        #newwindow_action.triggered.connect(self.new_open)
+        # newwindow_action.triggered.connect(self.assistence)
+        newwindow_action.triggered.connect(self.new_open)
         menu.addAction(newwindow_action)
         return menu
 
@@ -361,17 +360,16 @@ class Sidebar(QFrame):
             pname = self.controller.players[col].name
             args.append(f"--{str(col).lower()}-name={pname}")
 
-        for arg, key in (
-            ("boardsize", "SZ"),
-            ("komi", "KM"),
-        ):
-            val = self.controller.infos[key]
-            args.append(f"--{arg}={val}")
-        args.append("--mode=EDIT")
-        args = parser.parse_args(args)
-        c = startgame(args, init_gui=False, root=copy(self.controller.root))[1]
-        c.input_mode = InputMode.PLAY
-        # c.sidebar.editbox.do_next_variation()
+        kwargs = {
+            name: self.controller.infos[key]
+            for key, name in (
+                ("SZ", "boardsize"),
+                ("KM", "komi"),
+            )
+        }
+        c = startgame(**kwargs, init_gui=False, root=copy(self.controller.root))[1]
+        c.gui_mode = gamewindow.GuiMode.edit
+        c.sidebar.editbox.do_next_variation()
 
     def assistence(self):
         assist(cmd="gnugo", orig=self.controller)

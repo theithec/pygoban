@@ -2,7 +2,7 @@
 # because qt
 import os
 from enum import Enum
-from typing import Dict, Optional
+from typing import Dict
 
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QIcon
@@ -10,12 +10,11 @@ from PyQt5.QtMultimedia import QSound
 from PyQt5.QtWidgets import QMainWindow, QMessageBox
 
 from pygoban import InputMode
-from pygoban.controller import Controller
-from pygoban.events import Event, Counted, CursorChanged, Ended, Undo
+from pygoban.controller import ControllerMixin
+from pygoban.events import Event, Counted, CursorChanged, Ended, Reset
 from pygoban.player import Player
 from pygoban.status import BLACK, EMPTY, WHITE, Status
 from pygoban.timesettings import TimeSettings
-from pygoban.move import Empty
 
 from . import BASE_DIR, CenteredMixin
 from .guiboard import GuiBoard
@@ -28,7 +27,8 @@ class GuiMode(Enum):
     edit = "edit"
     play = "play"
 
-class GameWindow(QMainWindow, Controller, CenteredMixin):
+
+class GameWindow(QMainWindow, ControllerMixin, CenteredMixin):
 
     gameended_signal = pyqtSignal(str)
     movesound = QSound(os.path.join(BASE_DIR, "gui/sounds/stone.wav"))
@@ -41,7 +41,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
         infos: Dict,
         gui_mode: GuiMode = GuiMode.play,
         timesettings: TimeSettings = None,
-        input_mode: InputMode = None
+        input_mode: InputMode = None,
     ):
         super().__init__(
             black=black,
@@ -49,7 +49,7 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
             callbacks=callbacks,
             infos=infos,
             timesettings=timesettings,
-            input_mode=input_mode
+            input_mode=input_mode,
         )
         self.gui_mode = gui_mode
         self.guiboard = GuiBoard(self, int(infos["SZ"]))
@@ -67,10 +67,9 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
                 clock = self.players[color].clock
                 nexttime = clock.nexttime()  # type: ignore
                 self.sidebar.controls[color].clock_stop_signal.emit(nexttime)
-        if isinstance(event, Undo):
-            pass
-            self.update()
-        elif isinstance(event, CursorChanged):
+        if isinstance(event, CursorChanged):
+            if event.reset == Reset.UNDO:
+                self.update()
             if self.timesettings:
                 if (color := event.cursor.color) in (BLACK, WHITE):  # type: ignore
                     self.sidebar.controls[color].clock_stop_signal.emit(
@@ -107,13 +106,6 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
                 player.clock.nexttime()
             )
 
-    def player_lost_by_overtime2(self, player):
-        for color in (BLACK, WHITE):
-            clock = self.players[color].clock
-            nexttime = clock.nexttime()  # type: ignore
-            self.sidebar.controls[color].clock_stop_signal.emit(nexttime)
-        super().player_lost_by_overtime(player)
-
     def inter_rightclicked(self, inter: Intersection):
         assert self.last_move_result
         cursor = self.last_move_result.cursor
@@ -125,7 +117,9 @@ class GameWindow(QMainWindow, Controller, CenteredMixin):
 
     def inter_leftclicked(self, inter: Intersection):
         assert self.last_move_result
+        print("S", self.input_mode)
         if self.input_mode == InputMode.PLAY:
+            print("Si2", self.input_mode)
             color = self.last_move_result.next_player
             if not color:
                 color = self.last_move_result.next_player

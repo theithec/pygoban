@@ -1,5 +1,5 @@
 from copy import copy
-from .controller import Controller
+from .controller import ControllerMixin as Controller
 from .move import Empty
 from .events import CursorChanged
 from .startgame import initgame
@@ -30,7 +30,7 @@ def assist(cmd, orig: Controller):
     config = getconfig()
     players = {
         col: GTPPlayer(col, cmd, cmd=config["GTP"][cmd]),
-        get_othercolor(col): PassingPlayer(get_othercolor(col))
+        get_othercolor(col): PassingPlayer(get_othercolor(col)),
     }
     g, c = initgame(
         controller_cls=Assistent,
@@ -38,13 +38,10 @@ def assist(cmd, orig: Controller):
         root=copy(orig.root),
         input_mode=InputMode.EDIT,
         players=players,
-        extra_controller_kwargs={"orig": orig, "gtp_name": "gnugo"}
+        extra_controller_kwargs={"orig": orig, "gtp_name": "gnugo"},
     )
     c.input_mode = InputMode.EDIT
     path = orig.last_move_result.cursor.get_path()
     for col in (BLACK, WHITE):
         c.players[col].moves = [move for move in path if move.color == col]
     g.start()
-
-
-

@@ -6,13 +6,13 @@ import sys
 from typing import Any, Dict, Optional
 
 from . import get_argparser, getconfig, InputMode
-from .events import Counted, CursorChanged, Ended, Undo
+from .events import Counted, CursorChanged, Ended
 from .status import Status, BLACK, WHITE
 from .game import Game
 from .player import Player, GTPPlayer
 from .sgf.reader import parse
 from .timesettings import TimeSettings
-from .controller import Controller as _Controller
+from .controller import ControllerMixin as _Controller
 
 QAPP: Any = None
 GAME_WINDOWS = []
@@ -39,6 +39,7 @@ def get_player_cls(nogui):
 def initgame(
     controller_cls: _Controller,
     players: Dict[Status, Player],
+    input_mode,
     boardsize=None,
     komi=None,
     root=None,
@@ -46,10 +47,14 @@ def initgame(
     sgf_file=None,
     handicap=None,
     time=None,
-    input_mode=InputMode.PLAY,
     extra_controller_kwargs: Optional[Dict] = None
     # **kwargs
 ):
+
+    input_mode = (
+        input_mode if isinstance(input_mode, InputMode) else InputMode[input_mode]
+    )
+    print("CK0", input_mode)
     config = getconfig()
     defaults = {
         "SZ": boardsize or int(config["PYGOBAN"]["boardsize"]),
@@ -73,8 +78,9 @@ def initgame(
         white=players[WHITE],
         callbacks=game.get_callbacks(),
         infos=game.infos,
-        input_mode=input_mode
+        input_mode=input_mode,
     )
+    print("CK1", controller_kwargs["input_mode"])
     if time:
         timekwargs = dict(
             zip(
@@ -85,10 +91,11 @@ def initgame(
         controller_kwargs["timesettings"] = TimeSettings(**timekwargs)
     if extra_controller_kwargs:
         controller_kwargs.update(extra_controller_kwargs)
+    print("CK2", controller_kwargs["input_mode"])
     controller = controller_cls(**controller_kwargs)
-    game.add_listener(controller, [CursorChanged, Undo, Counted, Ended], wait=True)
+    game.add_listener(controller, [CursorChanged, Counted, Ended], wait=True)
     for col in (BLACK, WHITE):
-        game.add_listener(players[col], [CursorChanged, Undo, Counted])
+        game.add_listener(players[col], [CursorChanged, Counted])
     if root:
         game.root = root
 
@@ -114,10 +121,11 @@ def startgame(
     sgf_file=None,
     handicap=None,
     time=None,
-    mode=None
+    mode=InputMode.PLAY,
     # **kwargs
 ):
 
+    print("M0", mode)
     players = {}
     config = getconfig()
     player_cls = get_player_cls(nogui)
@@ -138,6 +146,7 @@ def startgame(
         handicap=handicap,
         time=time,
         controller_cls=get_control_cls(nogui),
+        input_mode=mode,
     )
 
     game.start()
@@ -151,6 +160,8 @@ def startgame(
 def startpygoban():
     parser = get_argparser()
     args = parser.parse_args()
+    args.mode = InputMode[args.mode]
+    print("A", args.mode, dict(**vars(args)))
     if not args.nogui:
         from PyQt5.QtWidgets import QApplication
 
@@ -161,7 +172,9 @@ def startpygoban():
 
             win = StartWindow(parser, starter_callback=startgame)
             win.show()
+            print("VARS1", args)
             sys.exit(QAPP.exec_())
         startgame(**vars(args), init_gui=True)
     else:
+        print("VARS2", args)
         startgame(**vars(args), init_gui=False)
