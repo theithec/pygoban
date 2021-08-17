@@ -13,7 +13,7 @@ from pygoban import InputMode
 from pygoban.controller import ControllerMixin
 from pygoban.events import Event, Counted, CursorChanged, Ended, Reset
 from pygoban.player import Player
-from pygoban.status import BLACK, EMPTY, WHITE, Status
+from pygoban.status import BLACK, EMPTY, WHITE, Status, get_othercolor
 from pygoban.timesettings import TimeSettings
 
 from . import BASE_DIR, CenteredMixin
@@ -119,14 +119,14 @@ class GameWindow(QMainWindow, ControllerMixin, CenteredMixin):
         assert self.last_move_result
         print("S", self.input_mode)
         if self.input_mode == InputMode.PLAY:
-            print("Si2", self.input_mode)
+            print("Si2", self.last_move_result)
             color = self.last_move_result.next_player
             if not color:
-                color = self.last_move_result.next_player
-            if color and not isinstance(self.players[color], GuiPlayer):
+                color = get_othercolor(self.last_move_result.cursor.color)
+            if not isinstance(self.players[color], GuiPlayer):
                 return
             self._play(color, inter.coord)
-        elif self.input_mode == InputMode.EDIT:
+        elif self.input_mode == InputMode.DECO:
             if self._deco in (BLACK, WHITE):
                 self.last_move_result.cursor.extras.stones[self._deco].add(inter.coord)
             else:

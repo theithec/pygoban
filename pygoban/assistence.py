@@ -36,11 +36,11 @@ def assist(cmd, orig: Controller):
         controller_cls=Assistent,
         nogui=True,
         root=copy(orig.root),
-        input_mode=InputMode.EDIT,
+        # input_mode=InputMode.EDIT,
         players=players,
         extra_controller_kwargs={"orig": orig, "gtp_name": "gnugo"},
     )
-    c.input_mode = InputMode.EDIT
+    # c.input_mode = InputMode.EDIT
     path = orig.last_move_result.cursor.get_path()
     for col in (BLACK, WHITE):
         c.players[col].moves = [move for move in path if move.color == col]

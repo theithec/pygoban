@@ -190,9 +190,7 @@ class GTPPlayer(Player):
             self.do_cmd("undo")
             self.controller.handle_gtp_move(self.color, "undo")
             return
-        # elif isinstance(event, CursorChanged) and (
         if event.next_player == self.color:
-            logging.debug("E22 %s", event)
             if event.cursor.is_pass:
                 vertex = "pass"
             elif not isinstance(event.cursor.pos, Empty):
@@ -201,7 +199,5 @@ class GTPPlayer(Player):
                 self.do_cmd(
                     "play %s %s" % (event.cursor.color.strval.lower(), vertex), False
                 )
-                # self.do_cmd("showboard", False)
-            # if self.controller.input_mode == InputMode.PLAY:
             if event.next_player == self.color:
                 self._get_move()

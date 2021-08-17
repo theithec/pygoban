@@ -47,7 +47,7 @@ class GameResult(Result):
 
 class InputMode(enum.Enum):
     PLAY = "PLAY"
-    EDIT = "EDIT"
+    DECO = "DECO"
     COUNT = "COUNT"
     ENDED = "ENDED"
 

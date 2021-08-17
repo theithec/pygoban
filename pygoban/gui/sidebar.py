@@ -245,7 +245,7 @@ class EditBox(Box):
         self.controller.callbacks["set_cursor"](move)
 
     def toggle_deco(self, checked):
-        self.controller.input_mode = InputMode.EDIT if checked else InputMode.PLAY
+        self.controller.input_mode = InputMode.DECO if checked else InputMode.PLAY
 
     def do_B(self):
         self.controller.deco = BLACK

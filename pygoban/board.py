@@ -9,7 +9,6 @@ from . import Result, Pos
 
 @dataclass
 class MoveResult(Result):
-    next_player: Optional[Status] = None
     move: Optional[Move] = None
     libs: Set[Pos] = field(default_factory=set)
     killed: Set[Pos] = field(default_factory=set)

@@ -26,7 +26,6 @@ HANDICAPS[9] = HANDICAPS[8] + ((15, 9),)
 class Game:
     def __init__(self, **infos):
         self.infos = {k: v for k in INFO_KEYS if (v := infos.get(k))}
-        print("iii", infos["SZ"])
         self.board = Board(int(infos["SZ"]))
         self.ruleset = BaseRuleset(self)
         self.prisoners = {BLACK: 0, WHITE: 0}
@@ -92,21 +91,15 @@ class Game:
         self.fire_event(event)
 
     def test_move(self, move, apply_result=False):
-        is_new = True
         if child := self.cursor.children.get(move.pos):
             if child.color == move.color:
                 move = child
-                is_new = False
 
         if not move.is_empty:
             result = self.board.result(move)
         else:
-            result = MoveResult(next_player=get_othercolor(self.nextcolor), move=move)
-            result.is_new = is_new
-        result.move = move
-        result.next_player = result.next_player or get_othercolor(
-            self.nextcolor
-        )  # OLD cursor!
+            result = MoveResult(move=move)
+        # result.next_player = result.next_player or get_othercolor(self.nextcolor)
         if apply_result:
             self._apply_result(result)
         return result
@@ -122,7 +115,7 @@ class Game:
                 and self.cursor.parent
                 and self.cursor.parent.is_pass
             ):
-                result.next_player = None
+                # result.next_player = None
                 self.count()
         elif move.pos == Empty.RESIGN:
             self.resign(move.color)
@@ -183,13 +176,13 @@ class Game:
             except RuleViolation as err:
                 logging.info("RuleViolation: %s", err)
                 result.exception = err
-                result.next_player = color
+                # result.next_player = color
             if not result.exception:
                 self._apply_result(result)
 
             self.fire_event(
                 CursorChanged(
-                    next_player=result.next_player,
+                    next_player=self.nextcolor,
                     cursor=result.move,
                     board=self.board,
                 )

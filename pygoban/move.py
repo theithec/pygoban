@@ -37,8 +37,8 @@ class Move:
         self.pos = pos
         self.color = color
         self.children: Dict[str, Move] = {}
-        stones = extras.pop("stones", {})
         self._parent = None
+        stones = extras.pop("stones", {})
         self.extras = MoveExtras(**extras)
         self.extras.stones.update(stones)
         if parent:
