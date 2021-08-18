@@ -117,9 +117,7 @@ class GameWindow(QMainWindow, ControllerMixin, CenteredMixin):
 
     def inter_leftclicked(self, inter: Intersection):
         assert self.last_move_result
-        print("S", self.input_mode)
         if self.input_mode == InputMode.PLAY:
-            print("Si2", self.last_move_result)
             color = self.last_move_result.next_player
             if not color:
                 color = get_othercolor(self.last_move_result.cursor.color)

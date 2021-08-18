@@ -68,8 +68,9 @@ class TreeCanvas(QWidget):
             while move.parent:
                 move = move.parent
             self.root = move
-        add(move)
-        self.set_moves()
+        if not (move.parent and move.parent.is_pass and move.is_pass):
+            add(move)
+            self.set_moves()
 
     def set_moves(self):
         alreade_used = set()
@@ -115,7 +116,8 @@ class TreeCanvas(QWidget):
                 and pos.x() < visible_rect.x() + visible_rect.width()
             ):
                 for child in node.move.children.values():
-                    conn(self.nodes[id(child)])
+                    if child_node := self.nodes.get(id(child)):
+                        conn(child_node)
 
         painter = QPainter()
         painter.begin(self)
