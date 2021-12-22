@@ -10,6 +10,7 @@ from .rulesets import BaseRuleset, RuleViolation
 from .sgf import INFO_KEYS
 from .status import BLACK, WHITE, Status, get_othercolor
 
+
 HANDICAPS: Dict[int, Tuple] = {2: ((3, 3), (15, 15))}
 HANDICAPS[3] = HANDICAPS[2] + ((15, 3),)
 HANDICAPS[4] = HANDICAPS[3] + ((3, 15),)
@@ -29,7 +30,7 @@ class Game:
         self.board = Board(int(infos["SZ"]))
         self.ruleset = BaseRuleset(self)
         self.prisoners = {BLACK: 0, WHITE: 0}
-        self.root = Move(color=None, pos=Empty.FIRST_MOVE)
+        self.root = Move(color=None, pos=Empty.ROOT)
         self._cursor = self.root
         self.registrations = {}
 
@@ -99,7 +100,6 @@ class Game:
             result = self.board.result(move)
         else:
             result = MoveResult(move=move)
-        # result.next_player = result.next_player or get_othercolor(self.nextcolor)
         if apply_result:
             self._apply_result(result)
         return result
@@ -226,10 +226,10 @@ class Game:
                 curr = parent
             else:
                 break
-            if parent.is_empty and not parent.pos == Empty.FIRST_MOVE:
+            if parent.is_empty and not parent.pos == Empty.ROOT:
                 continue
             break
-        if not curr.is_empty or curr.pos == Empty.FIRST_MOVE:
+        if not curr.is_empty or curr.pos == Empty.ROOT:
             logging.info("UNDO. Set Cursor: %s", curr)
             self._set_cursor(curr, reset=Reset.UNDO)
         else:

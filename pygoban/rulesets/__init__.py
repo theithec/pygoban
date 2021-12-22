@@ -46,11 +46,7 @@ class BaseRuleset:
         bxy = self.game.board[x][y]
         if bxy != EMPTY:
             raise OccupiedViolation(f"Not empty: {result} BUT {bxy}")
-        if (
-            not result.libs
-            and not result.killed
-            and not result.move.pos == move.Empty.PASS
-        ):
+        if not result.libs and not result.killed:
             raise NoLibsViolation(f"No liberties: {result}")
 
         if (x, y) == self.ko:

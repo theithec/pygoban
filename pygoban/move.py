@@ -20,7 +20,7 @@ class MoveExtras:
 
 
 class Empty(Enum):
-    FIRST_MOVE = "first_move"
+    ROOT = "first_move"
     PASS = "pass"
     RESIGN = "resign"
     UNDO = "undo"
@@ -63,7 +63,7 @@ class Move:
 
     @property
     def is_root(self):
-        return self.pos == Empty.FIRST_MOVE
+        return self.pos == Empty.ROOT
 
     def get_path(self):
         path = []

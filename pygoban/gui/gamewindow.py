@@ -24,8 +24,8 @@ from .sidebar import Sidebar
 
 
 class GuiMode(Enum):
-    edit = "edit"
-    play = "play"
+    EDIT = "EDIT"
+    PLAY = "PLAY"
 
 
 class GameWindow(QMainWindow, ControllerMixin, CenteredMixin):
@@ -39,7 +39,7 @@ class GameWindow(QMainWindow, ControllerMixin, CenteredMixin):
         white: Player,
         callbacks: Dict,
         infos: Dict,
-        gui_mode: GuiMode = GuiMode.play,
+        gui_mode: GuiMode = GuiMode.PLAY,
         timesettings: TimeSettings = None,
         input_mode: InputMode = None,
     ):
@@ -79,7 +79,7 @@ class GameWindow(QMainWindow, ControllerMixin, CenteredMixin):
                     self.players[event.next_player].clock.nexttime()  # type: ignore
                 )
             if (
-                self.gui_mode == GuiMode.play
+                self.gui_mode == GuiMode.PLAY
                 and self.input_mode == InputMode.PLAY
                 and not event.cursor.is_empty
             ):
@@ -89,7 +89,7 @@ class GameWindow(QMainWindow, ControllerMixin, CenteredMixin):
         elif isinstance(event, Counted):
             self.input_mode = InputMode.COUNT
         elif isinstance(event, Ended):
-            self.gui_mode = GuiMode.edit
+            self.gui_mode = GuiMode.EDIT
             self.input_mode = InputMode.PLAY
             assert event.color
             self.end(event.msg, event.color)

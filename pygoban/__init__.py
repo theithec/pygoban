@@ -1,15 +1,16 @@
 import argparse
 import configparser
-from collections import namedtuple
 import enum
-from dataclasses import dataclass, field
-import signal
-from typing import Dict
 import logging
 import os
+import signal
 import sysconfig
+from collections import namedtuple
+from dataclasses import dataclass, field
+from typing import Dict
 
-logging.basicConfig(level=logging.DEBUG)
+
+logging.basicConfig(level=logging.INFO)
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)  # kill with <Ctrl-C>
 

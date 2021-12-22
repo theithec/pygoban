@@ -2,7 +2,15 @@
 # because qt and do_-commands and Box overloading
 from copy import copy
 from typing import Any, Optional
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer
+
+from pygoban import InputMode, events, get_argparser
+from pygoban.events import CursorChanged
+from pygoban.move import Empty
+from pygoban.player import PassingPlayer, Player
+from pygoban.sgf import CR, SQ, TR
+from pygoban.startgame import initgame, startgame
+from pygoban.status import BLACK, WHITE, get_othercolor
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (
     QAction,
     QFormLayout,
@@ -16,16 +24,6 @@ from PyQt5.QtWidgets import (
     QSizePolicy,
     QTextEdit,
 )
-
-from pygoban.status import BLACK, WHITE, get_othercolor
-from pygoban.move import Empty
-from pygoban.player import Player, PassingPlayer
-from pygoban.sgf import CR, SQ, TR
-from pygoban import InputMode, events, get_argparser
-from pygoban.startgame import initgame, startgame
-from pygoban.events import CursorChanged
-from pygoban.assistence import assist
-
 
 from . import btn_adder, gamewindow
 from .filedialog import filename_from_savedialog
@@ -160,14 +158,14 @@ class GameBox(Box):
     def update_controlls(self, _result):
         is_play = (
             self.controller.input_mode == InputMode.PLAY
-            and self.controller.gui_mode == gamewindow.GuiMode.play
+            and self.controller.gui_mode == gamewindow.GuiMode.PLAY
         )
         self.pass_btn.setEnabled(is_play)
         self.undo_btn.setEnabled(is_play)
         self.resign_btn.setEnabled(is_play)
         self.count_btn.setEnabled(
             self.controller.input_mode == InputMode.COUNT
-            or self.controller.gui_mode == gamewindow.GuiMode.edit
+            or self.controller.gui_mode == gamewindow.GuiMode.EDIT
         )
 
     def do_undo(self):
@@ -368,15 +366,15 @@ class Sidebar(QFrame):
             )
         }
         c = startgame(**kwargs, init_gui=False, root=copy(self.controller.root))[1]
-        c.gui_mode = gamewindow.GuiMode.edit
+        c.gui_mode = gamewindow.GuiMode.EDIT
         c.sidebar.editbox.do_next_variation()
 
     def assistence(self):
         assist(cmd="gnugo", orig=self.controller)
 
     def update_controlls(self, event):
-        self.editbox.setVisible(self.controller.gui_mode == gamewindow.GuiMode.edit)
-        self.gamebox.setVisible(self.controller.gui_mode == gamewindow.GuiMode.play)
+        self.editbox.setVisible(self.controller.gui_mode == gamewindow.GuiMode.EDIT)
+        self.gamebox.setVisible(self.controller.gui_mode == gamewindow.GuiMode.PLAY)
         for box in self.boxes:
             if box.isVisible():
                 box.update_controlls(event)
