@@ -298,8 +298,9 @@ class IntersectionWidget(QWidget):
                 analyzed_variation_stones = rate[2]
 
             if (
-                type_ == QEvent.Enter
-                and not self.controller.bar.inner.boxes["EditBox"].decogroup.checkedButton()
+                type_
+                == QEvent.Enter
+                # and not self.controller.bar.inner.boxes["EditBox"].decogroup.checkedButton()
             ):
                 self._hover = True
                 if analyzed_variation_stones:
@@ -319,8 +320,9 @@ class IntersectionWidget(QWidget):
                 return True
 
             if (
-                type_ == QEvent.Leave
-                and not self.controller.bar.inner.boxes["EditBox"].decogroup.checkedButton()
+                type_
+                == QEvent.Leave
+                # and not self.controller.bar.inner.boxes["EditBox"].decogroup.checkedButton()
             ):
                 # if not self.controller.is_annotating:
                 self._hover = False

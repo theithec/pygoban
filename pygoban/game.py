@@ -134,7 +134,6 @@ class Game:
             print(err)
         else:
             self.stones.apply_result(result)
-            result.dead = self.stones.dead
             self.send_game_event(result)
 
     def _reset(self, stone: Stone):

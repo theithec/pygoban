@@ -20,11 +20,11 @@ HANDICAPS[9] = HANDICAPS[8] + ((9, 9),)
 
 class StonesController:
     cursor: Stone
-    dead: Dict[Color, int]
+    total_dead: Dict[Color, int]
     next_color: Color
 
     def __init__(self, boardsize: int, handicap: int = 0) -> None:
-        self.dead = {Color.BLACK: 0, Color.WHITE: 0}
+        self.total_dead = {Color.BLACK: 0, Color.WHITE: 0}
         self.handicap = handicap
         self.boardsize = boardsize
         self.board = Board(self.boardsize)
@@ -32,11 +32,12 @@ class StonesController:
         # self.set_cursor(self.root)
 
     def set_cursor(self, stone: Stone) -> ActionResult:
+        print("SET CURSOR", stone)
         if not stone.parent:
             print("SET_ROOT", stone, stone.annos)
             self.root = stone
         self.cursor = self.root
-        self.dead = {Color.BLACK: 0, Color.WHITE: 0}
+        self.total_dead = {Color.BLACK: 0, Color.WHITE: 0}
         self.board = Board(self.boardsize)
         self.root.apply_permanent_annos(self.board)
         for x, y in HANDICAPS[self.handicap]:
@@ -65,7 +66,7 @@ class StonesController:
                 stone_result=StoneResult(stone=self.root, next_color=self.next_color),
             )
 
-        result.dead = self.dead
+        print("NOWDEAD2", self.total_dead)
         return result
 
     def apply_result(self, result: ActionResult):
@@ -75,9 +76,11 @@ class StonesController:
         self.cursor = stone_result.stone
         self.cursor.set_parent(oldcursor)
         self.next_color = stone_result.next_color
-        self.dead[Color.BLACK if stone_result.stone.color == Color.WHITE else Color.WHITE] += len(
-            stone_result.killed
-        )
+        self.total_dead[
+            Color.BLACK if stone_result.stone.color == Color.WHITE else Color.WHITE
+        ] += len(stone_result.killed)
+        print("NOWDEAD1", self.total_dead)
+        result.total_dead = self.total_dead
         self.board = result.board
         for pos in stone_result.killed:
             self.board.intersection(pos, Color.EMPTY)

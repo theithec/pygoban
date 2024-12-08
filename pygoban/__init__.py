@@ -5,6 +5,7 @@ from .game import Game
 from .gamecontroller import GameController
 from .info import GameInfo
 from .party import Member, Parties, Party
+from .receivers import BaseReceiver
 from .results import ActionResult, ActionType, GameResult
 from .rulesets import Ruleset
 from .stone import Stone
@@ -16,6 +17,7 @@ logging.basicConfig(level=logging.DEBUG)
 __all__ = [
     "ActionResult",
     "ActionType",
+    "BaseReceiver",
     "Color",
     "Game",
     "Controller",

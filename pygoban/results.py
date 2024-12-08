@@ -32,11 +32,14 @@ class GameResult:
             return self.white
         raise KeyError(key)
 
-    def __str__(self) -> str:
-        vars_ = vars(self)
-        return ", ".join(
-            [f"{key}: {val}" for (key, val) in vars_.items() if val and key != "board"]
-        )
+
+@dataclass
+class StoneResult:  # (_StoneResultDefaults, _StoneResult):  # , _ActionResult):
+    stone: "Stone"
+    next_color: Color
+    killed: Set[Pos] = field(default_factory=set)
+    libs: Set[Pos] = field(default_factory=set)
+    ko: Pos | None = None
 
 
 class ActionType(Enum):
@@ -49,43 +52,17 @@ class ActionType(Enum):
 
 
 @dataclass
-class _StoneResult:
-    stone: "Stone"
-    next_color: Color
-
-    def __str__(self) -> str:
-        vars_ = vars(self)
-        return ", ".join(
-            [f"{key}: {val}" for (key, val) in vars_.items() if val and key != "board"]
-        )
-
-
-@dataclass
-class _StoneResultDefaults:
-    killed: Set[Pos] = field(default_factory=set)
-    libs: Set[Pos] = field(default_factory=set)
-    ko: Pos | None = None
-    dead: Dict[Color, int] = field(default_factory=lambda: {Color.BLACK: 0, Color.WHITE: 0})
-
-
-# @dataclass
-# class _ActionResult:
-
-
-@dataclass
-class StoneResult(_StoneResultDefaults, _StoneResult):  # , _ActionResult):
-    pass
-
-
-@dataclass
 class ActionResult:  # , _ActionResult):
     type: ActionType
     board: Board
+    total_dead: Dict[Color, int] = field(default_factory=lambda: {Color.BLACK: 0, Color.WHITE: 0})
+
     game_result: GameResult | None = None
     stone_result: StoneResult | None = None
 
     def __repr__(self) -> str:
         vars_ = vars(self)
+        # print("K", vars(self.stone_result).keys())
         return ", ".join(
-            [f"{key}: {val}" for (key, val) in vars_.items() if val and key != "board"]
+            [f"{key}-: {val}" for (key, val) in vars_.items() if val and key != "board"]
         )
