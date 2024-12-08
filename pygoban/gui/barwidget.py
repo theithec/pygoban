@@ -27,7 +27,7 @@ from pygoban import ActionResult, ActionType, Color, GameController, GameResult,
 from . import GUIMode
 
 # from .chart import MyChart
-# from .tree import Tree
+from .tree import Tree
 
 # from pygoban.stone import Annotations
 
@@ -150,7 +150,7 @@ class PlayerGameBox(_PlayerBox):
     def stop_clockdisplay(self, seconds):
         if self.timer:
             self.timer.stop()
-        self.clock.display(seconds_to_str(seconds))
+        # self.clock.display(seconds_to_str(seconds))
         # self.update_byoyomi_label()
 
     def set_clockdisplay(self, seconds):
@@ -233,9 +233,9 @@ class PlayersBox(Box):
         self.setLayout(self.boxlayout)
 
     def update_controlls(self, result: ActionResult):
-        curr_boxes = self.boxes_by_mode[self.last_gui_mode]
-        next_boxes = self.boxes_by_mode[self.game_ui.gui_mode]
         if self.last_gui_mode != self.game_ui.gui_mode:
+            curr_boxes = self.boxes_by_mode[self.last_gui_mode]
+            next_boxes = self.boxes_by_mode[self.game_ui.gui_mode]
             for color in (Color.BLACK, Color.WHITE):
                 self.boxlayout.replaceWidget(
                     curr_boxes[color],
@@ -244,8 +244,13 @@ class PlayersBox(Box):
                 curr_boxes[color].setVisible(False)
                 next_boxes[color].setVisible(True)
         self.last_gui_mode = self.game_ui.gui_mode
+        curr_boxes = self.boxes_by_mode[self.last_gui_mode]
+        if result.stone_result:
+            stone = result.stone_result.stone
+            # curr_boxes[stone.color].clock_stop_signal.emit(0)
+            # curr_boxes[stone.color.other()].clock_update_signal.emit()
 
-        for box in next_boxes.values():
+        for box in curr_boxes.values():
             # if isinstance(result, GameResult):
             box.update_controlls(result)
 
@@ -435,7 +440,7 @@ class InnerWidget(QFrame):
     def update_controlls(self, result: ActionResult):
         for box in self.boxes.values():
             if box.isVisible():
-                print("UPDATE BOX", box)
+                # print("UPDATE BOX", box)
                 box.update_controlls(result)
 
 
@@ -454,8 +459,8 @@ class BarWidget(QFrame):
         splitter = QSplitter(self)
         self.inner = InnerWidget(self)
         splitter.addWidget(self.inner)
-        # elf.tree = Tree(self, callback=self.controller.game_callbacks.set_cursor)
-        # splitter.addWidget(self.tree)
+        self.tree = Tree(self, callback=self.parent().controller.callbacks.set_cursor)
+        splitter.addWidget(self.tree)
         splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setStyleSheet(
             """BarWidget {
@@ -480,8 +485,8 @@ class BarWidget(QFrame):
 
     def update_controlls(self, result: ActionResult):
         # self.tree.setEnabled(self.controller.gui_mode == GUIMode.EDIT)
-        # if result.stone_result:
-        #     self.tree.stones_signal.emit(result.stone_result.stone)
+        if result.stone_result:
+            self.tree.stones_signal.emit(result.stone_result.stone)
         self.inner.update_controlls(result)
         # for box in self.inner.boxes.values():
         #    box.toggle_action.setChecked(box.isVisible())

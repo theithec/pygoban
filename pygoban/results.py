@@ -42,6 +42,12 @@ class StoneResult:  # (_StoneResultDefaults, _StoneResult):  # , _ActionResult):
     ko: Pos | None = None
 
 
+@dataclass
+class TimeResult:  # (_StoneResultDefaults, _StoneResult):  # , _ActionResult):
+    color: Color
+    next_time: int
+
+
 class ActionType(Enum):
     STONE = "STONE"
     RESET = "RESET"
@@ -49,6 +55,7 @@ class ActionType(Enum):
     ANNOTATED = "ANNOTATED"
     COUNT = "COUNT"
     COUNT_DONE = "COUNT_DONE"
+    PERIOD_ENDED = "PERIOD_ENDED"
 
 
 @dataclass
@@ -59,6 +66,7 @@ class ActionResult:  # , _ActionResult):
 
     game_result: GameResult | None = None
     stone_result: StoneResult | None = None
+    time_result: TimeResult | None = None
 
     def __repr__(self) -> str:
         vars_ = vars(self)

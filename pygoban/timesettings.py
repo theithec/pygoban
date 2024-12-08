@@ -7,9 +7,11 @@ from datetime import datetime
 from threading import Timer
 from typing import TYPE_CHECKING
 
+from pygoban.results import ActionResult
+
 if TYPE_CHECKING:
     from pygoban.board import Color
-    from pygoban.controllers import Controller
+    from pygoban.game import Game
 
 
 class _PlayerTimer(Timer):
@@ -20,7 +22,7 @@ class _PlayerTimer(Timer):
 
 @dataclass
 class TimeSettings:
-    maintime: int = 30
+    maintime: int = 20
     byoyomi_time: int = 10
     byoyomi_num: int = 3
     byoyomi_stones: int = 1
@@ -34,10 +36,10 @@ class Byoyomi:
 
 
 class PlayerTime:
-    def __init__(self, controller: "Controller", color: "Color"):
-        self.controller = controller
+    def __init__(self, game: "Game", color: "Color"):
+        self.game = game
         self.color = color
-        settings = controller.ruleset.timesettings
+        settings = game.ruleset.timesettings
         assert settings
         self.maintime = settings.maintime
         self.byoyomi = Byoyomi(
@@ -53,10 +55,10 @@ class PlayerTime:
 
     def start_timer(self):
         assert not self.ended
-        assert (not self.timer) or self.timer.finished.is_set(), "T " + str(self.timer)
+        # assert (not self.timer) or self.timer.finished.is_set(), "T " + str(self.timer)
         self.last_started = datetime.now()
         self.timer = _PlayerTimer(self.nexttime(), self.period_ended)
-        return self.nexttime()
+        self.game.period_ended(self.color, self.nexttime())
 
     def cancel_timer(self):
         if self.timer:
@@ -80,9 +82,10 @@ class PlayerTime:
                 self.start_timer()
             else:
                 self.byoyomi.time_left = 0
-                self.controller.lost_by_overtime(self.color)
+                # self.game.send_game_result(ActionResult())
+                # self.controller.lost_by_overtime(self.color)
                 self.ended = True
-        self.controller.period_ended(self.color)
+        self.game.period_ended(self.color, self.nexttime())
         logging.info("Timeperiod ended %s", self.color)
 
     def nexttime(self):

@@ -32,9 +32,7 @@ class StonesController:
         # self.set_cursor(self.root)
 
     def set_cursor(self, stone: Stone) -> ActionResult:
-        print("SET CURSOR", stone)
         if not stone.parent:
-            print("SET_ROOT", stone, stone.annos)
             self.root = stone
         self.cursor = self.root
         self.total_dead = {Color.BLACK: 0, Color.WHITE: 0}
@@ -66,7 +64,6 @@ class StonesController:
                 stone_result=StoneResult(stone=self.root, next_color=self.next_color),
             )
 
-        print("NOWDEAD2", self.total_dead)
         return result
 
     def apply_result(self, result: ActionResult):
@@ -79,7 +76,6 @@ class StonesController:
         self.total_dead[
             Color.BLACK if stone_result.stone.color == Color.WHITE else Color.WHITE
         ] += len(stone_result.killed)
-        print("NOWDEAD1", self.total_dead)
         result.total_dead = self.total_dead
         self.board = result.board
         for pos in stone_result.killed:

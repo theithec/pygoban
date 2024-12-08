@@ -6,9 +6,17 @@ from typing import TYPE_CHECKING, List, Optional
 # from .basecontroller import BaseGameControllerMixin
 from .board import Marker
 from .receivers import BaseReceiver
-from .results import ActionResult, ActionType, ColorResult, GameResult, StoneResult
+from .results import (
+    ActionResult,
+    ActionType,
+    ColorResult,
+    GameResult,
+    StoneResult,
+    TimeResult,
+)
 from .rulesets import Counter, Ruleset, RuleViolation, ThreePasses, WrongColor
 from .stonescontroller import Color, Pos, Stone, StonesController
+from .timesettings import PlayerTime
 
 # if TYPE_CHECKING:
 #     from .controller import GameController
@@ -68,6 +76,15 @@ class Game:
         self._event_threads: List[Thread] = []
         self.last_action_result: ActionResult | None = None
         self._started = False
+        self.timers = (
+            {
+                Color.BLACK: PlayerTime(self, Color.BLACK),
+                Color.WHITE: PlayerTime(self, Color.WHITE),
+            }
+            if ruleset.timesettings
+            else None
+        )
+        print(self.timers)
 
     def send_game_event(self, result: ActionResult):
         if isinstance(result, ActionResult):
@@ -93,6 +110,9 @@ class Game:
             self.stones.root = Stone(color=Color.EMPTY, pos=None, parent=None)
             cursor = self.stones.root
         self.stones.set_cursor(cursor)
+        if self.timers:
+            self.timers[self.stones.next_color.other()].cancel_timer()
+            self.timers[self.stones.next_color].start_timer()
         self.send_game_event(
             ActionResult(
                 type=ActionType.RESET,
@@ -120,6 +140,18 @@ class Game:
             )
         )
 
+    def period_ended(self, color: Color, next_time: int):
+        self.send_game_event(
+            ActionResult(
+                type=ActionType.PERIOD_ENDED,
+                board=self.stones.board,
+                time_result=TimeResult(
+                    color=color,
+                    next_time=next_time,
+                ),
+            )
+        )
+
     def _place(self, color: Color, pos: Pos | None):
         assert self.last_action_result and self.last_action_result.stone_result
         if not color == self.last_action_result.stone_result.next_color:
@@ -134,6 +166,9 @@ class Game:
             print(err)
         else:
             self.stones.apply_result(result)
+            if self.timers:
+                self.timers[self.stones.next_color].start_timer()
+                self.timers[self.stones.next_color.other()].cancel_timer()
             self.send_game_event(result)
 
     def _reset(self, stone: Stone):

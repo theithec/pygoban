@@ -64,12 +64,12 @@ class GameWidget(QWidget, BaseReceiver):
     #    msg.show()
 
     def received_stone(self, result: ActionResult) -> None:
-        self.update()
+        # self.update()
         self.boardwidget.update()
         self.bar.result_signal.emit(result)
 
     def received_reset(self, result: ActionResult) -> None:
-        pass
+        self.boardwidget.update()
 
     def received_resign(self, result: ActionResult) -> None:
         pass
@@ -82,6 +82,15 @@ class GameWidget(QWidget, BaseReceiver):
 
     def received_count_done(self, result: ActionResult) -> None:
         pass
+
+    def received_period_ended(self, result: ActionResult) -> None:
+        assert result.time_result
+        color = result.time_result.color
+        next_time = result.time_result.next_time
+        box = self.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color]
+        box.clock_update_signal.emit(next_time)
+        box = self.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color.other()]
+        box.clock_stop_signal.emit(0)
 
     def inter_clicked(self, iwidget: IntersectionWidget, is_rightclick: bool):
         assert self.controller.receiver.curr_action_result
@@ -124,14 +133,12 @@ class GameWidget(QWidget, BaseReceiver):
             #         print("V", val)
             #         if val:
             #             self.callbacks.annotate(pos=iwidget.board_pos, name=val)
-
             else:
-                color = curr_action_result.stone_result.next_color
-                assert color
+                stone_result = self.controller.receiver.curr_stone_result
                 # self.boardwidget.show_analyzed_variation = False
-                if isinstance(self.parties[color], GUIPlayer):
+                if isinstance(self.parties[stone_result.next_color], GUIPlayer):
                     self.callbacks.play(
-                        color=curr_action_result.stone_result.next_color,
+                        color=stone_result.next_color,
                         pos=iwidget.board_pos,
                     )
 
@@ -144,11 +151,6 @@ class GameWidget(QWidget, BaseReceiver):
             ruleset=ruleset,
             cursor=cpy,
         )
-
-    def period_ended(self, color: Color):
-        assert self.clocks
-        box = self.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color]
-        box.clock_update_signal.emit(self.clocks[color].nexttime())
 
     def lost_by_overtime(self, color: Color):
         super().lost_by_overtime(color=color)

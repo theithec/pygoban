@@ -1,4 +1,5 @@
 """The board with a given """
+
 from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Dict, List, Optional, Set, Tuple
@@ -19,6 +20,10 @@ class Color(IntEnum):
 
     def __str__(self):
         return str(self.name)[0]
+
+    def other(self):
+        assert self.name != "EMPTY"
+        return self.WHITE if self.name == "BLACK" else self.BLACK
 
 
 class Marker(Enum):

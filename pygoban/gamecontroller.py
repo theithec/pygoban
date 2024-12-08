@@ -49,10 +49,7 @@ class GameController:
         self.callbacks.set_cursor(self.curr_stone.root())
 
     def do_pass(self) -> None:
-        assert self.receiver.curr_action_result and self.receiver.curr_action_result.stone_result
-        self.callbacks.play(
-            color=self.receiver.curr_action_result.stone_result.next_color, pos=None
-        )
+        self.callbacks.play(color=self.receiver.curr_stone_result.next_color, pos=None)
 
     def do_last_stone(self) -> None:
         curr = self.curr_stone
