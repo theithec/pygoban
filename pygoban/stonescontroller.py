@@ -21,7 +21,6 @@ HANDICAPS[9] = HANDICAPS[8] + ((9, 9),)
 class StonesController:
     cursor: Stone
     total_dead: Dict[Color, int]
-    next_color: Color
 
     def __init__(self, boardsize: int, handicap: int = 0) -> None:
         self.total_dead = {Color.BLACK: 0, Color.WHITE: 0}
@@ -41,10 +40,6 @@ class StonesController:
         for x, y in HANDICAPS[self.handicap]:
             self.board.intersection(Pos(x, y), Color.BLACK)
         result = None
-        if not stone.children:
-            self.next_color = Color.BLACK if not self.handicap else Color.WHITE
-        else:
-            self.next_color = stone.children[0].color
         for stone_ in stone.path():
             # assert stone_.pos
             result = self.get_result(
@@ -53,15 +48,14 @@ class StonesController:
                 actiontype=ActionType.STONE,
                 annos=stone_.annos,
             )
-            # if stone_.color:
-            #    self.next_color = Color.BLACK if stone_.color == Color.WHITE else Color.WHITE
             self.apply_result(result)
 
         if not result:  # path is empty -> only root
+            next_color = Color.BLACK if not self.handicap else Color.WHITE
             result = ActionResult(
                 type=ActionType.RESET,
                 board=self.board,
-                stone_result=StoneResult(stone=self.root, next_color=self.next_color),
+                stone_result=StoneResult(stone=self.root, next_color=next_color),
             )
 
         return result
@@ -72,7 +66,6 @@ class StonesController:
         stone_result = result.stone_result
         self.cursor = stone_result.stone
         self.cursor.set_parent(oldcursor)
-        self.next_color = stone_result.next_color
         self.total_dead[
             Color.BLACK if stone_result.stone.color == Color.WHITE else Color.WHITE
         ] += len(stone_result.killed)
@@ -107,17 +100,14 @@ class StonesController:
                 stone = child
                 break
         else:
-            stone = Stone(color=color, pos=pos)  # , parent=self.cursor)
+            stone = Stone(color=color, pos=pos)
+
+        next_color = color.other()
 
         return ActionResult(
             type=actiontype,
             board=boardcpy,
-            stone_result=StoneResult(
-                stone=stone,
-                killed=killed,
-                libs=libs,
-                next_color=Color.WHITE if color == Color.BLACK else Color.BLACK,
-            ),
+            stone_result=StoneResult(stone=stone, killed=killed, libs=libs, next_color=next_color),
         )
 
 

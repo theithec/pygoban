@@ -74,7 +74,7 @@ class Game:
         self.ruleset.set_stonescontroller(stones)
         self.stones = stones
         self._event_threads: List[Thread] = []
-        self.last_action_result: ActionResult | None = None
+        # self.last_action_result: ActionResult | None = None
         self._started = False
         self.timers = (
             {
@@ -87,12 +87,23 @@ class Game:
         print(self.timers)
 
     def send_game_event(self, result: ActionResult):
-        if isinstance(result, ActionResult):
-            self.last_action_result = result
         for receiver in self.receivers:
             thread = Thread(target=receiver.receive_game_event, args=(result,))
             self._event_threads.append(thread)
             thread.start()
+
+    def period_ended(self, color: Color, next_time: int):
+        type_ = ActionType.PERIOD_ENDED if next_time else ActionType.LOST_BY_TIME
+        self.send_game_event(
+            ActionResult(
+                type=type_,
+                board=self.stones.board,
+                time_result=TimeResult(
+                    color=color,
+                    next_time=next_time,
+                ),
+            )
+        )
 
     def _start(self, receivers: List[BaseReceiver], cursor: Optional[Stone] = None):
         assert not self._started
@@ -109,54 +120,39 @@ class Game:
         else:
             self.stones.root = Stone(color=Color.EMPTY, pos=None, parent=None)
             cursor = self.stones.root
-        self.stones.set_cursor(cursor)
+        result = self.stones.set_cursor(cursor)
         if self.timers:
-            self.timers[self.stones.next_color.other()].cancel_timer()
-            self.timers[self.stones.next_color].start_timer()
-        self.send_game_event(
-            ActionResult(
-                type=ActionType.RESET,
-                board=self.stones.board,
-                stone_result=StoneResult(
-                    stone=self.stones.cursor,
-                    next_color=self.stones.next_color,
-                ),
-            )
-        )
+            assert result.stone_result
+            self.timers[result.stone_result.next_color].start_timer()
+        self.send_game_event(result)
 
     def _count(self):
         cnt = Counter(board=self.stones.board)
         coords, killed = cnt.result()
+        game_result = GameResult(
+            winner=None,
+            black=ColorResult(killed=killed[Color.WHITE], coords=coords[Color.BLACK]),
+            white=ColorResult(killed=killed[Color.BLACK], coords=coords[Color.WHITE]),
+            reason="start count",
+        )
+        total_dead = self.stones.total_dead.copy()
+        for color in (Color.BLACK, Color.WHITE):
+            total_dead[color] += killed[color]
+
         self.send_game_event(
             ActionResult(
                 type=ActionType.COUNT,
                 board=self.stones.board,
-                game_result=GameResult(
-                    winner=None,
-                    black=ColorResult(killed=killed[Color.WHITE], coords=coords[Color.BLACK]),
-                    white=ColorResult(killed=killed[Color.BLACK], coords=coords[Color.WHITE]),
-                    reason="start count",
-                ),
-            )
-        )
-
-    def period_ended(self, color: Color, next_time: int):
-        self.send_game_event(
-            ActionResult(
-                type=ActionType.PERIOD_ENDED,
-                board=self.stones.board,
-                time_result=TimeResult(
-                    color=color,
-                    next_time=next_time,
-                ),
+                total_dead=total_dead,
+                game_result=game_result,
             )
         )
 
     def _place(self, color: Color, pos: Pos | None):
-        assert self.last_action_result and self.last_action_result.stone_result
-        if not color == self.last_action_result.stone_result.next_color:
-            raise WrongColor(f"{color.name}: {pos}")
+        # if not color == self.stones.cursor.next_color:
+        #    raise WrongColor(f"{color.name}: {pos}")
         result = self.stones.get_result(color, pos, ActionType.STONE)
+        assert result.stone_result
         try:
             self.ruleset.validate_result(result)
         except ThreePasses:
@@ -167,8 +163,13 @@ class Game:
         else:
             self.stones.apply_result(result)
             if self.timers:
-                self.timers[self.stones.next_color].start_timer()
-                self.timers[self.stones.next_color.other()].cancel_timer()
+                own_timer = self.timers[result.stone_result.next_color]
+                if not own_timer.ended:
+                    own_timer.start_timer()
+                self.stones.cursor.annos.time_left = own_timer.nexttime()
+                other_timer = self.timers[result.stone_result.next_color.other()]
+                if not other_timer.ended:
+                    other_timer.cancel_timer()
             self.send_game_event(result)
 
     def _reset(self, stone: Stone):
@@ -239,14 +240,10 @@ class Game:
                     elif name == "1":
                         cursor.annos.numbers[pos] = str(1 + len(cursor.annos.numbers))
 
-                assert (last := game.last_action_result)
-                assert last.stone_result
                 action_result = ActionResult(
                     type=ActionType.ANNOTATED,
                     board=game.stones.board,
-                    stone_result=StoneResult(
-                        next_color=last.stone_result.next_color, stone=last.stone_result.stone
-                    ),
+                    stone_result=StoneResult(stone=game.stones.cursor),
                 )
                 game.send_game_event(action_result)
 

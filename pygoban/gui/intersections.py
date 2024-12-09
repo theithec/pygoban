@@ -44,7 +44,7 @@ class IntersectionWidget(QWidget):
         super().__init__(parent)
         self.board_pos: Pos = board_pos
         self.stone: stone.Stone | None = None
-        self.controller: "GameWindow" = parent.parent()
+        self.game_ui: "GameWindow" = parent.parent()
         self.is_hoshi = is_hoshi
         self._is_current = None
         self._hover = False
@@ -52,7 +52,7 @@ class IntersectionWidget(QWidget):
         self.inter: Intersection | None = None
 
     def mousePressEvent(self, event):
-        self.controller.inter_clicked(self, is_rightclick=event.button() == Qt.RightButton)
+        self.game_ui.inter_clicked(self, is_rightclick=event.button() == Qt.RightButton)
         self._hover = False
 
     def draw_number(self, painter, params):
@@ -158,9 +158,11 @@ class IntersectionWidget(QWidget):
 
     def paintEvent(self, _):
         """Draw"""
-        if not self.controller.curr_action_result:
+        if not (curr_stone_result := self.game_ui.controller.receiver.curr_stone_result):
             return
-        self.inter = self.controller.curr_action_result.board.intersection(self.board_pos)
+        self.inter = self.game_ui.controller.receiver.curr_action_result.board.intersection(
+            self.board_pos
+        )
         painter = QPainter()
         painter.begin(self)
         painter.setRenderHints(
@@ -171,8 +173,8 @@ class IntersectionWidget(QWidget):
         pen.setColor(QColor("black"))
         painter.setPen(pen)
         params: "InsParams" = self.parent().ins_params
-        if self.controller.curr_action_result.stone_result:
-            self.stone = self.controller.curr_action_result.stone_result.stone
+        if self.game_ui.controller.receiver.curr_action_result.stone_result:
+            self.stone = self.game_ui.controller.receiver.curr_action_result.stone_result.stone
         analyzed_variation = self.stone.annos.progress.get(self.board_pos)
 
         if self.is_hoshi:
@@ -206,7 +208,7 @@ class IntersectionWidget(QWidget):
                     params.small_size,
                     params.small_size,
                 )
-        elif self.controller.gui_mode in (GUIMode.EDIT, GUIMode.PLAY):
+        elif self.game_ui.gui_mode in (GUIMode.EDIT, GUIMode.PLAY):
             for child in self.stone.children:
                 if self.board_pos == child.pos:
                     break
@@ -224,8 +226,8 @@ class IntersectionWidget(QWidget):
                     ),
                     child_pixmap,
                 )
-                painter.setOpacity(1)
-        if self.controller.gui_mode == GUIMode.EDIT:
+            painter.setOpacity(1)
+        if self.game_ui.gui_mode == GUIMode.EDIT:
             if marker := self.stone.annos.markers.get(self.board_pos):
                 getattr(self, f"draw_{marker.value}")(painter, params)
             if color := self.stone.annos.owned.get(self.board_pos):
@@ -236,23 +238,18 @@ class IntersectionWidget(QWidget):
                 self.draw_char(txt, painter, params)
             #       pass
         if (not stone_pixmap) and self._hover:
-            next_color = (
-                self.controller.curr_action_result.stone_result.next_color
-                if self.controller.curr_action_result.stone_result
-                else None
+            next_color = curr_stone_result.next_color
+            hover_pixmap = get_pixmap(next_color)
+            painter.setOpacity(0.8)
+            painter.drawPixmap(
+                QRect(
+                    params.stone_pos,
+                    params.stone_pos,
+                    params.stone_size,
+                    params.stone_size,
+                ),
+                hover_pixmap,
             )
-            if next_color:
-                hover_pixmap = get_pixmap(next_color)
-                painter.setOpacity(0.8)
-                painter.drawPixmap(
-                    QRect(
-                        params.stone_pos,
-                        params.stone_pos,
-                        params.stone_size,
-                        params.stone_size,
-                    ),
-                    hover_pixmap,
-                )
         if analyzed_variation:
             index, color = analyzed_variation
             assert (vari_pixmap := get_pixmap(color))
@@ -270,21 +267,21 @@ class IntersectionWidget(QWidget):
             color = QColor(10 * index, 255, 255 - 20 * index)
             self.draw_char(str(index), painter, params, color)
             # self._hover = False
-        if self.controller.gui_mode == GUIMode.COUNT:
+        if self.game_ui.gui_mode == GUIMode.COUNT:
             if self.inter.owner:
                 self.draw_owned(self.inter.owner, painter, params)
-            #    assert (owned_pixmap := get_pixmap(self.inter.owner))
-            #    painter.setOpacity(0.5)
-            #    painter.drawPixmap(
-            #        QRect(
-            #            params.small_pos,
-            #            params.small_pos,
-            #            params.small_size,
-            #            params.small_size,
-            #        ),
-            #        owned_pixmap,
-            #    )
-            #    painter.setOpacity(1)
+                assert (owned_pixmap := get_pixmap(self.inter.owner))
+                painter.setOpacity(0.5)
+                painter.drawPixmap(
+                    QRect(
+                        params.small_pos,
+                        params.small_pos,
+                        params.small_size,
+                        params.small_size,
+                    ),
+                    owned_pixmap,
+                )
+                painter.setOpacity(1)
         self._hover = False
         painter.end()
 

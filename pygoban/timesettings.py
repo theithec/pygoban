@@ -22,7 +22,7 @@ class _PlayerTimer(Timer):
 
 @dataclass
 class TimeSettings:
-    maintime: int = 20
+    maintime: int = 30
     byoyomi_time: int = 10
     byoyomi_num: int = 3
     byoyomi_stones: int = 1

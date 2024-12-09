@@ -38,10 +38,13 @@ class BaseReceiver:  # ABC later
     @abstractmethod
     def received_period_ended(self, result: ActionResult) -> None: ...
 
+    @abstractmethod
+    def received_lost_by_time(self, result: ActionResult) -> None: ...
+
     def receive_game_event(self, result: ActionResult):
         self.curr_action_result = result
         if result.stone_result:
             self.curr_stone_result = result.stone_result
+        print("received", result)
         func = getattr(self, "received_" + str(result.type.name).lower())
-        print("CALL", func)
         func(result)

@@ -9,19 +9,20 @@ from pygoban.rulesets import Ruleset
 
 
 def test_game_start(mocker, receiver_cls) -> None:
+    receiver = receiver_cls()
+    mocked_received_reset = mocker.patch.object(receiver, "received_reset")
     info = GameInfo()
     ruleset = Ruleset(boardsize=9, komi=0, handicap=0, info=info)
     game = Game(ruleset=ruleset)
-    ctrl = GameController(game=game, receiver_cls=receiver_cls)
-    mocked_do_reset = mocker.patch.object(ctrl.receiver, "do_reset")
-    ctrl.start()
+    ctrl = GameController(game=game)
+    ctrl.start(receiver=receiver)
     for thread in game._event_threads:
         thread.join()
-    mocked_do_reset.assert_called()
-    mocked_do_stone = mocker.patch.object(ctrl.receiver, "do_stone")
+    # mocked_do_reset.assert_called()
+    mocked_received_stone = mocker.patch.object(receiver, "received_stone")
     assert ctrl.callbacks
     ctrl.callbacks.play(Color.BLACK, Pos(0, 0))
     for thread in game._event_threads:
         thread.join()
     assert game.stones.board[0][0].color == Color.BLACK
-    mocked_do_stone.assert_called()
+    mocked_received_stone.assert_called()

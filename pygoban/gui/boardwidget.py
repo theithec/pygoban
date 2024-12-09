@@ -84,7 +84,7 @@ class BoardWidget(QWidget):
         self._resize()
 
     def update_board(self):
-        # print("UPD BOARD")
+        print("UPD BOARD")
         self.update()
         # self.boardupdated_signal.emit()
 

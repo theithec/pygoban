@@ -56,6 +56,7 @@ class ActionType(Enum):
     COUNT = "COUNT"
     COUNT_DONE = "COUNT_DONE"
     PERIOD_ENDED = "PERIOD_ENDED"
+    LOST_BY_TIME = "LOST_BY_TIME"
 
 
 @dataclass

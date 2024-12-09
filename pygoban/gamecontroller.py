@@ -16,7 +16,7 @@ class GameController:
 
     @property
     def curr_stone(self) -> Stone:
-        return self.receiver.curr_stone
+        return self.receiver.curr_stone_result.stone
 
     def do_prev_variation(self) -> None:
         curr = self.curr_stone

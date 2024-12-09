@@ -5,22 +5,22 @@ from pygoban.results import ActionResult
 
 
 class TestReceiver(BaseReceiver):
-    def do_stone(self, result: ActionResult) -> None:
+    def received_stone(self, result: ActionResult) -> None:
         pass
 
-    def do_reset(self, result: ActionResult) -> None:
+    def received_reset(self, result: ActionResult) -> None:
         pass
 
-    def do_resign(self, result: ActionResult) -> None:
+    def received_resign(self, result: ActionResult) -> None:
         pass
 
-    def do_annotated(self, result: ActionResult) -> None:
+    def received_annotated(self, result: ActionResult) -> None:
         pass
 
-    def do_count(self, result: ActionResult) -> None:
+    def received_count(self, result: ActionResult) -> None:
         pass
 
-    def do_count_done(self, result: ActionResult) -> None:
+    def received_count_done(self, result: ActionResult) -> None:
         pass
 
 

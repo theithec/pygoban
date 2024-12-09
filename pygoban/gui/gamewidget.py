@@ -70,6 +70,7 @@ class GameWidget(QWidget, BaseReceiver):
 
     def received_reset(self, result: ActionResult) -> None:
         self.boardwidget.update()
+        self.bar.result_signal.emit(result)
 
     def received_resign(self, result: ActionResult) -> None:
         pass
@@ -78,7 +79,9 @@ class GameWidget(QWidget, BaseReceiver):
         pass
 
     def received_count(self, result: ActionResult) -> None:
-        pass
+        self.gui_mode = GUIMode.COUNT
+        self.boardwidget.boardupdate_signal.emit(result)
+        self.bar.result_signal.emit(result)
 
     def received_count_done(self, result: ActionResult) -> None:
         pass
@@ -91,6 +94,18 @@ class GameWidget(QWidget, BaseReceiver):
         box.clock_update_signal.emit(next_time)
         box = self.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color.other()]
         box.clock_stop_signal.emit(0)
+
+    def received_lost_by_time(self, result: ActionResult) -> None:
+        print("END", result)
+        assert result.time_result
+        color = result.time_result.color
+        box = self.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color]
+        box.clock_stop_signal.emit(0)
+        box = self.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color.other()]
+        box.clock_stop_signal.emit(0)
+        self.gui_mode = GUIMode.EDIT
+        self.bar.result_signal.emit(result)
+        self.boardwidget.update()
 
     def inter_clicked(self, iwidget: IntersectionWidget, is_rightclick: bool):
         assert self.controller.receiver.curr_action_result
@@ -136,9 +151,9 @@ class GameWidget(QWidget, BaseReceiver):
             else:
                 stone_result = self.controller.receiver.curr_stone_result
                 # self.boardwidget.show_analyzed_variation = False
-                if isinstance(self.parties[stone_result.next_color], GUIPlayer):
+                if isinstance(self.parties[color := stone_result.next_color], GUIPlayer):
                     self.callbacks.play(
-                        color=stone_result.next_color,
+                        color=color,
                         pos=iwidget.board_pos,
                     )
 
@@ -152,17 +167,13 @@ class GameWidget(QWidget, BaseReceiver):
             cursor=cpy,
         )
 
-    def lost_by_overtime(self, color: Color):
-        super().lost_by_overtime(color=color)
-        for color in (Color.BLACK, Color.WHITE):
-            box = self.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color]
-            box.clock_stop_signal.emit(0)
-
     def count_done(self):
         print("DONE")
-        # self.gui_mode = GUIMode.EDIT
+        self.gui_mode = GUIMode.EDIT
+        self.bar.result_signal.emit(self.controller.receiver.curr_action_result)
+        self.boardwidget.boardupdate_signal.emit(self.controller.receiver.curr_action_result)
         # self.repaint()
-        self.callbacks.finish()
+        # self.callbacks.finish()
 
     # @property
     # def deco(self):

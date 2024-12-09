@@ -63,7 +63,7 @@ def seconds_to_str(seconds):
 
 
 class Box(QGroupBox):
-    controller: "GameWidget"
+    game_ui: "GameWidget"
     name: str
 
     def __init__(self, parent: Union["Box", "BarWidget", QFrame], **kwargs):
@@ -116,8 +116,7 @@ class _PlayerBox(Box):
            background-color: {bg};
            {colors}
         }}
-        {
-        clsname}::title {{
+        {clsname}::title {{
             subcontrol-origin: margin;
             subcontrol-position: top left; /* position at the top center */
            {colors}
@@ -125,9 +124,17 @@ class _PlayerBox(Box):
         QLabel{{
            {colors}
         }}
+        QRow#total_row {{
+           font-weight: bold;
+        }}
+        QLabel#total_label{{
+           {colors}
+           font-weight: bold;
+        }}
 
         """
         self.setStyleSheet(css1)
+        print(css1)
         self.formlayout = QFormLayout()
         self.prisoners_label = QLabel(str(0))
         self.formlayout.addRow("Prisoners:", self.prisoners_label)
@@ -150,8 +157,6 @@ class PlayerGameBox(_PlayerBox):
     def stop_clockdisplay(self, seconds):
         if self.timer:
             self.timer.stop()
-        # self.clock.display(seconds_to_str(seconds))
-        # self.update_byoyomi_label()
 
     def set_clockdisplay(self, seconds):
         self.stop_clockdisplay(seconds)
@@ -189,22 +194,29 @@ class PlayerCountBox(_PlayerBox):
 
         if player.color == Color.WHITE:
             self.formlayout.addRow("Komi:", QLabel(str(self.game_ui.controller.ruleset.komi)))
+        else:
+            self.formlayout.addRow("", QLabel(""))
         self.total_label = QLabel(str(0))
-        self.formlayout.addRow("Total:", self.total_label)
+        self.total_label.setObjectName("total_label")
+        row = self.formlayout.addRow("Total:", self.total_label)
+        # row.setObjectName("total_row")
+        # print("ROW", row)
         self.setLayout(self.formlayout)
 
-    # def update_controlls(self, result: GameResult):  # type: ignore
-    #    playerresult = result[self.player.color]
-    #    if playerresult:
-    #        numcoords = len(playerresult.coords)
-    #        self.libs_label.setText(str(numcoords))
-    #        assert self.controller.curr_action_result
-    #        numdead = self.controller.curr_action_result.dead[self.othercolor] + playerresult.killed
-    #        self.prisoners_label.setText(str(numdead))
-    #        total = numdead + numcoords
-    #        if self.player.color == Color.WHITE:
-    #            total += self.controller.ruleset.komi
-    #        self.total_label.setText(str(total))
+    def update_controlls(self, result: ActionResult):  # type: ignore
+        assert self.game_ui.gui_mode == GUIMode.COUNT
+        game_result = result.game_result
+        assert game_result
+        playerresult = game_result[self.player.color]
+        if playerresult:
+            numcoords = len(playerresult.coords)
+            self.libs_label.setText(str(numcoords))
+            numdead = result.total_dead[self.othercolor] + playerresult.killed
+            self.prisoners_label.setText(str(numdead))
+            total = numdead + numcoords
+            if self.player.color == Color.WHITE:
+                total += self.game_ui.controller.ruleset.komi
+            self.total_label.setText(str(total))
 
 
 class PlayersBox(Box):
@@ -282,7 +294,7 @@ class GameBox(Box):
             "Pass": self.game_ui.controller.do_pass,
             ActionType.RESIGN.value: callbacks.resign,
             "Undo": callbacks.undo,
-            # "Done": self.game_ui.controller.count_done,
+            "Done": self.game_ui.count_done,
             # GameResultType.END: callbacks.end_result,
         }
 
@@ -295,11 +307,10 @@ class GameBox(Box):
         self.setLayout(layout)
 
     def update_controlls(self, result: ActionResult):
-        pass
-        # is_game_result = type(result) == GameResult
+        # is_game_result = bool(result.game_result)
         # self.buttons[GameResultType.END].setVisible(is_game_result)
-        # self.buttons["Pass"].setVisible(not is_game_result)
-        # self.buttons["Done"].setVisible(result.type == ActionType.COUNT)
+        self.buttons["Pass"].setVisible(result.type is ActionType.STONE)
+        self.buttons["Done"].setVisible(result.type == ActionType.COUNT)
 
 
 class EditBox(Box):
@@ -361,8 +372,8 @@ class EditBox(Box):
     #     # )
 
     def update_controlls(self, result: ActionResult):
-        if type(result) == ActionResult:
-            stone = result.stone
+        if stone_result := result.stone_result:
+            stone = stone_result.stone
             has_parent = bool(stone.parent)
             has_children = bool(stone.children)
             self.btn_first_stone.setEnabled(has_parent)
@@ -385,8 +396,8 @@ class CommentsBox(Box):
         self.setLayout(layout)
 
     def update_controlls(self, result: ActionResult):
-        assert self.controller.curr_action_result
-        self.comments.setText(self.controller.curr_action_result.stone.annos.comment)
+        if stone_result := result.stone_result:
+            self.comments.setText(stone_result.stone.annos.comment)
 
 
 class ChartBox(Box):
@@ -409,10 +420,10 @@ class InnerWidget(QFrame):
     def __init__(self, parent: "BarWidget"):
         super().__init__(parent)
         self._layout = QFormLayout()
-        self.controller = parent.controller
+        self.game_ui = parent.game_ui
         self.boxes: BoxesByName = {}
-        is_edit = self.controller.gui_mode == GUIMode.EDIT
-        pbox = PlayersBox(self, players=self.controller.parties)
+        is_edit = self.game_ui.gui_mode == GUIMode.EDIT
+        pbox = PlayersBox(self, players=self.game_ui.parties)
         self.playersbox = self.add_box(pbox, vis=True)
         self.add_box(GameBox(self), vis=not is_edit)
         self.add_box(EditBox(self), vis=is_edit)
@@ -432,8 +443,8 @@ class InnerWidget(QFrame):
             checked = action.isChecked()
             box.setVisible(checked)
             if checked:
-                assert self.controller.curr_action_result
-                self.update_controlls(result=self.controller.curr_action_result)
+                assert self.game_ui.curr_action_result
+                self.update_controlls(result=self.game_ui.curr_action_result)
 
         return handle
 
@@ -446,10 +457,10 @@ class InnerWidget(QFrame):
 
 class BarWidget(QFrame):
     result_signal = pyqtSignal(ActionResult)
-    controller: "GameWidget"
+    game_ui: "GameWidget"
 
     def __init__(self, parent: "GameWidget"):
-        self.controller = parent
+        self.game_ui = parent
         super().__init__(parent)
         self._layout = QFormLayout()
         self.btn_settings = QPushButton("\u2630")
@@ -459,7 +470,7 @@ class BarWidget(QFrame):
         splitter = QSplitter(self)
         self.inner = InnerWidget(self)
         splitter.addWidget(self.inner)
-        self.tree = Tree(self, callback=self.parent().controller.callbacks.set_cursor)
+        self.tree = Tree(self, callback=self.game_ui.controller.callbacks.set_cursor)
         splitter.addWidget(self.tree)
         splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setStyleSheet(
@@ -477,14 +488,14 @@ class BarWidget(QFrame):
         return
         found = False
         for action in self.engines_menu.actions():
-            is_connected = action.iconText() not in self.controller.connected_engines.keys()
+            is_connected = action.iconText() not in self.game_ui.controller.connected_engines.keys()
             action.setEnabled(is_connected)
             found = found or is_connected
         if found:
             pass
 
     def update_controlls(self, result: ActionResult):
-        # self.tree.setEnabled(self.controller.gui_mode == GUIMode.EDIT)
+        self.tree.setEnabled(self.game_ui.gui_mode == GUIMode.EDIT)
         if result.stone_result:
             self.tree.stones_signal.emit(result.stone_result.stone)
         self.inner.update_controlls(result)
@@ -516,7 +527,7 @@ class BarWidget(QFrame):
         # settings_action.triggered.connect(self.controller.parent().show_settings_dialog)
 
         open_action = QAction("Open as new", self)
-        open_action.triggered.connect(self.controller.open_as_new)
+        open_action.triggered.connect(self.game_ui.open_as_new)
         menu.addAction(open_action)
         save_action = QAction("Save", self)
         save_action.triggered.connect(self.save_as_file)
@@ -525,7 +536,7 @@ class BarWidget(QFrame):
 
         def mk_handler(name, cmd, key):
             def handler():
-                self.controller.connect_engine(name, cmd, key)
+                self.game_ui.connect_engine(name, cmd, key)
 
             return handler
 
