@@ -109,17 +109,3 @@ class StonesController:
             board=boardcpy,
             stone_result=StoneResult(stone=stone, killed=killed, libs=libs, next_color=next_color),
         )
-
-
-# class GameEventReceiver:
-#     """Events from a game/variation"""
-#
-#     curr_action_result: Optional[ActionResult]
-#     game_result: Optional[GameResult]
-#     game_callbacks: "Game.Callbacks"
-#
-#     def __init__(self):
-#         self.game_callbacks = None
-#         self.curr_action_result = None
-#         self.game_result = None
-#         self._ready = False

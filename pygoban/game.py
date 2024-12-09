@@ -42,7 +42,7 @@ class AbstractCallbacks(abc.ABC):
     def toggle_status(self, pos: Pos) -> None: ...
 
     @abc.abstractmethod
-    def annotate(self, pos: Pos, name: str | Color) -> None: ...
+    def annotate(self, pos: Pos, name: str | Color, next_color: Color) -> None: ...
 
     @abc.abstractmethod
     def annotate_winrates(self, infos: dict) -> None: ...
@@ -84,7 +84,6 @@ class Game:
             if ruleset.timesettings
             else None
         )
-        print(self.timers)
 
     def send_game_event(self, result: ActionResult):
         for receiver in self.receivers:
@@ -196,6 +195,7 @@ class Game:
             started = False
 
             def play(self, color: Color, pos: Optional[Pos] = None):
+                print("PLAY ", color, pos)
                 game._place(color=color, pos=pos)  # pylint: disable=protected-access
 
             def undo(self):
@@ -203,6 +203,7 @@ class Game:
                     game._reset(parent)  # pylint: disable=protected-access
 
             def set_cursor(self, stone: Stone):
+                print("SET CURSOR", stone)
                 game._reset(stone)  # pylint: disable=protected-access
 
             def resign(self, color: Color):
@@ -226,7 +227,7 @@ class Game:
                     inter.owner = owner
                 game._count()  # pylint
 
-            def annotate(self, pos: Pos, name: str | Color | Marker):
+            def annotate(self, pos: Pos, name: str | Color | Marker, next_color: Color):
                 cursor = game.stones.cursor
                 if isinstance(name, Color):
                     cursor.annos.stones[pos] = name
@@ -243,7 +244,7 @@ class Game:
                 action_result = ActionResult(
                     type=ActionType.ANNOTATED,
                     board=game.stones.board,
-                    stone_result=StoneResult(stone=game.stones.cursor),
+                    stone_result=StoneResult(stone=game.stones.cursor, next_color=next_color),
                 )
                 game.send_game_event(action_result)
 

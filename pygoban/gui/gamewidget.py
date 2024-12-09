@@ -112,42 +112,50 @@ class GameWidget(QWidget, BaseReceiver):
         curr_action_result = self.controller.receiver.curr_action_result
         board = curr_action_result.board
         inter = board.intersection(iwidget.board_pos)
-        # decobox = self.bar.inner.boxes["EditBox"].decobox
-        # decogroup = self.bar.inner.boxes["EditBox"].decogroup
         iwidget._hover = False
         if is_rightclick:
             if (
                 self.gui_mode == GUIMode.EDIT
                 and self.bar.inner.boxes["EditBox"].decogroup.checkedButton()
             ):
-                self.callbacks.annotate(iwidget.board_pos, Color.EMPTY)
+                self.callbacks.annotate(
+                    iwidget.board_pos,
+                    Color.EMPTY,
+                    next_color=self.controller.receiver.curr_stone_result.next_color,
+                )
         else:
+            decobox = self.bar.inner.boxes["EditBox"].decobox
             if self.gui_mode == GUIMode.COUNT:
                 if inter.color:
                     self.callbacks.toggle_status(iwidget.board_pos)
-            # elif self.gui_mode == GUIMode.EDIT and decobox.isChecked():
-            #     if btn := decogroup.checkedButton():
-            #         name = btn.text()
-            #         print(btn, name)
-            #         val: str | Marker | Color | None = None
-            #         match name:
-            #             case "B":
-            #                 val = Color.BLACK
-            #             case "W":
-            #                 val = Color.WHITE
-            #             case "TR":
-            #                 val = Marker.TR
-            #             case "SQ":
-            #                 val = Marker.SQ
-            #             case "CR":
-            #                 val = Marker.CR
-            #             case "1":
-            #                 val = "1"
-            #             case "A":
-            #                 val = "A"
-            #         print("V", val)
-            #         if val:
-            #             self.callbacks.annotate(pos=iwidget.board_pos, name=val)
+            elif self.gui_mode == GUIMode.EDIT and decobox.isChecked():
+                decogroup = self.bar.inner.boxes["EditBox"].decogroup
+                if btn := decogroup.checkedButton():
+                    name = btn.text()
+                    print(btn, name)
+                    val: str | Marker | Color | None = None
+                    match name:
+                        case "B":
+                            val = Color.BLACK
+                        case "W":
+                            val = Color.WHITE
+                        case "TR":
+                            val = Marker.TR
+                        case "SQ":
+                            val = Marker.SQ
+                        case "CR":
+                            val = Marker.CR
+                        case "1":
+                            val = "1"
+                        case "A":
+                            val = "A"
+                    print("V", val)
+                    if val:
+                        self.callbacks.annotate(
+                            pos=iwidget.board_pos,
+                            name=val,
+                            next_color=self.controller.receiver.curr_stone_result.next_color,
+                        )
             else:
                 stone_result = self.controller.receiver.curr_stone_result
                 # self.boardwidget.show_analyzed_variation = False

@@ -240,6 +240,7 @@ class IntersectionWidget(QWidget):
         if (not stone_pixmap) and self._hover:
             next_color = curr_stone_result.next_color
             hover_pixmap = get_pixmap(next_color)
+            print("Nextcol", next_color, hover_pixmap)
             painter.setOpacity(0.8)
             painter.drawPixmap(
                 QRect(

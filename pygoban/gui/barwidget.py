@@ -134,7 +134,6 @@ class _PlayerBox(Box):
 
         """
         self.setStyleSheet(css1)
-        print(css1)
         self.formlayout = QFormLayout()
         self.prisoners_label = QLabel(str(0))
         self.formlayout.addRow("Prisoners:", self.prisoners_label)
@@ -354,7 +353,7 @@ class EditBox(Box):
         self.setLayout(box_layout)
 
     def toggle_deco(self):
-        self.controller.is_annotating = self.decobox.isChecked()
+        self.game_ui.is_annotating = self.decobox.isChecked()
 
     def do_nr(self):
         pass
