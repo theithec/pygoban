@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import (  # pylint: disable=no-name-in-module
     QTextEdit,
 )
 
-from pygoban import ActionResult, ActionType, Color, GameController, GameResult, Party
+from pygoban import Color, GameController, Party, results
 
 from . import GUIMode
 
@@ -81,15 +81,12 @@ class Box(QGroupBox):
     def init(self, **kwargs: Any):
         raise NotImplementedError()
 
-    def update_controlls(self, result: ActionResult):
-        raise NotImplementedError(self)
-
 
 BoxesByName = Dict[str, Box]
 
 
 class _PlayerBox(Box):
-    name = "Players"
+    name = "_Player"
     prisoners_label: QLabel
     byoyomi_label: QLabel
     clock: QLCDNumber
@@ -138,14 +135,8 @@ class _PlayerBox(Box):
         self.prisoners_label = QLabel(str(0))
         self.formlayout.addRow("Prisoners:", self.prisoners_label)
 
-    def update_controlls(self, result: ActionResult):
-        pass
-
 
 class PlayerGameBox(_PlayerBox):
-    clock_update_signal = pyqtSignal(int)
-    clock_stop_signal = pyqtSignal(int)
-
     timer = None
 
     def clockdisplay_tick(self):
@@ -156,6 +147,7 @@ class PlayerGameBox(_PlayerBox):
     def stop_clockdisplay(self, seconds):
         if self.timer:
             self.timer.stop()
+        self.clock.display(seconds_to_str(seconds))
 
     def set_clockdisplay(self, seconds):
         self.stop_clockdisplay(seconds)
@@ -169,20 +161,13 @@ class PlayerGameBox(_PlayerBox):
         else:
             self.clock.display("00:00")
 
-    def init(self, player: Party, **kwargs):  # type: ignore
+    def init(self, player: Party, **kwargs) -> None:  # type: ignore
         super().init(player)
         self.clock = QLCDNumber()
         self.byoyomi_label = QLabel("")
         self.clock.display(seconds_to_str(0))
         self.formlayout.addRow(self.clock)
         self.setLayout(self.formlayout)
-        self.clock_update_signal.connect(self.set_clockdisplay)
-        self.clock_stop_signal.connect(self.stop_clockdisplay)
-
-    def update_controlls(self, result: ActionResult):  # type: ignore
-        if result.stone_result:
-            numdead = result.total_dead[self.othercolor]
-            self.prisoners_label.setText(str(numdead))
 
 
 class PlayerCountBox(_PlayerBox):
@@ -197,25 +182,23 @@ class PlayerCountBox(_PlayerBox):
             self.formlayout.addRow("", QLabel(""))
         self.total_label = QLabel(str(0))
         self.total_label.setObjectName("total_label")
-        row = self.formlayout.addRow("Total:", self.total_label)
-        # row.setObjectName("total_row")
-        # print("ROW", row)
+        self.formlayout.addRow("", self.total_label)
         self.setLayout(self.formlayout)
 
-    def update_controlls(self, result: ActionResult):  # type: ignore
-        assert self.game_ui.gui_mode == GUIMode.COUNT
-        game_result = result.game_result
-        assert game_result
-        playerresult = game_result[self.player.color]
-        if playerresult:
-            numcoords = len(playerresult.coords)
-            self.libs_label.setText(str(numcoords))
-            numdead = result.total_dead[self.othercolor] + playerresult.killed
-            self.prisoners_label.setText(str(numdead))
-            total = numdead + numcoords
-            if self.player.color == Color.WHITE:
-                total += self.game_ui.controller.ruleset.komi
-            self.total_label.setText(str(total))
+    # def update_controlls(self, result):  # type: ignore
+    #    assert self.game_ui.gui_mode == GUIMode.COUNT
+    #    game_result = result.game_result
+    #    assert game_result
+    #    playerresult = game_result[self.player.color]
+    #    if playerresult:
+    #        numcoords = len(playerresult.coords)
+    #        self.libs_label.setText(str(numcoords))
+    #        numdead = result.total_dead[self.othercolor] + playerresult.killed
+    #        self.prisoners_label.setText(str(numdead))
+    #        total = numdead + numcoords
+    #        if self.player.color == Color.WHITE:
+    #            total += self.game_ui.controller.ruleset.komi
+    #        self.total_label.setText(str(total))
 
 
 class PlayersBox(Box):
@@ -242,8 +225,9 @@ class PlayersBox(Box):
             self.boxlayout.addWidget(box)
             box.setVisible(True)
         self.setLayout(self.boxlayout)
+        self
 
-    def update_controlls(self, result: ActionResult):
+    def update_controlls22(self, result):
         if self.last_gui_mode != self.game_ui.gui_mode:
             curr_boxes = self.boxes_by_mode[self.last_gui_mode]
             next_boxes = self.boxes_by_mode[self.game_ui.gui_mode]
@@ -291,10 +275,9 @@ class GameBox(Box):
         callbacks = self.game_ui.callbacks
         self.action_mapping = {
             "Pass": self.game_ui.controller.do_pass,
-            ActionType.RESIGN.value: callbacks.resign,
+            "Resign": callbacks.resign,
             "Undo": callbacks.undo,
-            "Done": self.game_ui.count_done,
-            # GameResultType.END: callbacks.end_result,
+            "Done": lambda: callbacks.set_end_result(results.GameResultType.COUNTED),
         }
 
         add_gamebutton = btn_adder(layout)
@@ -305,11 +288,10 @@ class GameBox(Box):
 
         self.setLayout(layout)
 
-    def update_controlls(self, result: ActionResult):
+    def update_controlls(self, result):
         # is_game_result = bool(result.game_result)
         # self.buttons[GameResultType.END].setVisible(is_game_result)
         self.buttons["Pass"].setVisible(result.type is ActionType.STONE)
-        self.buttons["Done"].setVisible(result.type == ActionType.COUNT)
 
 
 class EditBox(Box):
@@ -370,7 +352,7 @@ class EditBox(Box):
     #     #    self.ctrl.ruleset.count(self.ctrl.curr_action_result.board)
     #     # )
 
-    def update_controlls(self, result: ActionResult):
+    def update_controlls(self, result):
         if stone_result := result.stone_result:
             stone = stone_result.stone
             has_parent = bool(stone.parent)
@@ -394,7 +376,7 @@ class CommentsBox(Box):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setLayout(layout)
 
-    def update_controlls(self, result: ActionResult):
+    def update_controlls(self, result):
         if stone_result := result.stone_result:
             self.comments.setText(stone_result.stone.annos.comment)
 
@@ -409,7 +391,7 @@ class ChartBox(Box):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setLayout(layout)
 
-    def update_controlls(self, result: ActionResult):
+    def update_controlls(self, result):
         assert self.controller.curr_action_result
         self.chart.add_data()
         # self.comments.setText(self.controller.curr_action_result.stone.annos.comment)
@@ -447,7 +429,7 @@ class InnerWidget(QFrame):
 
         return handle
 
-    def update_controlls(self, result: ActionResult):
+    def update_controlls(self, result):
         for box in self.boxes.values():
             if box.isVisible():
                 # print("UPDATE BOX", box)
@@ -455,7 +437,10 @@ class InnerWidget(QFrame):
 
 
 class BarWidget(QFrame):
-    result_signal = pyqtSignal(ActionResult)
+    turn_done_signal = pyqtSignal(results.TurnDone)
+    counted_signal = pyqtSignal(results.Counted)
+    clock_stop_signal = pyqtSignal(int)
+
     game_ui: "GameWidget"
 
     def __init__(self, parent: "GameWidget"):
@@ -479,7 +464,8 @@ class BarWidget(QFrame):
             """
         )
         self.btn_settings.setMenu(self.get_menu())
-        self.result_signal.connect(self.update_controlls)
+        self.turn_done_signal.connect(self.handle_turn_done)
+        self.counted_signal.connect(self.handle_counted)
         self._layout.addRow(splitter)
         self.setLayout(self._layout)
 
@@ -493,14 +479,14 @@ class BarWidget(QFrame):
         if found:
             pass
 
-    def update_controlls(self, result: ActionResult):
-        self.tree.setEnabled(self.game_ui.gui_mode == GUIMode.EDIT)
-        if result.stone_result:
-            self.tree.stones_signal.emit(result.stone_result.stone)
-        self.inner.update_controlls(result)
-        # for box in self.inner.boxes.values():
-        #    box.toggle_action.setChecked(box.isVisible())
-        self.update_menu()
+    # def update_controlls(self, result):
+    #    self.tree.setEnabled(self.game_ui.gui_mode == GUIMode.EDIT)
+    #    if result.stone_result:
+    #        self.tree.stones_signal.emit(result.stone_result.stone)
+    #    self.inner.update_controlls(result)
+    #    # for box in self.inner.boxes.values():
+    #    #    box.toggle_action.setChecked(box.isVisible())
+    #    self.update_menu()
 
     def get_menu(self) -> QMenu:
         menu = QMenu(self)
@@ -550,6 +536,60 @@ class BarWidget(QFrame):
         #    self.engines_menu.addMenu(engine_menu)
 
         return menu
+
+    def handle_turn_done(self, result: results.TurnDone):  # type: ignore
+
+        game_box = self.inner.boxes["Play-Mode"]
+        assert isinstance(game_box, GameBox)
+        game_box.buttons["Done"].setVisible(False)
+        game_box.buttons["Resign"].setVisible(True)
+
+        if result.stone.color is not Color.EMPTY:
+            players_box = self.inner.playersbox
+            assert isinstance(players_box, PlayersBox)
+            player_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
+            numdead = result.total_dead[result.next_color]
+            player_box = player_boxes[result.stone.color]
+            player_box.prisoners_label.setText(str(numdead))
+
+        print("GUIM", self.game_ui.gui_mode)
+        self.tree.setEnabled(self.game_ui.gui_mode == GUIMode.EDIT)
+        self.tree.stones_signal.emit(result.stone)
+
+    def handle_counted(self, result: results.Counted) -> None:
+        self.tree.setEnabled(False)
+
+        players_box = self.inner.playersbox
+        assert isinstance(players_box, PlayersBox)
+
+        if self.game_ui._initial_gui_mode == GUIMode.PLAY:
+            game_box = self.inner.boxes["Play-Mode"]
+            assert isinstance(game_box, GameBox)
+            game_box.buttons["Done"].setVisible(True)
+            game_box.buttons["Resign"].setVisible(False)
+
+        if players_box.last_gui_mode != self.game_ui.gui_mode:
+            curr_boxes = players_box.boxes_by_mode[players_box.last_gui_mode]
+            next_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
+            for color in (Color.BLACK, Color.WHITE):
+                players_box.boxlayout.replaceWidget(
+                    curr_boxes[color],
+                    next_boxes[color],
+                )
+                curr_boxes[color].setVisible(False)
+                next_boxes[color].setVisible(True)
+
+                box = next_boxes[color]
+                assert isinstance(box, PlayerCountBox), box
+                playerresult = result[color]
+                numcoords = len(playerresult.coords)
+                box.libs_label.setText(str(numcoords))
+                # numdead = playerresult.total_dead[color.other] + playerresult.killed
+                box.prisoners_label.setText(str(playerresult.killed))
+                total = playerresult.total()
+                if box.player.color == Color.WHITE:
+                    total += self.game_ui.controller.ruleset.komi
+                box.total_label.setText(str(total))
 
     def save_as_file(self):
         pass

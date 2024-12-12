@@ -16,7 +16,7 @@ class GameController:
 
     @property
     def curr_stone(self) -> Stone:
-        return self.receiver.curr_stone_result.stone
+        return self.receiver.last_turn.stone
 
     def do_prev_variation(self) -> None:
         curr = self.curr_stone
@@ -24,8 +24,6 @@ class GameController:
             if (not curr.parent) or len(curr.children) > 1:
                 break
             curr = curr.parent
-
-        assert self.callbacks
         self.callbacks.set_cursor(curr)
 
     def do_next_variation(self) -> None:
@@ -34,22 +32,19 @@ class GameController:
             if not curr.children or len(curr.children) > 1:
                 break
             curr = curr.children[0]
-        assert self.callbacks
         self.callbacks.set_cursor(curr)
 
     def do_prev_stone(self) -> None:
-        assert self.curr_stone.parent
         self.callbacks.set_cursor(self.curr_stone.parent)
 
     def do_next_stone(self) -> None:
-        assert self.curr_stone.children
         self.callbacks.set_cursor(self.curr_stone.children[0])
 
     def do_first_stone(self) -> None:
         self.callbacks.set_cursor(self.curr_stone.root())
 
     def do_pass(self) -> None:
-        self.callbacks.play(color=self.receiver.curr_stone_result.next_color, pos=None)
+        self.callbacks.play(color=self.receiver.last_turn.next_color, pos=None)
 
     def do_last_stone(self) -> None:
         curr = self.curr_stone

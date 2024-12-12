@@ -3,7 +3,7 @@ from typing import Dict, Optional, Set, Tuple, Union
 
 from .board import Board, Color, Pos
 from .info import GameInfo
-from .results import ActionResult, ActionType, ColorResult, GameResult
+from .results import TurnDone
 from .stonescontroller import StonesController
 from .timesettings import TimeSettings
 
@@ -40,8 +40,8 @@ class Group:
     coords: Set[Pos] = field(default_factory=set)
 
 
-PosSetByColor = Dict[Color, Set[Pos]]
-IntByColor = Dict[Color, int]
+PosSetByColor = dict[Color, Set[Pos]]
+FloatByColor = dict[Color, float]
 
 
 class Counter:
@@ -69,10 +69,10 @@ class Counter:
             self.board.intersection(coord).owner = group.owner
         return group
 
-    def result(self) -> Tuple[PosSetByColor, IntByColor]:
+    def result(self) -> Tuple[PosSetByColor, FloatByColor]:
         self.checked = set()
         empties: PosSetByColor = {Color.BLACK: set(), Color.WHITE: set()}
-        deadonboard: IntByColor = {Color.BLACK: 0, Color.WHITE: 0}
+        deadonboard: FloatByColor = {Color.BLACK: 0, Color.WHITE: 0}
         boardrange = range(self.board.boardsize)
         for x in boardrange:
             for y in boardrange:
@@ -85,6 +85,7 @@ class Counter:
                 if inter.owner and inter.owner != inter.color:
                     if inter.color:
                         deadonboard[inter.color] += 1
+                        empties[group.owner].add(pos)
 
         return empties, deadonboard
 
@@ -118,42 +119,8 @@ class Ruleset:
         self.stones = stones
         return self
 
-    def count(self, board: Board) -> ActionResult:
-        assert self.stones
-        counter = Counter(board)
-        owned_empties, dob = counter.result()
-        black_result = ColorResult(
-            coords=owned_empties[Color.BLACK],
-            killed=dob[Color.WHITE] + self.stones.dead[Color.WHITE],
-        )
-        white_result = ColorResult(
-            coords=owned_empties[Color.WHITE],
-            killed=dob[Color.BLACK] + self.stones.dead[Color.BLACK],
-        )
-        white_plus_komi = white_result.total() + float(self.komi)
-        wbdiff = white_plus_komi - black_result.total()
-        for col in (Color.BLACK, Color.WHITE):
-            for empty in owned_empties[col]:
-                board.intersection(empty).owner = col
-        if wbdiff < 0:
-            winner = Color.BLACK
-            wbdiff = wbdiff * -1
-        elif wbdiff > 0:
-            winner = Color.WHITE
-        else:
-            winner = Color.EMPTY
-        return ActionResult(
-            type=ActionType.COUNT,
-            board=self.stones.board,
-            game_result=GameResult(
-                winner=winner,
-                reason=f"{winner}+{wbdiff}",
-            ),
-        )
-
-    def validate_result(self, result: ActionResult) -> ActionResult:
-        assert result.stone_result
-        stone = result.stone_result.stone
+    def validate_result(self, result: TurnDone) -> TurnDone:
+        stone = result.stone
         if stone.pos:
             self.passed = 0
         else:
@@ -168,15 +135,12 @@ class Ruleset:
         color = self.stones.board.intersection(stone.pos).color
         if not color.is_empty():
             raise OccupiedViolation(f"Not empty: {result} BUT {color}")
-        if not result.stone_result.libs and not result.stone_result.killed:
+        if not result.libs and not result.killed:
             raise NoLibsViolation(f"No liberties: {result}")
         if stone.pos == self.ko:
             raise KoViolation(f"Invalid Ko: {result}")
-        if (
-            len(result.stone_result.libs) == 1
-            and result.stone_result.libs == result.stone_result.killed
-        ):
-            self.ko = list(result.stone_result.killed)[0]
+        if len(result.libs) == 1 and result.libs == result.killed:
+            self.ko = list(result.killed)[0]
         else:
             self.ko = None
         return result

@@ -8,10 +8,9 @@ from PyQt5.QtCore import pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt5.QtMultimedia import QSound  # pylint: disable=no-name-in-module
 from PyQt5.QtWidgets import QMessageBox, QWidget  # pylint: disable=no-name-in-module
 
-from pygoban import ActionType, TimeSettings
+from pygoban import TimeSettings, TurnDone
 
 from .. import (  # ActionType,; GameResult,
-    ActionResult,
     BaseReceiver,
     Color,
     Game,
@@ -19,9 +18,10 @@ from .. import (  # ActionType,; GameResult,
     Marker,
     Parties,
     Ruleset,
+    results,
 )
 from . import BASE_DIR, GUIMode
-from .barwidget import BarWidget
+from .barwidget import BarWidget, PlayersBox
 from .boardwidget import BoardWidget
 from .intersections import IntersectionWidget
 from .players import GUIPlayer
@@ -30,7 +30,59 @@ from .players import GUIPlayer
 #    from .mainwindow import MainWindow
 
 
-class GameWidget(QWidget, BaseReceiver):
+class GuiReceiver(BaseReceiver):
+    def __init__(self, game_ui: "GameWidget"):
+        super().__init__()
+        self.game_ui: "GameWidget" = game_ui
+
+    def received_turn(self, result: TurnDone) -> None:
+
+        self.game_ui.gui_mode = self.game_ui._initial_gui_mode
+        self.game_ui.last_turn = result
+        self.game_ui.boardwidget.update()
+        self.game_ui.bar.turn_done_signal.emit(result)
+
+    def received_resign(self, result) -> None:
+        pass
+
+    def received_annotated(self, result) -> None:
+        print("ANNO", result)
+        self.game_ui.boardwidget.update()
+
+    def received_count(self, result) -> None:
+        self.game_ui.gui_mode = GUIMode.COUNT
+        self.game_ui.boardwidget.boardupdate_signal.emit(result)
+        assert self.game_ui.last_turn
+        for color in (Color.BLACK, Color.WHITE):
+            result[color].killed += self.game_ui.last_turn.total_dead[color.other()]
+        self.game_ui.bar.counted_signal.emit(result)
+
+    def received_count_done(self, result) -> None:
+        pass
+
+    def received_period_ended(self, result) -> None:
+        assert result.time_result
+        color = result.time_result.color
+        next_time = result.time_result.next_time
+        box = self.game_ui.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color]
+        box.clock_update_signal.emit(next_time)
+        box = self.game_ui.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color.other()]
+        box.clock_stop_signal.emit(0)
+
+    def received_lost_by_time(self, result) -> None:
+        print("END", result)
+        assert result.time_result
+        color = result.time_result.color
+        box = self.game_ui.bar.inner.playersbox.boxes_by_mode[self.game_ui.gui_mode][color]
+        box.clock_stop_signal.emit(0)
+        box = self.game_ui.bar.inner.playersbox.boxes_by_mode[self.game_ui.gui_mode][color.other()]
+        box.clock_stop_signal.emit(0)
+        self.gui_mode = GUIMode.EDIT
+        self.game_ui.bar.result_signal.emit(result)
+        self.game_ui.boardwidget.update()
+
+
+class GameWidget(QWidget):
     gameended_signal = pyqtSignal(str)
 
     def __init__(
@@ -47,7 +99,7 @@ class GameWidget(QWidget, BaseReceiver):
         self.parties = parties
         self.controller = controller
         self._deco = None
-        self.curr_action_result: ActionResult | None = None
+        self.last_turn: TurnDone | None = None
         self.stonesound = QSound(os.path.join(BASE_DIR, "gui/sounds/stone.wav"))
         self.gui_mode = gui_mode
         self._initial_gui_mode = gui_mode
@@ -56,6 +108,7 @@ class GameWidget(QWidget, BaseReceiver):
         self.bar = BarWidget(self)
         self.ruleset = controller.ruleset
         self.bar.btn_settings.setFocus()
+        self.receiver = GuiReceiver(game_ui=self)
 
     # def gameended_action(self, reason: str):
     #    msg = QMessageBox(self)
@@ -63,54 +116,9 @@ class GameWidget(QWidget, BaseReceiver):
     #    msg.setText(reason)
     #    msg.show()
 
-    def received_stone(self, result: ActionResult) -> None:
-        # self.update()
-        self.boardwidget.update()
-        self.bar.result_signal.emit(result)
-
-    def received_reset(self, result: ActionResult) -> None:
-        self.boardwidget.update()
-        self.bar.result_signal.emit(result)
-
-    def received_resign(self, result: ActionResult) -> None:
-        pass
-
-    def received_annotated(self, result: ActionResult) -> None:
-        pass
-
-    def received_count(self, result: ActionResult) -> None:
-        self.gui_mode = GUIMode.COUNT
-        self.boardwidget.boardupdate_signal.emit(result)
-        self.bar.result_signal.emit(result)
-
-    def received_count_done(self, result: ActionResult) -> None:
-        pass
-
-    def received_period_ended(self, result: ActionResult) -> None:
-        assert result.time_result
-        color = result.time_result.color
-        next_time = result.time_result.next_time
-        box = self.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color]
-        box.clock_update_signal.emit(next_time)
-        box = self.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color.other()]
-        box.clock_stop_signal.emit(0)
-
-    def received_lost_by_time(self, result: ActionResult) -> None:
-        print("END", result)
-        assert result.time_result
-        color = result.time_result.color
-        box = self.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color]
-        box.clock_stop_signal.emit(0)
-        box = self.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color.other()]
-        box.clock_stop_signal.emit(0)
-        self.gui_mode = GUIMode.EDIT
-        self.bar.result_signal.emit(result)
-        self.boardwidget.update()
-
     def inter_clicked(self, iwidget: IntersectionWidget, is_rightclick: bool):
-        assert self.controller.receiver.curr_action_result
-        curr_action_result = self.controller.receiver.curr_action_result
-        board = curr_action_result.board
+        assert self.last_turn
+        board = self.last_turn.board
         inter = board.intersection(iwidget.board_pos)
         iwidget._hover = False
         if is_rightclick:
@@ -118,11 +126,7 @@ class GameWidget(QWidget, BaseReceiver):
                 self.gui_mode == GUIMode.EDIT
                 and self.bar.inner.boxes["EditBox"].decogroup.checkedButton()
             ):
-                self.callbacks.annotate(
-                    iwidget.board_pos,
-                    Color.EMPTY,
-                    next_color=self.controller.receiver.curr_stone_result.next_color,
-                )
+                self.callbacks.annotate(iwidget.board_pos, Color.EMPTY, next_color=self.last_turn)
         else:
             decobox = self.bar.inner.boxes["EditBox"].decobox
             if self.gui_mode == GUIMode.COUNT:
@@ -154,12 +158,11 @@ class GameWidget(QWidget, BaseReceiver):
                         self.callbacks.annotate(
                             pos=iwidget.board_pos,
                             name=val,
-                            next_color=self.controller.receiver.curr_stone_result.next_color,
+                            next_color=self.last_turn.next_color,
                         )
             else:
-                stone_result = self.controller.receiver.curr_stone_result
                 # self.boardwidget.show_analyzed_variation = False
-                if isinstance(self.parties[color := stone_result.next_color], GUIPlayer):
+                if isinstance(self.parties[color := self.last_turn.next_color], GUIPlayer):
                     self.callbacks.play(
                         color=color,
                         pos=iwidget.board_pos,
@@ -175,25 +178,6 @@ class GameWidget(QWidget, BaseReceiver):
             cursor=cpy,
         )
 
-    def count_done(self):
-        print("DONE")
-        self.gui_mode = GUIMode.EDIT
-        self.bar.result_signal.emit(self.controller.receiver.curr_action_result)
-        self.boardwidget.boardupdate_signal.emit(self.controller.receiver.curr_action_result)
-        # self.repaint()
-        # self.callbacks.finish()
-
-    # @property
-    # def deco(self):
-    #    if self._deco == "NR":
-    #        return str(self.last_stone_result.cursor.extras.nr)
-    #    if self._deco == "CHAR":
-    #        return self.last_stone_result.cursor.extras.char
-    #    return self._deco
-
-    # @deco.setter
-    # def deco(self, val):
-    #    self._deco = val
     def resizeEvent(self, event):
         size = event.size()
         height = size.height()

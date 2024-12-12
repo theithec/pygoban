@@ -13,7 +13,7 @@ from PyQt5.QtGui import (  # pylint: disable=no-name-in-module
 )
 from PyQt5.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
-from .. import ActionResult, Pos
+from .. import Pos
 from . import BASE_DIR
 from .intersections import IntersectionWidget
 
@@ -53,7 +53,7 @@ class InsParams:
 
 
 class BoardWidget(QWidget):
-    boardupdate_signal = pyqtSignal(ActionResult)
+    boardupdate_signal = pyqtSignal(object)
 
     def __init__(self, parent: "GameWidget", boardsize: int):
         super().__init__(parent=parent)

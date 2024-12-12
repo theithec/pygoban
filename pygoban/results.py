@@ -8,8 +8,40 @@ if TYPE_CHECKING:
     from .stone import Stone
 
 
+class Event:
+    pass
+
+
 @dataclass
-class ColorResult:
+class TurnDone(Event):
+    """A players turn, placement or pass"""
+
+    board: Board
+    stone: "Stone"
+    next_color: Color
+    killed: Set[Pos] = field(default_factory=set)
+    libs: Set[Pos] = field(default_factory=set)
+    total_dead: Dict[Color, int] = field(default_factory=lambda: {Color.BLACK: 0, Color.WHITE: 0})
+    ko: Pos | None = None
+
+
+@dataclass
+class AnnotationDone(Event):
+    pass
+
+
+@dataclass
+class TimeDone:
+    """A period ended"""
+
+    color: Color
+    next_time: int
+
+
+@dataclass
+class ColorResult(Event):
+    """Result after counting"""
+
     killed: int
     coords: Set[Pos] = field(default_factory=set)
 
@@ -18,60 +50,33 @@ class ColorResult:
 
 
 @dataclass
-class GameResult:
-    reason: str
-    # -type: GameResultType
-    winner: Color | None = None
+class Counted(Event):
     black: ColorResult | None = None
     white: ColorResult | None = None
 
-    def __getitem__(self, key):
-        if key == Color.BLACK:
+    def __getitem__(self, color: Color):
+        if color == Color.BLACK:
             return self.black
-        if key == Color.WHITE:
+        if color == Color.WHITE:
             return self.white
-        raise KeyError(key)
+        raise KeyError(color)
 
 
-@dataclass
-class StoneResult:  # (_StoneResultDefaults, _StoneResult):  # , _ActionResult):
-    stone: "Stone"
-    next_color: Color
-    killed: Set[Pos] = field(default_factory=set)
-    libs: Set[Pos] = field(default_factory=set)
-    ko: Pos | None = None
-
-
-@dataclass
-class TimeResult:  # (_StoneResultDefaults, _StoneResult):  # , _ActionResult):
-    color: Color
-    next_time: int
-
-
-class ActionType(Enum):
-    STONE = "STONE"
-    RESET = "RESET"
+class GameResultType(Enum):
     RESIGN = "RESIGN"
-    ANNOTATED = "ANNOTATED"
-    COUNT = "COUNT"
-    COUNT_DONE = "COUNT_DONE"
-    PERIOD_ENDED = "PERIOD_ENDED"
     LOST_BY_TIME = "LOST_BY_TIME"
+    COUNTED = "COUNTED"
+
+
+GAME_RESULT_STR_BY_TYPE: dict[GameResultType, str] = {
+    GameResultType.RESIGN: "{color} + resign",
+    GameResultType.LOST_BY_TIME: "{color} + time",
+    GameResultType.COUNTED: "{color} + {points_diff}",
+}
 
 
 @dataclass
-class ActionResult:  # , _ActionResult):
-    type: ActionType
-    board: Board
-    total_dead: Dict[Color, int] = field(default_factory=lambda: {Color.BLACK: 0, Color.WHITE: 0})
-
-    game_result: GameResult | None = None
-    stone_result: StoneResult | None = None
-    time_result: TimeResult | None = None
-
-    def __repr__(self) -> str:
-        vars_ = vars(self)
-        # print("K", vars(self.stone_result).keys())
-        return ", ".join(
-            [f"{key}-: {val}" for (key, val) in vars_.items() if val and key != "board"]
-        )
+class GameResultDone:
+    type = GameResultType
+    winner: Color | None = None
+    msg: str = ""

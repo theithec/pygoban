@@ -7,7 +7,7 @@ from datetime import datetime
 from threading import Timer
 from typing import TYPE_CHECKING
 
-from pygoban.results import ActionResult
+from pygoban.results import TurnDone
 
 if TYPE_CHECKING:
     from pygoban.board import Color

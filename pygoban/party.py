@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Callable, List, Optional
 
 from .board import Color
-from .results import ActionResult
 
 # from pygoban.gtp import GTPConn
 

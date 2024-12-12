@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Dict, List, Optional, Set, Tuple
 
-# from .coords import letter_from_int
-
 
 class Color(IntEnum):
     EMPTY = 0
@@ -57,8 +55,10 @@ class Intersection:
 class Board(List[List[Intersection]]):
     def __init__(self, boardsize: int):
         super().__init__()
-        boardrange = range(boardsize)
-        self.extend([[Intersection(color=Color.EMPTY) for _x in boardrange] for _y in boardrange])
+        self.boardrange = range(boardsize)
+        self.extend(
+            [[Intersection(color=Color.EMPTY) for _x in self.boardrange] for _y in self.boardrange]
+        )
         self.boardsize = boardsize
 
     def get_chain(self, pos: Pos, chain: Optional[Set[Pos]] = None):
@@ -170,6 +170,10 @@ class Board(List[List[Intersection]]):
             txt += "\n"
 
         return txt
+
+    def __repr__(self):
+        size = str(len(self))
+        return "x".join((size,) * 2)
 
     # def rotated(self, switch_axis=False, switch_x=False, switch_y=False):
     #     if not any((switch_axis, switch_x, switch_y)):

@@ -1,4 +1,5 @@
 import abc
+from dataclasses import dataclass
 from re import M
 from threading import Thread
 from typing import TYPE_CHECKING, List, Optional
@@ -6,20 +7,12 @@ from typing import TYPE_CHECKING, List, Optional
 # from .basecontroller import BaseGameControllerMixin
 from .board import Marker
 from .receivers import BaseReceiver
-from .results import (
-    ActionResult,
-    ActionType,
-    ColorResult,
-    GameResult,
-    StoneResult,
-    TimeResult,
-)
+
+# from .results import TurnDone, Event, AnnotationDone, Counted, ColorResult
+from . import results
 from .rulesets import Counter, Ruleset, RuleViolation, ThreePasses, WrongColor
 from .stonescontroller import Color, Pos, Stone, StonesController
 from .timesettings import PlayerTime
-
-# if TYPE_CHECKING:
-#     from .controller import GameController
 
 
 class AbstractCallbacks(abc.ABC):
@@ -51,10 +44,10 @@ class AbstractCallbacks(abc.ABC):
     def add_receiver(self, receiver: "BaseReceiver") -> None: ...
 
     @abc.abstractmethod
-    def end_result(self) -> None: ...
+    def set_end_result(self, result_type: results.GameResultType) -> None: ...
 
     @abc.abstractmethod
-    def finish(self) -> None: ...
+    def quit(self) -> None: ...
 
 
 class Game:
@@ -74,7 +67,6 @@ class Game:
         self.ruleset.set_stonescontroller(stones)
         self.stones = stones
         self._event_threads: List[Thread] = []
-        # self.last_action_result: ActionResult | None = None
         self._started = False
         self.timers = (
             {
@@ -85,7 +77,7 @@ class Game:
             else None
         )
 
-    def send_game_event(self, result: ActionResult):
+    def send_game_event(self, result: dataclass):
         for receiver in self.receivers:
             thread = Thread(target=receiver.receive_game_event, args=(result,))
             self._event_threads.append(thread)
@@ -128,30 +120,28 @@ class Game:
     def _count(self):
         cnt = Counter(board=self.stones.board)
         coords, killed = cnt.result()
-        game_result = GameResult(
-            winner=None,
-            black=ColorResult(killed=killed[Color.WHITE], coords=coords[Color.BLACK]),
-            white=ColorResult(killed=killed[Color.BLACK], coords=coords[Color.WHITE]),
-            reason="start count",
+        game_result = results.Counted(
+            black=results.ColorResult(killed=killed[Color.WHITE], coords=coords[Color.BLACK]),
+            white=results.ColorResult(killed=killed[Color.BLACK], coords=coords[Color.WHITE]),
         )
-        total_dead = self.stones.total_dead.copy()
-        for color in (Color.BLACK, Color.WHITE):
-            total_dead[color] += killed[color]
+        self.send_game_event(game_result)
+        # total_dead = self.stones.total_dead.copy()
+        # for color in (Color.BLACK, Color.WHITE):
+        #    total_dead[color] += killed[color]
 
-        self.send_game_event(
-            ActionResult(
-                type=ActionType.COUNT,
-                board=self.stones.board,
-                total_dead=total_dead,
-                game_result=game_result,
-            )
-        )
+        # self.send_game_event(
+        #    ActionResult(
+        #        type=ActionType.COUNT,
+        #        board=self.stones.board,
+        #        total_dead=total_dead,
+        #        game_result=game_result,
+        #    )
+        # )
 
-    def _place(self, color: Color, pos: Pos | None):
+    def _place(self, color: Color, pos: Pos | None) -> None:
         # if not color == self.stones.cursor.next_color:
         #    raise WrongColor(f"{color.name}: {pos}")
-        result = self.stones.get_result(color, pos, ActionType.STONE)
-        assert result.stone_result
+        result = self.stones.get_result(color, pos)
         try:
             self.ruleset.validate_result(result)
         except ThreePasses:
@@ -162,18 +152,17 @@ class Game:
         else:
             self.stones.apply_result(result)
             if self.timers:
-                own_timer = self.timers[result.stone_result.next_color]
+                own_timer = self.timers[result.next_color]
                 if not own_timer.ended:
                     own_timer.start_timer()
                 self.stones.cursor.annos.time_left = own_timer.nexttime()
-                other_timer = self.timers[result.stone_result.next_color.other()]
+                other_timer = self.timers[result.next_color.other()]
                 if not other_timer.ended:
                     other_timer.cancel_timer()
             self.send_game_event(result)
 
     def _reset(self, stone: Stone):
-        result: ActionResult = self.stones.set_cursor(stone)
-        result.type = ActionType.RESET
+        result: TurnDone = self.stones.set_cursor(stone)
         self.send_game_event(result)
 
     def _resign(self, color: Color):
@@ -241,11 +230,7 @@ class Game:
                     elif name == "1":
                         cursor.annos.numbers[pos] = str(1 + len(cursor.annos.numbers))
 
-                action_result = ActionResult(
-                    type=ActionType.ANNOTATED,
-                    board=game.stones.board,
-                    stone_result=StoneResult(stone=game.stones.cursor, next_color=next_color),
-                )
+                action_result = AnnotationDone()
                 game.send_game_event(action_result)
 
             def annotate_winrates(self, infos: dict):
@@ -269,10 +254,35 @@ class Game:
                     # receiver.game_callbacks = self
                     game.receivers.append(receiver)
 
-            def end_result(self):
-                print("END")
+            def set_end_result(self, result_type, color: Color | None = None):
+                print("Print TODO WRITE RESULT")
 
-            def finish(self):
+                types = results.GameResultType
+                fmt = results.GAME_RESULT_STR_BY_TYPE[result_type]
+                msg = ""
+                match result_type:
+                    case types.LOST_BY_TIME | types.RESIGN:
+                        assert color
+                        winner = color.other()
+                        msg = fmt.format(color=winner)
+                    case types.COUNTED:
+                        cnt = Counter(board=game.stones.board)
+                        coords, killed = cnt.result()
+                        for color in (Color.BLACK, Color.WHITE):
+                            killed[color] += game.stones.total_dead[color.other()] + len(
+                                coords[color]
+                            )
+                        killed[Color.WHITE] += game.ruleset.komi
+                        print("killed", killed)
+                        winner = max(killed, key=killed.get)
+                        points_diff = killed[winner] - killed[winner.other()]
+
+                        msg = fmt.format(color=winner, points_diff=points_diff)
+
+                result = results.GameResultDone(winner=winner, msg=msg)
+                game.send_game_event(result)
+
+            def quit(self):
                 for rec in game.receivers:
                     # rec.__del__()
                     del rec

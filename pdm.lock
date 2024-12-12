@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:da0ee8e26bc33d21f30a4a35fac915bed68282c97e1ee1067ffdcbd246126523"
+content_hash = "sha256:a5deeb830f93ee57786722ad4937dc94bb501da0f6bb1d783187cc46078d7742"
 
 [[metadata.targets]]
 requires_python = ">=3.12"
@@ -322,6 +322,22 @@ files = [
 ]
 
 [[package]]
+name = "pylsp-rope"
+version = "0.1.17"
+requires_python = ">=3.6"
+summary = "Extended refactoring capabilities for Python LSP Server using Rope."
+groups = ["dev"]
+dependencies = [
+    "python-lsp-server",
+    "rope>=0.21.0",
+    "typing-extensions; python_version < \"3.10\"",
+]
+files = [
+    {file = "pylsp_rope-0.1.17-py3-none-any.whl", hash = "sha256:6be821913b3834b3125e64457a8bcf2030c4f1d5cd629bce4c26ba5c2c12f30b"},
+    {file = "pylsp_rope-0.1.17.tar.gz", hash = "sha256:4cd6f2fb32c84302b94cb4ce002bc0700b1b656dd5147e7db3dd92303a9a8dc2"},
+]
+
+[[package]]
 name = "pyqt5"
 version = "5.15.11"
 requires_python = ">=3.8"
@@ -506,6 +522,51 @@ dependencies = [
 files = [
     {file = "python_lsp_server-1.12.0-py3-none-any.whl", hash = "sha256:2e912c661881d85f67f2076e4e66268b695b62bf127e07e81f58b187d4bb6eda"},
     {file = "python_lsp_server-1.12.0.tar.gz", hash = "sha256:b6a336f128da03bd9bac1e61c3acca6e84242b8b31055a1ccf49d83df9dc053b"},
+]
+
+[[package]]
+name = "pytoolconfig"
+version = "1.3.1"
+requires_python = ">=3.8"
+summary = "Python tool configuration"
+groups = ["dev"]
+dependencies = [
+    "packaging>=23.2",
+    "tomli>=2.0.1; python_version < \"3.11\"",
+]
+files = [
+    {file = "pytoolconfig-1.3.1-py3-none-any.whl", hash = "sha256:5d8cea8ae1996938ec3eaf44567bbc5ef1bc900742190c439a44a704d6e1b62b"},
+    {file = "pytoolconfig-1.3.1.tar.gz", hash = "sha256:51e6bd1a6f108238ae6aab6a65e5eed5e75d456be1c2bf29b04e5c1e7d7adbae"},
+]
+
+[[package]]
+name = "pytoolconfig"
+version = "1.3.1"
+extras = ["global"]
+requires_python = ">=3.8"
+summary = "Python tool configuration"
+groups = ["dev"]
+dependencies = [
+    "platformdirs>=3.11.0",
+    "pytoolconfig==1.3.1",
+]
+files = [
+    {file = "pytoolconfig-1.3.1-py3-none-any.whl", hash = "sha256:5d8cea8ae1996938ec3eaf44567bbc5ef1bc900742190c439a44a704d6e1b62b"},
+    {file = "pytoolconfig-1.3.1.tar.gz", hash = "sha256:51e6bd1a6f108238ae6aab6a65e5eed5e75d456be1c2bf29b04e5c1e7d7adbae"},
+]
+
+[[package]]
+name = "rope"
+version = "1.13.0"
+requires_python = ">=3.8"
+summary = "a python refactoring library..."
+groups = ["dev"]
+dependencies = [
+    "pytoolconfig[global]>=1.2.2",
+]
+files = [
+    {file = "rope-1.13.0-py3-none-any.whl", hash = "sha256:b435a0c0971244fdcd8741676a9fae697ae614c20cc36003678a7782f25c0d6c"},
+    {file = "rope-1.13.0.tar.gz", hash = "sha256:51437d2decc8806cd5e9dd1fd9c1306a6d9075ecaf78d191af85fc1dfface880"},
 ]
 
 [[package]]
