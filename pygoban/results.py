@@ -19,6 +19,7 @@ class TurnDone(Event):
     board: Board
     stone: "Stone"
     next_color: Color
+    next_time: int | None = None
     killed: Set[Pos] = field(default_factory=set)
     libs: Set[Pos] = field(default_factory=set)
     total_dead: Dict[Color, int] = field(default_factory=lambda: {Color.BLACK: 0, Color.WHITE: 0})
@@ -31,7 +32,7 @@ class AnnotationDone(Event):
 
 
 @dataclass
-class TimeDone:
+class TimeDone(Event):
     """A period ended"""
 
     color: Color
@@ -76,7 +77,7 @@ GAME_RESULT_STR_BY_TYPE: dict[GameResultType, str] = {
 
 
 @dataclass
-class GameResultDone:
-    type = GameResultType
+class GameResultDone(Event):
+    type: GameResultType
     winner: Color | None = None
     msg: str = ""

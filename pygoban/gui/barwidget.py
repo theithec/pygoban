@@ -29,8 +29,6 @@ from . import GUIMode
 # from .chart import MyChart
 from .tree import Tree
 
-# from pygoban.stone import Annotations
-
 
 def _(txt):
     return txt
@@ -69,16 +67,13 @@ class Box(QGroupBox):
     def __init__(self, parent: Union["Box", "BarWidget", QFrame], **kwargs):
         super().__init__(parent=parent, visible=kwargs.pop("visible", True))  # type: ignore
         curr: Any = parent
-        while (
-            str(curr.__class__.__name__) != "GameWidget"
-        ):  # not issubclass(type(curr), GameController):
+        while str(curr.__class__.__name__) != "GameWidget":
             curr = curr.parent()
-        # self.controller = curr
         self.game_ui = curr
         self.kwargs = kwargs
         self.init(**kwargs)
 
-    def init(self, **kwargs: Any):
+    def init(self, **kwargs):
         raise NotImplementedError()
 
 
@@ -144,12 +139,14 @@ class PlayerGameBox(_PlayerBox):
         txt = seconds_to_str(self._seconds)
         self.clock.display(txt)
 
-    def stop_clockdisplay(self, seconds):
+    def stop_clockdisplay(self, seconds: int | None = None):
         if self.timer:
             self.timer.stop()
-        self.clock.display(seconds_to_str(seconds))
+        if seconds is not None:
+            self.clock.display(seconds_to_str(seconds))
 
     def set_clockdisplay(self, seconds):
+        # seconds = seconds or self._seconds
         self.stop_clockdisplay(seconds)
         self._seconds = seconds
 
@@ -185,27 +182,12 @@ class PlayerCountBox(_PlayerBox):
         self.formlayout.addRow("", self.total_label)
         self.setLayout(self.formlayout)
 
-    # def update_controlls(self, result):  # type: ignore
-    #    assert self.game_ui.gui_mode == GUIMode.COUNT
-    #    game_result = result.game_result
-    #    assert game_result
-    #    playerresult = game_result[self.player.color]
-    #    if playerresult:
-    #        numcoords = len(playerresult.coords)
-    #        self.libs_label.setText(str(numcoords))
-    #        numdead = result.total_dead[self.othercolor] + playerresult.killed
-    #        self.prisoners_label.setText(str(numdead))
-    #        total = numdead + numcoords
-    #        if self.player.color == Color.WHITE:
-    #            total += self.game_ui.controller.ruleset.komi
-    #        self.total_label.setText(str(total))
-
 
 class PlayersBox(Box):
     name = "Players"
     last_gui_mode: GUIMode = GUIMode.PLAY
 
-    def init(self, players: Dict[Color, Party]):  # type: ignore
+    def init(self, players: dict[Color, Party]):  # type: ignore
         self.boxlayout = QHBoxLayout()
         self.boxes_by_mode: dict[GUIMode, dict[Color, PlayerCountBox | PlayerGameBox]] = {
             GUIMode.PLAY: {
@@ -216,9 +198,7 @@ class PlayersBox(Box):
                 Color.BLACK: PlayerCountBox(self, player=players[Color.BLACK]),
                 Color.WHITE: PlayerCountBox(self, player=players[Color.WHITE]),
             },
-            # Color.WHITE: PlayerBox(self, player=players[Color.WHITE]),
         }
-        # for box in self.boxes_by_mode[self.controller.gui_mode].values():
         self.boxes_by_mode[GUIMode.EDIT] = self.boxes_by_mode[GUIMode.PLAY]
         for box in self.boxes_by_mode[self.game_ui.gui_mode].values():
             self.last_gui_mode: GUIMode = self.game_ui.gui_mode
@@ -227,8 +207,9 @@ class PlayersBox(Box):
         self.setLayout(self.boxlayout)
         self
 
-    def update_controlls22(self, result):
+    def set_boxes(self):
         if self.last_gui_mode != self.game_ui.gui_mode:
+            print("MODES", self.last_gui_mode, self.game_ui.gui_mode)
             curr_boxes = self.boxes_by_mode[self.last_gui_mode]
             next_boxes = self.boxes_by_mode[self.game_ui.gui_mode]
             for color in (Color.BLACK, Color.WHITE):
@@ -237,45 +218,21 @@ class PlayersBox(Box):
                     next_boxes[color],
                 )
                 curr_boxes[color].setVisible(False)
-                next_boxes[color].setVisible(True)
+                next_boxes[color].setVisible(False)  # True)
         self.last_gui_mode = self.game_ui.gui_mode
-        curr_boxes = self.boxes_by_mode[self.last_gui_mode]
-        if result.stone_result:
-            stone = result.stone_result.stone
-            # curr_boxes[stone.color].clock_stop_signal.emit(0)
-            # curr_boxes[stone.color.other()].clock_update_signal.emit()
-
-        for box in curr_boxes.values():
-            # if isinstance(result, GameResult):
-            box.update_controlls(result)
-
-        # #].items():
-        # for color, box in self.boxes[self.controller.gui_mode].items():
-        # for color, box in self.boxes[self.controller.gui_mode].items():
-        # othercolor = Color.WHITE if color == Color.BLACK else Color.BLACK
-        # if isinstance(result, ActionResult):
-        #    box.prisoners_label.setText(str(result.dead[othercolor]))
-        #    box.libs_label.setVisible(False)
-        #    box.total_label.setVisible(False)
-        # elif isinstance(result, GameResult):
-        #    box.libs_label.setVisible(True)
-        #    box.total_label.setVisible(True)
-        #    numcoords = len(result[color].coords)
-        #    box.libs_label.setText(str(numcoords))
-        #    numdead = self.controller.curr_action_result.dead[othercolor] + result[color].killed
-        #    box.prisoners_label.setText(str(numdead))
-        #    box.total_label.setText(str(numdead + numcoords))
 
 
 class GameBox(Box):
     name = "Play-Mode"
 
-    def init(self):  # type: ignore
+    def init(self, **kwargs) -> None:
         layout = QHBoxLayout()
         callbacks = self.game_ui.callbacks
         self.action_mapping = {
             "Pass": self.game_ui.controller.do_pass,
-            "Resign": callbacks.resign,
+            "Resign": lambda: callbacks.set_end_result(
+                results.GameResultType.RESIGN, color=self.game_ui.last_turn.next_color
+            ),
             "Undo": callbacks.undo,
             "Done": lambda: callbacks.set_end_result(results.GameResultType.COUNTED),
         }
@@ -287,11 +244,6 @@ class GameBox(Box):
             self.buttons[action] = add_gamebutton(action, self.action_mapping[action])
 
         self.setLayout(layout)
-
-    def update_controlls(self, result):
-        # is_game_result = bool(result.game_result)
-        # self.buttons[GameResultType.END].setVisible(is_game_result)
-        self.buttons["Pass"].setVisible(result.type is ActionType.STONE)
 
 
 class EditBox(Box):
@@ -343,15 +295,6 @@ class EditBox(Box):
     def do_char(self):
         pass
 
-    # def toggle_count(self):
-    #     if self.btn_count.isChecked():
-    #         self.ctrl.gui_mode = GUIMode.COUNT
-    #     else:
-    #         self.ctrl.gui_mode = GUIMode.EDIT
-    #     # self.ctrl.boardwidget.update_intersections(
-    #     #    self.ctrl.ruleset.count(self.ctrl.curr_action_result.board)
-    #     # )
-
     def update_controlls(self, result):
         if stone_result := result.stone_result:
             stone = stone_result.stone
@@ -363,7 +306,6 @@ class EditBox(Box):
             self.btn_next_stone.setEnabled(has_children)
             self.btn_next_var.setEnabled(has_children)
             self.btn_last_stone.setEnabled(has_children)
-            # self.forward_stones.setEnabled(has_children)
 
 
 class CommentsBox(Box):
@@ -394,7 +336,6 @@ class ChartBox(Box):
     def update_controlls(self, result):
         assert self.controller.curr_action_result
         self.chart.add_data()
-        # self.comments.setText(self.controller.curr_action_result.stone.annos.comment)
 
 
 class InnerWidget(QFrame):
@@ -405,7 +346,7 @@ class InnerWidget(QFrame):
         self.boxes: BoxesByName = {}
         is_edit = self.game_ui.gui_mode == GUIMode.EDIT
         pbox = PlayersBox(self, players=self.game_ui.parties)
-        self.playersbox = self.add_box(pbox, vis=True)
+        self.playersbox: PlayersBox = self.add_box(pbox, vis=True)
         self.add_box(GameBox(self), vis=not is_edit)
         self.add_box(EditBox(self), vis=is_edit)
         self.add_box(CommentsBox(self), vis=is_edit)
@@ -429,17 +370,13 @@ class InnerWidget(QFrame):
 
         return handle
 
-    def update_controlls(self, result):
-        for box in self.boxes.values():
-            if box.isVisible():
-                # print("UPDATE BOX", box)
-                box.update_controlls(result)
-
 
 class BarWidget(QFrame):
     turn_done_signal = pyqtSignal(results.TurnDone)
     counted_signal = pyqtSignal(results.Counted)
     clock_stop_signal = pyqtSignal(int)
+    clock_update_signal = pyqtSignal(results.TimeDone)
+    result_done_signal = pyqtSignal(results.GameResultDone)
 
     game_ui: "GameWidget"
 
@@ -466,6 +403,8 @@ class BarWidget(QFrame):
         self.btn_settings.setMenu(self.get_menu())
         self.turn_done_signal.connect(self.handle_turn_done)
         self.counted_signal.connect(self.handle_counted)
+        self.clock_update_signal.connect(self.handle_period_done)
+        self.result_done_signal.connect(self.handle_result_done)
         self._layout.addRow(splitter)
         self.setLayout(self._layout)
 
@@ -478,15 +417,6 @@ class BarWidget(QFrame):
             found = found or is_connected
         if found:
             pass
-
-    # def update_controlls(self, result):
-    #    self.tree.setEnabled(self.game_ui.gui_mode == GUIMode.EDIT)
-    #    if result.stone_result:
-    #        self.tree.stones_signal.emit(result.stone_result.stone)
-    #    self.inner.update_controlls(result)
-    #    # for box in self.inner.boxes.values():
-    #    #    box.toggle_action.setChecked(box.isVisible())
-    #    self.update_menu()
 
     def get_menu(self) -> QMenu:
         menu = QMenu(self)
@@ -552,9 +482,29 @@ class BarWidget(QFrame):
             player_box = player_boxes[result.stone.color]
             player_box.prisoners_label.setText(str(numdead))
 
-        print("GUIM", self.game_ui.gui_mode)
         self.tree.setEnabled(self.game_ui.gui_mode == GUIMode.EDIT)
         self.tree.stones_signal.emit(result.stone)
+
+        if self.game_ui.ruleset.timesettings and result.stone.color:
+
+            players_box = self.inner.playersbox
+            assert isinstance(players_box, PlayersBox)
+            game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
+            # game_boxes[result.color].set_clockdisplay(result.next_time)
+            game_boxes[result.stone.color].stop_clockdisplay()
+            game_boxes[result.stone.color.other()].set_clockdisplay(result.stone.annos.time_left)
+
+    def handle_result_done(self, result: results.GameResultDone):
+        self.inner.playersbox.set_boxes()
+        if self.game_ui.ruleset.timesettings:
+            players_box = self.inner.playersbox
+            assert isinstance(players_box, PlayersBox)
+            game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
+            game_boxes[result.winner].stop_clockdisplay()
+            num = 0 if result.type == results.GameResultType.LOST_BY_TIME else None
+            print("RE", result, result.type, num)
+            game_boxes[result.winner.other()].stop_clockdisplay(seconds=num)
+            game_boxes[result.winner].stop_clockdisplay()
 
     def handle_counted(self, result: results.Counted) -> None:
         self.tree.setEnabled(False)
@@ -584,12 +534,20 @@ class BarWidget(QFrame):
                 playerresult = result[color]
                 numcoords = len(playerresult.coords)
                 box.libs_label.setText(str(numcoords))
-                # numdead = playerresult.total_dead[color.other] + playerresult.killed
                 box.prisoners_label.setText(str(playerresult.killed))
                 total = playerresult.total()
                 if box.player.color == Color.WHITE:
                     total += self.game_ui.controller.ruleset.komi
                 box.total_label.setText(str(total))
+
+    def handle_period_done(self, result: results.TimeDone):
+        print("HANDLE", result)
+
+        players_box = self.inner.playersbox
+        assert isinstance(players_box, PlayersBox)
+        game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
+        game_boxes[result.color].set_clockdisplay(result.next_time)
+        # game_boxes[result.color.other()].stop_clockdisplay()
 
     def save_as_file(self):
         pass

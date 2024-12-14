@@ -31,8 +31,11 @@ class BaseReceiver:  # ABC later
     # @abstractmethod
     # def received_count_done(self, result: ActionResult) -> None: ...
 
-    # @abstractmethod
-    # def received_period_ended(self, result: ActionResult) -> None: ...
+    @abstractmethod
+    def received_period_ended(self, result: results.TimeDone) -> None: ...
+
+    @abstractmethod
+    def received_result_done(self, result: results.GameResultDone) -> None: ...
 
     # @abstractmethod
     # def received_lost_by_time(self, result: ActionResult) -> None: ...
@@ -47,6 +50,10 @@ class BaseReceiver:  # ABC later
                 self.received_annotated(result)
             case results.Counted:
                 self.received_count(result)
+            case results.TimeDone:
+                self.received_period_ended(result)
+            case results.GameResultDone:
+                self.received_result_done(result)
             case _:
                 pass
             # case AnnotatedDone:

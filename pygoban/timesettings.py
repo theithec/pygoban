@@ -22,7 +22,7 @@ class _PlayerTimer(Timer):
 
 @dataclass
 class TimeSettings:
-    maintime: int = 30
+    maintime: int = 10
     byoyomi_time: int = 10
     byoyomi_num: int = 3
     byoyomi_stones: int = 1
@@ -52,13 +52,15 @@ class PlayerTime:
         self.timer = None
         self.last_started = None
         self.ended = False
+        self.first_time = True
 
     def start_timer(self):
         assert not self.ended
-        # assert (not self.timer) or self.timer.finished.is_set(), "T " + str(self.timer)
         self.last_started = datetime.now()
         self.timer = _PlayerTimer(self.nexttime(), self.period_ended)
-        self.game.period_ended(self.color, self.nexttime())
+        if self.first_time:
+            self.first_time = False
+            self.game.period_ended(self.color, self.nexttime())
 
     def cancel_timer(self):
         if self.timer:
@@ -82,8 +84,6 @@ class PlayerTime:
                 self.start_timer()
             else:
                 self.byoyomi.time_left = 0
-                # self.game.send_game_result(ActionResult())
-                # self.controller.lost_by_overtime(self.color)
                 self.ended = True
         self.game.period_ended(self.color, self.nexttime())
         logging.info("Timeperiod ended %s", self.color)

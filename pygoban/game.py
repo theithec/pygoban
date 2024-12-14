@@ -26,9 +26,6 @@ class AbstractCallbacks(abc.ABC):
     def set_cursor(self, stone: Stone) -> None: ...
 
     @abc.abstractmethod
-    def resign(self, color: Color) -> None: ...
-
-    @abc.abstractmethod
     def start(self, receivers: List["BaseReceiver"], stone: Optional[Stone] = None) -> None: ...
 
     @abc.abstractmethod
@@ -44,7 +41,9 @@ class AbstractCallbacks(abc.ABC):
     def add_receiver(self, receiver: "BaseReceiver") -> None: ...
 
     @abc.abstractmethod
-    def set_end_result(self, result_type: results.GameResultType) -> None: ...
+    def set_end_result(
+        self, result_type: results.GameResultType, color: Color | None = None
+    ) -> None: ...
 
     @abc.abstractmethod
     def quit(self) -> None: ...
@@ -77,24 +76,26 @@ class Game:
             else None
         )
 
-    def send_game_event(self, result: dataclass):
+    def send_game_event(self, result: results.Event):
         for receiver in self.receivers:
             thread = Thread(target=receiver.receive_game_event, args=(result,))
             self._event_threads.append(thread)
             thread.start()
 
     def period_ended(self, color: Color, next_time: int):
-        type_ = ActionType.PERIOD_ENDED if next_time else ActionType.LOST_BY_TIME
-        self.send_game_event(
-            ActionResult(
-                type=type_,
-                board=self.stones.board,
-                time_result=TimeResult(
-                    color=color,
-                    next_time=next_time,
-                ),
+        # type_ = ActionType.PERIOD_ENDED if next_time else ActionType.LOST_BY_TIME
+        if next_time:
+            result: results.Event = results.TimeDone(color=color, next_time=next_time)
+        else:
+            assert self.timers
+            for timer in self.timers.values():
+                timer.cancel_timer()
+            result_type = results.GameResultType.LOST_BY_TIME
+            msg = results.GAME_RESULT_STR_BY_TYPE[result_type].format(color=color.other())
+            result = results.GameResultDone(
+                winner=color.other(), msg=msg, type=results.GameResultType.LOST_BY_TIME
             )
-        )
+        self.send_game_event(result)
 
     def _start(self, receivers: List[BaseReceiver], cursor: Optional[Stone] = None):
         assert not self._started
@@ -113,11 +114,14 @@ class Game:
             cursor = self.stones.root
         result = self.stones.set_cursor(cursor)
         if self.timers:
-            assert result.stone_result
-            self.timers[result.stone_result.next_color].start_timer()
+            self.timers[result.next_color].start_timer()
         self.send_game_event(result)
 
     def _count(self):
+
+        if self.timers:
+            for timer in self.timers.values():
+                timer.cancel_timer()
         cnt = Counter(board=self.stones.board)
         coords, killed = cnt.result()
         game_result = results.Counted(
@@ -165,17 +169,6 @@ class Game:
         result: TurnDone = self.stones.set_cursor(stone)
         self.send_game_event(result)
 
-    def _resign(self, color: Color):
-        result = ActionResult(
-            board=self.stones.board,
-            type=ActionType.RESIGN,
-            game_result=GameResult(
-                winner=Color.WHITE if color == Color.BLACK else Color.BLACK,
-                reason="resign",
-            ),
-        )
-        self.send_game_event(result)
-
     def callbacks(self) -> AbstractCallbacks:
         game: "Game" = self
 
@@ -194,9 +187,6 @@ class Game:
             def set_cursor(self, stone: Stone):
                 print("SET CURSOR", stone)
                 game._reset(stone)  # pylint: disable=protected-access
-
-            def resign(self, color: Color):
-                game._resign(color)  # pylint: disable=protected-access
 
             def start(self, receivers: List[BaseReceiver], stone: Optional[Stone] = None):
                 assert not self.started
@@ -256,6 +246,9 @@ class Game:
 
             def set_end_result(self, result_type, color: Color | None = None):
                 print("Print TODO WRITE RESULT")
+                if game.timers:
+                    for timer in game.timers.values():
+                        timer.cancel_timer()
 
                 types = results.GameResultType
                 fmt = results.GAME_RESULT_STR_BY_TYPE[result_type]
@@ -279,7 +272,7 @@ class Game:
 
                         msg = fmt.format(color=winner, points_diff=points_diff)
 
-                result = results.GameResultDone(winner=winner, msg=msg)
+                result = results.GameResultDone(winner=winner, msg=msg, type=result_type)
                 game.send_game_event(result)
 
             def quit(self):

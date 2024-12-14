@@ -85,7 +85,8 @@ class Counter:
                 if inter.owner and inter.owner != inter.color:
                     if inter.color:
                         deadonboard[inter.color] += 1
-                        empties[group.owner].add(pos)
+                        if inter.owner is not False:
+                            empties[group.owner].add(pos)
 
         return empties, deadonboard
 

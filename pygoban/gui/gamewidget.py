@@ -57,29 +57,16 @@ class GuiReceiver(BaseReceiver):
             result[color].killed += self.game_ui.last_turn.total_dead[color.other()]
         self.game_ui.bar.counted_signal.emit(result)
 
-    def received_count_done(self, result) -> None:
-        pass
+    def received_result_done(self, result: results.GameResultDone) -> None:
+        print("RESULT DONE", result)
+        self.game_ui.gui_mode = GUIMode.EDIT
+        self.game_ui.boardwidget.boardupdate_signal.emit(result)
+        self.game_ui.bar.result_done_signal.emit(result)
 
-    def received_period_ended(self, result) -> None:
-        assert result.time_result
-        color = result.time_result.color
-        next_time = result.time_result.next_time
-        box = self.game_ui.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color]
-        box.clock_update_signal.emit(next_time)
-        box = self.game_ui.bar.inner.playersbox.boxes_by_mode[self.gui_mode][color.other()]
-        box.clock_stop_signal.emit(0)
-
-    def received_lost_by_time(self, result) -> None:
-        print("END", result)
-        assert result.time_result
-        color = result.time_result.color
-        box = self.game_ui.bar.inner.playersbox.boxes_by_mode[self.game_ui.gui_mode][color]
-        box.clock_stop_signal.emit(0)
-        box = self.game_ui.bar.inner.playersbox.boxes_by_mode[self.game_ui.gui_mode][color.other()]
-        box.clock_stop_signal.emit(0)
-        self.gui_mode = GUIMode.EDIT
-        self.game_ui.bar.result_signal.emit(result)
-        self.game_ui.boardwidget.update()
+    def received_period_ended(self, result: results.TimeDone) -> None:
+        self.game_ui.bar.clock_update_signal.emit(result)
+        # boxes[result.color].clock_update_signal.emit(result)
+        # boxes[result.color.other()].clock_stop_signal.emit(0)
 
 
 class GameWidget(QWidget):
