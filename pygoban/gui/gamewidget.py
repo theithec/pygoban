@@ -2,26 +2,22 @@
 # because qt
 import os
 from copy import copy
-from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt5.QtMultimedia import QSound  # pylint: disable=no-name-in-module
 from PyQt5.QtWidgets import QMessageBox, QWidget  # pylint: disable=no-name-in-module
 
-from pygoban import TimeSettings, TurnDone
 
 from .. import (  # ActionType,; GameResult,
     BaseReceiver,
     Color,
-    Game,
     GameController,
     Marker,
     Parties,
-    Ruleset,
     results,
 )
 from . import BASE_DIR, GUIMode
-from .barwidget import BarWidget, PlayersBox
+from .barwidget import BarWidget
 from .boardwidget import BoardWidget
 from .intersections import IntersectionWidget
 from .players import GUIPlayer
@@ -35,7 +31,7 @@ class GuiReceiver(BaseReceiver):
         super().__init__()
         self.game_ui: "GameWidget" = game_ui
 
-    def received_turn(self, result: TurnDone) -> None:
+    def received_turn(self, result: results.TurnDone) -> None:
 
         # self.game_ui.gui_mode = self.game_ui._initial_gui_mode
         self.game_ui.last_turn = result
@@ -55,6 +51,7 @@ class GuiReceiver(BaseReceiver):
         assert self.game_ui.last_turn
         for color in (Color.BLACK, Color.WHITE):
             result[color].killed += self.game_ui.last_turn.total_dead[color.other()]
+        print("rN", result)
         self.game_ui.bar.counted_signal.emit(result)
 
     def received_result_done(self, result: results.GameResultDone) -> None:
@@ -88,7 +85,7 @@ class GameWidget(QWidget):
         self.parties = parties
         self.controller = controller
         self._deco = None
-        self.last_turn: TurnDone | None = None
+        self.last_turn: results.TurnDone | None = None
         self.stonesound = QSound(os.path.join(BASE_DIR, "gui/sounds/stone.wav"))
         self.gui_mode = gui_mode
         self._initial_gui_mode = gui_mode

@@ -18,7 +18,7 @@ from PyQt5.QtGui import (  # pylint: disable=no-name-in-module
 )
 from PyQt5.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
-from .. import Color, Intersection, Pos, stone
+from .. import Color, Intersection, Pos, node
 from . import BASE_DIR, GUIMode
 
 if TYPE_CHECKING:

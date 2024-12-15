@@ -3,7 +3,7 @@ from typing import Dict, Optional, Tuple
 
 from .board import Board, Color, Pos
 from .results import TurnDone
-from .stone import Annotations, Stone
+from .node import Annotations, Node
 
 HANDICAPS: Dict[int, Tuple] = {0: tuple(), 2: ((3, 15), (15, 3))}
 HANDICAPS[3] = HANDICAPS[2] + ((3, 3),)
@@ -18,8 +18,8 @@ HANDICAPS[8] = HANDICAPS[6] + ((9, 3), (9, 15))
 HANDICAPS[9] = HANDICAPS[8] + ((9, 9),)
 
 
-class StonesController:
-    cursor: Stone
+class NodesController:
+    cursor: Node
     total_dead: Dict[Color, int]
 
     def __init__(self, boardsize: int, handicap: int = 0) -> None:
@@ -27,9 +27,9 @@ class StonesController:
         self.handicap = handicap
         self.boardsize = boardsize
         self.board = Board(self.boardsize)
-        self.root: Stone = Stone(color=Color.EMPTY)
+        self.root: Node = Node(color=Color.EMPTY)
 
-    def set_cursor(self, stone: Stone) -> TurnDone:
+    def set_cursor(self, stone: Node) -> TurnDone:
         if not stone.parent:
             self.root = stone
         self.cursor = self.root
@@ -89,7 +89,7 @@ class StonesController:
                 stone = child
                 break
         else:
-            stone = Stone(color=color, pos=pos)
+            stone = Node(color=color, pos=pos)
 
         next_color = color.other()
 

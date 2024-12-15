@@ -20,41 +20,41 @@ class Annotations:
     infos: dict[str, str] = field(default_factory=dict)
 
 
-class Stone:
-    children: List["Stone"]
+class Node:
+    children: List["Node"]
 
     def __init__(
         self,
         color: Color,
         pos: Optional[Pos] = None,
-        parent: Optional["Stone"] = None,
+        parent: Optional["Node"] = None,
     ):
         self.color = color
         self.pos = pos
-        self.children: List["Stone"] = []
+        self.children: List["Node"] = []
         self.annos = Annotations()
         self.set_parent(parent)
         self.is_pass = self.color and self.parent and not self.pos
         self.is_root = not any([self.color, self.pos, self.parent])
 
-    def set_parent(self, parent: Optional["Stone"]):
+    def set_parent(self, parent: Optional["Node"]):
         if parent and self not in parent.children:
             parent.children.append(self)
         self.parent = parent
 
-    def _full_path(self) -> List["Stone"]:
+    def _full_path(self) -> List["Node"]:
         path = []
-        curr: Optional[Stone] = self
+        curr: Optional[Node] = self
         while curr:
             path.append(curr)
             curr = curr.parent
         path.reverse()
         return path
 
-    def path(self) -> List["Stone"]:
+    def path(self) -> List["Node"]:
         return self._full_path()[1:]
 
-    def root(self) -> "Stone":
+    def root(self) -> "Node":
         return self._full_path()[0]
 
     def apply_permanent_annos(self, board: Board):
@@ -69,7 +69,7 @@ class Stone:
         # return self if not self.parent else self.path()[0].parent
 
     def __eq__(self, other):
-        if not isinstance(other, Stone):
+        if not isinstance(other, Node):
             return False
         cmprs = [(self.pos, other.pos), (self.color, other.color)]
         # TODO: use parent?
@@ -80,10 +80,10 @@ class Stone:
         return not any(sval != oval for (sval, oval) in cmprs)
 
     def _as_copy(
-        self, target: "Stone", found: Optional["Stone"] = None
-    ) -> Tuple["Stone", Optional["Stone"]]:
+        self, target: "Node", found: Optional["Node"] = None
+    ) -> Tuple["Node", Optional["Node"]]:
         pos = Pos(*self.pos) if self.pos else None
-        move: "Stone" = self.__class__(color=self.color, pos=pos)
+        move: "Node" = self.__class__(color=self.color, pos=pos)
         # print("COPY ANNOS")
         move.annos = Annotations(**vars(self.annos))
         for child in self.children:

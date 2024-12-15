@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Dict, List, Optional, Set, Tuple
 
+from . import coords
+
 
 class Color(IntEnum):
     """The 'color' of an intersection (and of 'stone.Stone)'"""
@@ -101,7 +103,7 @@ class Board(List[List[Intersection]]):
 
         return adjacents
 
-    def _analyze(  # pylint2: disable=too-many-arguments
+    def _analyze(
         self,
         pos: Pos,
         started: Optional[Set[Pos]] = None,
@@ -173,7 +175,8 @@ class Board(List[List[Intersection]]):
         return "BOARD"
         cpy = self  # .rotated(switch_axis=False, switch_y=False)
         txt = "\n    "
-        txt += " ".join([letter_from_int(i) for i in range(cpy.boardsize)])
+        txt += " ".join([coords.letter_from_int(i) for i in range(cpy.boardsize)])
+
         txt += "\n\n"
         for xorg in range(cpy.boardsize):
             x = cpy.boardsize - xorg - 1

@@ -1,17 +1,9 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 from . import results
-from .rulesets import Ruleset
-from .stone import Stone
-
-if TYPE_CHECKING:
-    from .game import AbstractCallbacks
-    from .gamecontroller import GameController
 
 
-class BaseReceiver:  # ABC later
+class BaseReceiver(ABC):  # ABC later
 
     def __init__(self) -> None:  # type: ignore
         self.last_turn: results.TurnDone | None = None

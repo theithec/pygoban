@@ -11,7 +11,7 @@ from .receivers import BaseReceiver
 # from .results import TurnDone, Event, AnnotationDone, Counted, ColorResult
 from . import results
 from .rulesets import Counter, Ruleset, RuleViolation, ThreePasses, WrongColor
-from .stonescontroller import Color, Pos, Stone, StonesController
+from .nodescontroller import Color, Pos, Node, NodesController
 from .timesettings import PlayerTime
 
 
@@ -25,10 +25,10 @@ class AbstractCallbacks(abc.ABC):
     def undo(self) -> None: ...
 
     @abc.abstractmethod
-    def set_cursor(self, stone: Stone) -> None: ...
+    def set_cursor(self, stone: Node) -> None: ...
 
     @abc.abstractmethod
-    def start(self, receivers: List["BaseReceiver"], stone: Optional[Stone] = None) -> None: ...
+    def start(self, receivers: List["BaseReceiver"], stone: Optional[Node] = None) -> None: ...
 
     @abc.abstractmethod
     def toggle_status(self, pos: Pos) -> None: ...
@@ -54,17 +54,17 @@ class AbstractCallbacks(abc.ABC):
 class Game:
     """Represents a game of go. A 'game' is any tree of placements/passes"""
 
-    stones: StonesController
-    cursor: Stone
+    stones: NodesController
+    cursor: Node
 
     def __init__(
         self,
         ruleset: Ruleset,  # | None = None,
-        stones: StonesController | None = None,
+        stones: NodesController | None = None,
     ):
         self.ruleset = ruleset  # if ruleset else Ruleset(boardsize=9, komi=0.5, handicap=0)
         if not stones:
-            stones = StonesController(self.ruleset.boardsize, self.ruleset.handicap)
+            stones = NodesController(self.ruleset.boardsize, self.ruleset.handicap)
         assert stones
         self.receivers: List[BaseReceiver] = []
         self.ruleset.set_stonescontroller(stones)
@@ -102,7 +102,7 @@ class Game:
             )
         self.send_game_event(result)
 
-    def _start(self, receivers: List[BaseReceiver], cursor: Optional[Stone] = None):
+    def _start(self, receivers: List[BaseReceiver], cursor: Optional[Node] = None):
         """Start a game, sending the emtpy root node"""
         assert not self._started
         self._started = True
@@ -116,7 +116,7 @@ class Game:
                 curr = curr.parent
             self.stones.root = curr
         else:
-            self.stones.root = Stone(color=Color.EMPTY, pos=None, parent=None)
+            self.stones.root = Node(color=Color.EMPTY, pos=None, parent=None)
             cursor = self.stones.root
         result = self.stones.set_cursor(cursor)
         if self.timers:
@@ -159,7 +159,7 @@ class Game:
                     other_timer.cancel_timer()
             self.send_game_event(result)
 
-    def _reset(self, stone: Stone):
+    def _reset(self, stone: Node):
         """Reset the board to given Situation"""
         result: results.TurnDone = self.stones.set_cursor(stone)
         self.send_game_event(result)
@@ -179,10 +179,10 @@ class Game:
                 if parent := game.stones.cursor.parent:
                     game._reset(parent)  # pylint: disable=protected-access
 
-            def set_cursor(self, stone: Stone):
+            def set_cursor(self, stone: Node):
                 game._reset(stone)  # pylint: disable=protected-access
 
-            def start(self, receivers: List[BaseReceiver], stone: Optional[Stone] = None):
+            def start(self, receivers: List[BaseReceiver], stone: Optional[Node] = None):
                 assert not self.started
                 game._start(receivers=receivers, cursor=stone)  # pylint: disable=protected-access
                 self.started = True

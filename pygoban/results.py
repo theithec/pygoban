@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Dict, Set
 from .board import Board, Color, Pos
 
 if TYPE_CHECKING:
-    from .stone import Stone
+    from .node import Node
 
 
 class Event:
@@ -17,7 +17,7 @@ class TurnDone(Event):
     """A players turn, placement or pass"""
 
     board: Board
-    stone: "Stone"
+    stone: "Node"
     next_color: Color
     next_time: int | None = None
     killed: Set[Pos] = field(default_factory=set)

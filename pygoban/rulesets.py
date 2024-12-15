@@ -4,7 +4,7 @@ from typing import Dict, Optional, Set, Tuple, Union
 from .board import Board, Color, Pos
 from .info import GameInfo
 from .results import TurnDone
-from .stonescontroller import StonesController
+from .nodescontroller import NodesController
 from .timesettings import TimeSettings
 
 # from .timesettings import TimeSettings
@@ -110,13 +110,13 @@ class Ruleset:
         self.ko: Optional[Pos] = None
         self.passed = 0
         self.first: Color = first
-        self.stones: Optional[StonesController] = None
+        self.stones: Optional[NodesController] = None
         self.info: GameInfo = info
         self.timesettings = timesettings
         # if timesettings:
         #     print("Timesettings", timesettings)
 
-    def set_stonescontroller(self, stones: StonesController) -> "Ruleset":
+    def set_stonescontroller(self, stones: NodesController) -> "Ruleset":
         self.stones = stones
         return self
 
@@ -127,6 +127,7 @@ class Ruleset:
         else:
             self.passed += 1
             if self.passed == 3:
+                self.passed = 0
                 raise ThreePasses()
             return result
         assert stone.pos

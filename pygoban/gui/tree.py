@@ -9,14 +9,14 @@ from PyQt5.QtWidgets import (  # pylint: disable=no-name-in-module
     QWidget,
 )
 
-from .. import Color, Stone
+from .. import Color, Node
 
 
 class StoneNode(QLabel):
     WIDTH = 38
     tree: "TreeCanvas"
 
-    def __init__(self, parent, stone: Stone):
+    def __init__(self, parent, stone: Node):
         super().__init__(parent)
         self.bstone = stone
         self.tree = parent
@@ -165,7 +165,7 @@ class TreeCanvas(QWidget):
 
 
 class Tree(QScrollArea):
-    stones_signal = pyqtSignal(Stone)
+    stones_signal = pyqtSignal(Node)
 
     def __init__(self, parent, callback):
         super().__init__(parent)
@@ -175,7 +175,7 @@ class Tree(QScrollArea):
         self.stones_signal.connect(self.set_cursor)
         self.setMinimumWidth(int(StoneNode.WIDTH * 1.5))
 
-    def set_cursor(self, stone: Stone):
+    def set_cursor(self, stone: Node):
         if node := self.canvas.nodes.get(id(stone)):
             self.canvas.tree_cursor = node
             self.canvas.repaint()
