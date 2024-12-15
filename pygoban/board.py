@@ -1,4 +1,4 @@
-"""The board with a given """
+"""The board and helpers """
 
 from dataclasses import dataclass
 from enum import Enum, IntEnum
@@ -6,6 +6,8 @@ from typing import Dict, List, Optional, Set, Tuple
 
 
 class Color(IntEnum):
+    """The 'color' of an intersection (and of 'stone.Stone)'"""
+
     EMPTY = 0
     BLACK = 1
     WHITE = 2
@@ -20,11 +22,13 @@ class Color(IntEnum):
         return str(self.name)[0]
 
     def other(self):
-        assert self.name != "EMPTY"
+        assert not self.is_empty()
         return self.WHITE if self.name == "BLACK" else self.BLACK
 
 
 class Marker(Enum):
+    """Marker for a `stone.Stone`, lives here for easier importing"""
+
     TR = "triangle"
     CR = "circle"
     SQ = "square"
@@ -35,6 +39,8 @@ class Marker(Enum):
 
 
 class Pos(tuple):
+    """A handcrafted named tuple"""
+
     def __new__(cls, x, y):
         return super().__new__(cls, (x, y))
 
@@ -45,6 +51,8 @@ class Pos(tuple):
 
 @dataclass
 class Intersection:
+    """A 'value' on a go board"""
+
     color: Color
     owner: Optional[Color] = None
 
@@ -53,6 +61,8 @@ class Intersection:
 
 
 class Board(List[List[Intersection]]):
+    """A Go board as a two dimensional list of intersections"""
+
     def __init__(self, boardsize: int):
         super().__init__()
         self.boardrange = range(boardsize)
@@ -62,6 +72,7 @@ class Board(List[List[Intersection]]):
         self.boardsize = boardsize
 
     def get_chain(self, pos: Pos, chain: Optional[Set[Pos]] = None):
+        """Return the chain of stones for a given position"""
         inter = self.intersection(pos)
         assert inter.color
         chain = chain or set()
@@ -73,6 +84,7 @@ class Board(List[List[Intersection]]):
         return chain
 
     def adjacent_ins(self, index) -> Dict[Pos, Intersection]:
+        """Return the 'neighbours' of a position"""
         adjacents = {}
         x, y = index
         if x > 0:
@@ -89,7 +101,7 @@ class Board(List[List[Intersection]]):
 
         return adjacents
 
-    def _analyze(  # pylint: disable=too-many-arguments
+    def _analyze(  # pylint2: disable=too-many-arguments
         self,
         pos: Pos,
         started: Optional[Set[Pos]] = None,
@@ -98,7 +110,7 @@ class Board(List[List[Intersection]]):
         libs: Set[Pos] | None = None,
         findkilled: bool = True,
     ) -> Tuple[Set[Pos], Set[Pos], Set[Pos], Set[Pos], bool]:
-        """Analyze a stone (pos, already played)"""
+        """Return the analyze a stone (pos, already played)"""
         started = started or set()
         group = group or set()
         killed = killed or set()
@@ -141,12 +153,14 @@ class Board(List[List[Intersection]]):
         return started, group, killed, libs, findkilled
 
     def analyze(self, pos: Pos, findkilled: bool = True):
+        """Return the finished analyze of a played stone"""
         _started, _group, killed, libs, _findkilled = self._analyze(pos=pos, findkilled=findkilled)
         return killed, libs
 
     def intersection(
         self, pos: Pos, status: Optional[Color] = None, owner: Optional[Color] = None
     ) -> Intersection:
+        """Return the `Intersection`(holding the value) of a `Pos`"""
         x, y = pos
         if status is not None:
             self[x][y].color = status

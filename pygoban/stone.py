@@ -68,14 +68,11 @@ class Stone:
         return self.__str__()
         # return self if not self.parent else self.path()[0].parent
 
-    def __eq__(self, other: "Stone"):
-        # if getattother.parent:
-        #    return super().__eq__(other)
+    def __eq__(self, other):
         if not isinstance(other, Stone):
             return False
         cmprs = [(self.pos, other.pos), (self.color, other.color)]
-        # if getattr(other, "parent", False):
-        #    cmprs.append((self.parent, other.parent))
+        # TODO: use parent?
         if not any((self.pos, self.color, other.pos, other.color)):
             cmprs.append((self.annos, other.annos))
             return self.annos == other.annos

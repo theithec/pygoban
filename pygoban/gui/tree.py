@@ -46,7 +46,6 @@ class StoneNode(QLabel):
         painter.setPen(pen)
         painter.setBrush(qcol)
         pen.setCosmetic(True)
-        # painter.setCosmetic(True)
         painter.drawEllipse(self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2)
         painter.end()
         painter = QPainter()
@@ -62,8 +61,6 @@ class StoneNode(QLabel):
         super().paintEvent(event)
 
     def mousePressEvent(self, _event):
-        # print("CLICK", self.bstone.annos)
-        # print("SIBLINGS", self.bstone.children)
         self.tree.callback(self.bstone)
 
 
@@ -74,7 +71,6 @@ class TreeCanvas(QWidget):
         self.root = None
         self.tree_cursor = None
         self.setMinimumWidth(StoneNode.WIDTH * 5)
-        # self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.callback = callback
         self.maxx = 0
         self.maxy = 0
@@ -138,7 +134,6 @@ class TreeCanvas(QWidget):
                 if node.bstone in path:
                     if winrate := node.bstone.annos.winrates:
                         best = sorted([float(val[0]) for val in winrate.values()])[-1]
-                        # best = 50
                         half = int((width / 100) * best)
                         if node.bstone.color == Color.BLACK:
                             half = width - half
@@ -184,10 +179,10 @@ class Tree(QScrollArea):
         if node := self.canvas.nodes.get(id(stone)):
             self.canvas.tree_cursor = node
             self.canvas.repaint()
-            # self.ensureWidgetVisible(self.canvas.tree_cursor)
+            # TODO check auto
+            self.ensureWidgetVisible(self.canvas.tree_cursor)
         else:
             self.canvas.add_stone(stone)
         self.ensureWidgetVisible(self.canvas.tree_cursor)
-        # print("TSC", self.canvas.tree_cursor.bstone, stone)
         if self.canvas.tree_cursor.bstone != stone:
             self.set_cursor(stone)

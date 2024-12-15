@@ -37,7 +37,7 @@ class GuiReceiver(BaseReceiver):
 
     def received_turn(self, result: TurnDone) -> None:
 
-        self.game_ui.gui_mode = self.game_ui._initial_gui_mode
+        # self.game_ui.gui_mode = self.game_ui._initial_gui_mode
         self.game_ui.last_turn = result
         self.game_ui.boardwidget.update()
         self.game_ui.bar.turn_done_signal.emit(result)
@@ -60,6 +60,8 @@ class GuiReceiver(BaseReceiver):
     def received_result_done(self, result: results.GameResultDone) -> None:
         print("RESULT DONE", result)
         self.game_ui.gui_mode = GUIMode.EDIT
+        self.game_ui._initial_gui_mode = GUIMode.EDIT
+        # self.game_ui.last_turn = result
         self.game_ui.boardwidget.boardupdate_signal.emit(result)
         self.game_ui.bar.result_done_signal.emit(result)
 

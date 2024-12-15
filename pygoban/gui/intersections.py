@@ -43,7 +43,6 @@ class IntersectionWidget(QWidget):
     def __init__(self, parent: "BoardWidget", board_pos: Pos, is_hoshi: bool):
         super().__init__(parent)
         self.board_pos: Pos = board_pos
-        # self.stone: stone.Stone | None = None
         self.game_ui: "GameWindow" = parent.parent()
         self.is_hoshi = is_hoshi
         self._is_current = None
@@ -156,7 +155,7 @@ class IntersectionWidget(QWidget):
         painter.fillRect(0, 0, params.size, params.size, painter.brush())
         painter.setOpacity(1)
 
-    def paintEvent(self, _):
+    def paintEvent(self, _) -> None:
         """Draw"""
 
         if not (last_turn := self.game_ui.last_turn):
@@ -182,6 +181,7 @@ class IntersectionWidget(QWidget):
             painter.drawEllipse(pos, pos, size, size)
             painter.setBrush(brush)
 
+        assert self.inter
         stone_pixmap = get_pixmap(self.inter.color)
         if (not stone_pixmap) and (rate := last_turn.stone.annos.winrates.get(self.board_pos)):
             if not self.parent().show_analyzed_variation:
@@ -235,7 +235,6 @@ class IntersectionWidget(QWidget):
                 self.draw_char(txt, painter, params)
             elif txt := last_turn.stone.annos.numbers.get(self.board_pos):
                 self.draw_char(txt, painter, params)
-            #       pass
         if (not stone_pixmap) and self._hover:
             next_color = last_turn.next_color
             hover_pixmap = get_pixmap(next_color)
@@ -288,10 +287,9 @@ class IntersectionWidget(QWidget):
         if not (last_turn := self.game_ui.last_turn):
             return False
 
-        if self.inter and self.inter.color == Color.EMPTY:  # and not self.controller.is_annotating:
+        if self.inter and self.inter.color == Color.EMPTY:
             type_ = event.type()
 
-            # stone = self.controller.curr_action_result.stone
             analyzed_variation_stones = []
             if rate := last_turn.stone.annos.winrates.get(self.board_pos):
                 analyzed_variation_stones = rate[2]
@@ -312,10 +310,6 @@ class IntersectionWidget(QWidget):
                 else:
                     self.repaint()
 
-                    # print("VR", stone.annos.progress[self.board_pos])
-                # if not self.controller.is_annotating:
-
-                # .annos.winrates.get(self.board_pos)):
                 return True
 
             if (

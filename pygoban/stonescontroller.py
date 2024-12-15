@@ -28,7 +28,6 @@ class StonesController:
         self.boardsize = boardsize
         self.board = Board(self.boardsize)
         self.root: Stone = Stone(color=Color.EMPTY)
-        # self.set_cursor(self.root)
 
     def set_cursor(self, stone: Stone) -> TurnDone:
         if not stone.parent:
@@ -41,7 +40,6 @@ class StonesController:
             self.board.intersection(Pos(x, y), Color.BLACK)
         result = None
         for stone_ in stone.path():
-            # assert stone_.pos
             result = self.get_result(
                 color=stone_.color,
                 pos=stone_.pos,
@@ -79,7 +77,6 @@ class StonesController:
 
         if pos:
             boardcpy.intersection(pos, color)
-            # group, killed, libs = boardcpy.analyze(pos)[1:4]
             killed, libs = boardcpy.analyze(pos)
         else:
             killed = set()

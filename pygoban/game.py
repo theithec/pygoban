@@ -16,6 +16,8 @@ from .timesettings import PlayerTime
 
 
 class AbstractCallbacks(abc.ABC):
+    """The callbacks a `Game` returns for interacting"""
+
     @abc.abstractmethod
     def play(self, color: Color, pos: Optional[Pos] = None) -> None: ...
 
@@ -50,6 +52,8 @@ class AbstractCallbacks(abc.ABC):
 
 
 class Game:
+    """Represents a game of go. A 'game' is any tree of placements/passes"""
+
     stones: StonesController
     cursor: Stone
 
@@ -77,13 +81,14 @@ class Game:
         )
 
     def send_game_event(self, result: results.Event):
+        """Send the event to all registered recivers"""
         for receiver in self.receivers:
             thread = Thread(target=receiver.receive_game_event, args=(result,))
             self._event_threads.append(thread)
             thread.start()
 
     def period_ended(self, color: Color, next_time: int):
-        # type_ = ActionType.PERIOD_ENDED if next_time else ActionType.LOST_BY_TIME
+        """A time period ended"""
         if next_time:
             result: results.Event = results.TimeDone(color=color, next_time=next_time)
         else:
@@ -98,6 +103,7 @@ class Game:
         self.send_game_event(result)
 
     def _start(self, receivers: List[BaseReceiver], cursor: Optional[Stone] = None):
+        """Start a game, sending the emtpy root node"""
         assert not self._started
         self._started = True
 
@@ -118,6 +124,7 @@ class Game:
         self.send_game_event(result)
 
     def _count(self):
+        """Count a board position"""
 
         if self.timers:
             for timer in self.timers.values():
@@ -129,22 +136,9 @@ class Game:
             white=results.ColorResult(killed=killed[Color.BLACK], coords=coords[Color.WHITE]),
         )
         self.send_game_event(game_result)
-        # total_dead = self.stones.total_dead.copy()
-        # for color in (Color.BLACK, Color.WHITE):
-        #    total_dead[color] += killed[color]
-
-        # self.send_game_event(
-        #    ActionResult(
-        #        type=ActionType.COUNT,
-        #        board=self.stones.board,
-        #        total_dead=total_dead,
-        #        game_result=game_result,
-        #    )
-        # )
 
     def _place(self, color: Color, pos: Pos | None) -> None:
-        # if not color == self.stones.cursor.next_color:
-        #    raise WrongColor(f"{color.name}: {pos}")
+        """Placement of a stone or a pass if `pos` is None"""
         result = self.stones.get_result(color, pos)
         try:
             self.ruleset.validate_result(result)
@@ -166,10 +160,12 @@ class Game:
             self.send_game_event(result)
 
     def _reset(self, stone: Stone):
-        result: TurnDone = self.stones.set_cursor(stone)
+        """Reset the board to given Situation"""
+        result: results.TurnDone = self.stones.set_cursor(stone)
         self.send_game_event(result)
 
     def callbacks(self) -> AbstractCallbacks:
+        """Return the callbacks for a game"""
         game: "Game" = self
 
         # pylint: disable=protected-access
@@ -177,7 +173,6 @@ class Game:
             started = False
 
             def play(self, color: Color, pos: Optional[Pos] = None):
-                print("PLAY ", color, pos)
                 game._place(color=color, pos=pos)  # pylint: disable=protected-access
 
             def undo(self):
@@ -185,7 +180,6 @@ class Game:
                     game._reset(parent)  # pylint: disable=protected-access
 
             def set_cursor(self, stone: Stone):
-                print("SET CURSOR", stone)
                 game._reset(stone)  # pylint: disable=protected-access
 
             def start(self, receivers: List[BaseReceiver], stone: Optional[Stone] = None):
@@ -220,7 +214,7 @@ class Game:
                     elif name == "1":
                         cursor.annos.numbers[pos] = str(1 + len(cursor.annos.numbers))
 
-                action_result = AnnotationDone()
+                action_result = results.AnnotationDone()
                 game.send_game_event(action_result)
 
             def annotate_winrates(self, infos: dict):
@@ -266,7 +260,6 @@ class Game:
                                 coords[color]
                             )
                         killed[Color.WHITE] += game.ruleset.komi
-                        print("killed", killed)
                         winner = max(killed, key=killed.get)
                         points_diff = killed[winner] - killed[winner.other()]
 

@@ -35,6 +35,7 @@ class GameController:
         self.callbacks.set_cursor(curr)
 
     def do_prev_stone(self) -> None:
+        assert self.curr_stone and self.curr_stone.parent
         self.callbacks.set_cursor(self.curr_stone.parent)
 
     def do_next_stone(self) -> None:
