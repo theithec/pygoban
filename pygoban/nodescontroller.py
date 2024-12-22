@@ -35,45 +35,40 @@ class NodesController:
         self.cursor = self.root
         self.total_dead = {Color.BLACK: 0, Color.WHITE: 0}
         self.board = Board(self.boardsize)
-        self.root.apply_permanent_annos(self.board)
         for x, y in HANDICAPS[self.handicap]:
             self.board.intersection(Pos(x, y), Color.BLACK)
         result = None
         for stone_ in stone.path():
             result = self.get_result(
-                color=stone_.color,
-                pos=stone_.pos,
-                annos=stone_.annos,
+                color=stone_.color, pos=stone_.pos, annos=stone_.annos, use_copy=False
             )
             self.apply_result(result)
 
         if not result:  # path is empty -> only root
             next_color = Color.BLACK if not self.handicap else Color.WHITE
-            result = TurnDone(board=self.board, stone=self.root, next_color=next_color)
+            result = TurnDone(board=self.board, node=self.root, next_color=next_color)
 
         return result
 
     def apply_result(self, result: TurnDone):
         oldcursor = self.cursor
-        self.cursor = result.stone
+        self.cursor = result.node
         self.cursor.set_parent(oldcursor)
-        self.total_dead[Color.BLACK if result.stone.color == Color.WHITE else Color.WHITE] += len(
+        self.total_dead[Color.BLACK if result.node.color == Color.WHITE else Color.WHITE] += len(
             result.killed
         )
         result.total_dead = self.total_dead
         self.board = result.board
         for pos in result.killed:
             self.board.intersection(pos, Color.EMPTY)
-        result.stone.apply_permanent_annos(self.board)
+        result.node.apply_permanent_annos(self.board)
 
     def get_result(
-        self,
-        color: Color,
-        pos: Pos | None,
-        annos: Annotations | None = None,
+        self, color: Color, pos: Pos | None, annos: Annotations | None = None, use_copy=True
     ) -> TurnDone:
+        """set use_copy to False if no validation is required"""
         assert self.board
-        boardcpy = deepcopy(self.board)
+        boardcpy = deepcopy(self.board) if use_copy else self.board
 
         if pos:
             boardcpy.intersection(pos, color)
@@ -93,6 +88,4 @@ class NodesController:
 
         next_color = color.other()
 
-        return TurnDone(
-            board=boardcpy, stone=stone, next_color=next_color, killed=killed, libs=libs
-        )
+        return TurnDone(board=boardcpy, node=stone, next_color=next_color, killed=killed, libs=libs)

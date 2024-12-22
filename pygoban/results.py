@@ -17,7 +17,7 @@ class TurnDone(Event):
     """A players turn, placement or pass"""
 
     board: Board
-    stone: "Node"
+    node: "Node"
     next_color: Color
     next_time: int | None = None
     killed: Set[Pos] = field(default_factory=set)

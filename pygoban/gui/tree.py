@@ -180,7 +180,7 @@ class Tree(QScrollArea):
             self.canvas.tree_cursor = node
             self.canvas.repaint()
             # TODO check auto
-            self.ensureWidgetVisible(self.canvas.tree_cursor)
+            # self.ensureWidgetVisible(self.canvas.tree_cursor)
         else:
             self.canvas.add_stone(stone)
         self.ensureWidgetVisible(self.canvas.tree_cursor)

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Dict, List, Optional, Set, Tuple
 
-from . import coords
+from . import coords, Pos
 
 
 class Color(IntEnum):
@@ -40,7 +40,7 @@ class Marker(Enum):
     DIMMED = "dimmed"
 
 
-class Pos(tuple):
+class Pos2(tuple):
     """A handcrafted named tuple"""
 
     def __new__(cls, x, y):

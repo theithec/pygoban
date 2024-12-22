@@ -10,12 +10,12 @@ class GameController:
 
     def start(self, receiver: BaseReceiver, node: Node | None = None) -> None:
         self.receiver = receiver  #: BaseReceiver = receiver_cls(controller=self)
-        self.callbacks.start([self.receiver], stone=node)
+        self.callbacks.start([self.receiver], node=node)
 
     @property
     def last_stone(self) -> Node:
         assert self.receiver.last_turn
-        return self.receiver.last_turn.stone
+        return self.receiver.last_turn.node
 
     def do_prev_variation(self) -> None:
         curr = self.last_stone

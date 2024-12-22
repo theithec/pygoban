@@ -296,7 +296,7 @@ class EditBox(Box):
         pass
 
     def update_controlls(self, result):
-        stone = result.stone
+        stone = result.node
         has_parent = bool(stone.parent)
         has_children = bool(stone.children)
         self.btn_first_stone.setEnabled(has_parent)
@@ -482,18 +482,18 @@ class BarWidget(QFrame):
             player_box.prisoners_label.setText(str(numdead))
 
         self.tree.setEnabled(self.game_ui.gui_mode == GUIMode.EDIT)
-        self.tree.stones_signal.emit(result.stone)
+        self.tree.stones_signal.emit(result.node)
         print("GUIMODE", self.game_ui.gui_mode)
         if self.game_ui.gui_mode in (GUIMode.EDIT, GUIMode.COUNT):
             self.inner.boxes[EditBox.name].update_controlls(result)
 
-        if self.game_ui.ruleset.timesettings and result.stone.color:
+        if self.game_ui.ruleset.timesettings and result.node.color:
 
             players_box = self.inner.playersbox
             assert isinstance(players_box, PlayersBox)
             game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
-            game_boxes[result.stone.color].stop_clockdisplay()
-            game_boxes[result.stone.color.other()].set_clockdisplay(result.stone.annos.time_left)
+            game_boxes[result.node.color].stop_clockdisplay()
+            game_boxes[result.node.color.other()].set_clockdisplay(result.node.annos.time_left)
 
     def handle_result_done(self, result: results.GameResultDone):
 

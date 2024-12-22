@@ -276,7 +276,7 @@ def parse(sgftxt: str, defaults: Dict) -> tuple[Ruleset, Node]:
     parser = Parser(sgftxt, defaults)
     parser.parse()
     assert parser.ruleset and parser.cursor, f"{parser.ruleset} / {parser.cursor}"
-    return parser.ruleset, parser.cursor.root()
+    return parser.ruleset, parser.cursor  # .root()
 
 
 def load(path: str) -> tuple[Ruleset, Node]:
@@ -285,6 +285,11 @@ def load(path: str) -> tuple[Ruleset, Node]:
     # print("LOADED")
     # from .writer import write
 
+    import time
+
+    start = time.time()
     ruleset, cursor = parse(sgftxt, {})
+    end = time.time()
+    print("RESET", end - start)
     return ruleset, cursor
     # write(cursor, ruleset)

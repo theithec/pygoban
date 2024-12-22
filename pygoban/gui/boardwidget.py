@@ -1,12 +1,10 @@
 # pylint: disable=invalid-name  # because qt
 import os
-from dataclasses import dataclass, field
 from itertools import permutations
-from typing import TYPE_CHECKING, Dict
 
 from PyQt5.QtCore import QRect, Qt, pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt5.QtGui import (  # pylint: disable=no-name-in-module
-    QBrush,
+    # QBrush,
     QColor,
     QImage,
     QPainter,
@@ -14,11 +12,9 @@ from PyQt5.QtGui import (  # pylint: disable=no-name-in-module
 from PyQt5.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
 from .. import Pos
-from . import BASE_DIR
+from . import BASE_DIR, GameUI, InsParams
 from .intersections import IntersectionWidget
 
-if TYPE_CHECKING:
-    from .gamewidget import GameWidget
 
 COORDS = [chr(i) for i in list(range(97, 117))]
 
@@ -34,40 +30,21 @@ HOSHIS = {
 }
 
 
-@dataclass
-class InsParams:
-    """Values for all intersectionwidgets"""
-
-    size: int = 0
-    small_size: int = 0
-    small_pos: int = 0
-    hoshi_size: int = 0
-    hoshi_pos: int = 0
-    stone_size: int = 0
-    stone_pos: int = 0
-    font_height: int = 0
-    font_bottom: int = 0
-    small_font_height: int = 0
-    small_font_bottom: int = 0
-    small_bottom: int = 0
-
-
 class BoardWidget(QWidget):
     boardupdate_signal = pyqtSignal(object)
 
-    def __init__(self, parent: "GameWidget", boardsize: int):
+    def __init__(self, parent: GameUI, boardsize: int):
         super().__init__(parent=parent)
         self.bgimage = QImage(os.path.join(BASE_DIR, "gui/imgs/shinkaya.jpg"))
         self.boardsize = boardsize
         self.boardwidth = 0
         self.borderspace = 0
-        self.intersections: Dict[Pos, IntersectionWidget] = {}
+        self.intersections: dict[Pos, IntersectionWidget] = {}
         self.boardrange = range(self.boardsize)
         self.current_in = None  # "Active" intersection
         self.boardupdate_signal.connect(self.update_board)
         self.ins_params = InsParams()
         self.create_intersections()
-        self.show_analyzed_variation = False
         self.setAutoFillBackground(True)
 
     def create_intersections(self):

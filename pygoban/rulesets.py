@@ -110,18 +110,18 @@ class Ruleset:
         self.ko: Optional[Pos] = None
         self.passed = 0
         self.first: Color = first
-        self.stones: Optional[NodesController] = None
+        self.nodes: Optional[NodesController] = None
         self.info: GameInfo = info
         self.timesettings = timesettings
         # if timesettings:
         #     print("Timesettings", timesettings)
 
-    def set_stonescontroller(self, stones: NodesController) -> "Ruleset":
-        self.stones = stones
+    def set_node_controller(self, nodes: NodesController) -> "Ruleset":
+        self.nodes = nodes
         return self
 
     def validate_result(self, result: TurnDone) -> TurnDone:
-        stone = result.stone
+        stone = result.node
         if stone.pos:
             self.passed = 0
         else:
@@ -133,8 +133,8 @@ class Ruleset:
         assert stone.pos
         if stone.color.is_empty():
             return result
-        assert self.stones
-        color = self.stones.board.intersection(stone.pos).color
+        assert self.nodes
+        color = self.nodes.board.intersection(stone.pos).color
         if not color.is_empty():
             raise OccupiedViolation(f"Not empty: {result} BUT {color}")
         if not result.libs and not result.killed:

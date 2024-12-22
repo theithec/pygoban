@@ -25,10 +25,10 @@ class AbstractCallbacks(abc.ABC):
     def undo(self) -> None: ...
 
     @abc.abstractmethod
-    def set_cursor(self, stone: Node) -> None: ...
+    def set_cursor(self, node: Node) -> None: ...
 
     @abc.abstractmethod
-    def start(self, receivers: List["BaseReceiver"], stone: Optional[Node] = None) -> None: ...
+    def start(self, receivers: List["BaseReceiver"], node: Optional[Node] = None) -> None: ...
 
     @abc.abstractmethod
     def toggle_status(self, pos: Pos) -> None: ...
@@ -54,21 +54,21 @@ class AbstractCallbacks(abc.ABC):
 class Game:
     """Represents a game of go. A 'game' is any tree of placements/passes"""
 
-    stones: NodesController
+    nodes: NodesController
     cursor: Node
 
     def __init__(
         self,
         ruleset: Ruleset,  # | None = None,
-        stones: NodesController | None = None,
+        nodes: NodesController | None = None,
     ):
         self.ruleset = ruleset  # if ruleset else Ruleset(boardsize=9, komi=0.5, handicap=0)
-        if not stones:
-            stones = NodesController(self.ruleset.boardsize, self.ruleset.handicap)
-        assert stones
+        if not nodes:
+            nodes = NodesController(self.ruleset.boardsize, self.ruleset.handicap)
+        assert nodes
         self.receivers: List[BaseReceiver] = []
-        self.ruleset.set_stonescontroller(stones)
-        self.stones = stones
+        self.ruleset.set_node_controller(nodes)
+        self.nodes = nodes
         self._event_threads: List[Thread] = []
         self._started = False
         self.timers = (
@@ -114,11 +114,11 @@ class Game:
                 if not curr.parent:
                     break
                 curr = curr.parent
-            self.stones.root = curr
+            self.nodes.root = curr
         else:
-            self.stones.root = Node(color=Color.EMPTY, pos=None, parent=None)
-            cursor = self.stones.root
-        result = self.stones.set_cursor(cursor)
+            self.nodes.root = Node(color=Color.EMPTY, pos=None, parent=None)
+            cursor = self.nodes.root
+        result = self.nodes.set_cursor(cursor)
         if self.timers:
             self.timers[result.next_color].start_timer()
         self.send_game_event(result)
@@ -129,7 +129,7 @@ class Game:
         if self.timers:
             for timer in self.timers.values():
                 timer.cancel_timer()
-        cnt = Counter(board=self.stones.board)
+        cnt = Counter(board=self.nodes.board)
         coords, killed = cnt.result()
         game_result = results.Counted(
             black=results.ColorResult(killed=killed[Color.WHITE], coords=coords[Color.BLACK]),
@@ -139,7 +139,7 @@ class Game:
 
     def _place(self, color: Color, pos: Pos | None) -> None:
         """Placement of a stone or a pass if `pos` is None"""
-        result = self.stones.get_result(color, pos)
+        result = self.nodes.get_result(color, pos)
         try:
             self.ruleset.validate_result(result)
         except ThreePasses:
@@ -148,20 +148,25 @@ class Game:
         except RuleViolation as err:
             print(err)
         else:
-            self.stones.apply_result(result)
+            self.nodes.apply_result(result)
             if self.timers:
                 own_timer = self.timers[result.next_color]
                 if not own_timer.ended:
                     own_timer.start_timer()
-                self.stones.cursor.annos.time_left = own_timer.nexttime()
+                self.nodes.cursor.annos.time_left = own_timer.nexttime()
                 other_timer = self.timers[result.next_color.other()]
                 if not other_timer.ended:
                     other_timer.cancel_timer()
             self.send_game_event(result)
 
-    def _reset(self, stone: Node):
+    def _reset(self, node: Node):
         """Reset the board to given Situation"""
-        result: results.TurnDone = self.stones.set_cursor(stone)
+        import time
+
+        start = time.time()
+        result: results.TurnDone = self.nodes.set_cursor(node)
+        end = time.time()
+        print("RESET", end - start)
         self.send_game_event(result)
 
     def callbacks(self) -> AbstractCallbacks:
@@ -176,35 +181,35 @@ class Game:
                 game._place(color=color, pos=pos)  # pylint: disable=protected-access
 
             def undo(self):
-                if parent := game.stones.cursor.parent:
+                if parent := game.nodes.cursor.parent:
                     game._reset(parent)  # pylint: disable=protected-access
 
-            def set_cursor(self, stone: Node):
-                game._reset(stone)  # pylint: disable=protected-access
+            def set_cursor(self, node: Node):
+                game._reset(node)  # pylint: disable=protected-access
 
-            def start(self, receivers: List[BaseReceiver], stone: Optional[Node] = None):
+            def start(self, receivers: List[BaseReceiver], node: Optional[Node] = None):
                 assert not self.started
-                game._start(receivers=receivers, cursor=stone)  # pylint: disable=protected-access
+                game._start(receivers=receivers, cursor=node)  # pylint: disable=protected-access
                 self.started = True
 
             def toggle_status(self, pos):
-                chain = game.stones.board.get_chain(pos)
-                start = game.stones.board.intersection(pos)
+                chain = game.nodes.board.get_chain(pos)
+                start = game.nodes.board.intersection(pos)
                 owner = (
                     None
                     if start.owner
                     else (Color.BLACK if start.color == Color.WHITE else Color.WHITE)
                 )
                 for cpos in chain:
-                    inter = game.stones.board.intersection(cpos)
+                    inter = game.nodes.board.intersection(cpos)
                     inter.owner = owner
                 game._count()  # pylint
 
             def annotate(self, pos: Pos, name: str | Color | Marker, next_color: Color):
-                cursor = game.stones.cursor
+                cursor = game.nodes.cursor
                 if isinstance(name, Color):
                     cursor.annos.stones[pos] = name
-                    cursor.apply_permanent_annos(game.stones.board)
+                    cursor.apply_permanent_annos(game.nodes.board)
 
                 elif isinstance(name, Marker):
                     cursor.annos.markers[pos] = name
@@ -218,17 +223,17 @@ class Game:
                 game.send_game_event(action_result)
 
             def annotate_winrates(self, infos: dict):
-                game.stones.cursor.annos.winrates.clear()
+                game.nodes.cursor.annos.winrates.clear()
                 for pos, rate in infos.items():
-                    game.stones.cursor.annos.winrates[pos] = rate
+                    game.nodes.cursor.annos.winrates[pos] = rate
                 assert (last := game.last_action_result)
                 assert last.stone_result
                 action_result = ActionResult(
                     type=ActionType.ANNOTATED,
-                    board=game.stones.board,
+                    board=game.nodes.board,
                     stone_result=StoneResult(
                         next_color=last.stone_result.next_color,
-                        stone=last.stone_result.stone,
+                        node=last.stone_result.node,
                     ),
                 )
                 game.send_game_event(action_result)
@@ -253,10 +258,10 @@ class Game:
                         winner = color.other()
                         msg = fmt.format(color=winner)
                     case types.COUNTED:
-                        cnt = Counter(board=game.stones.board)
+                        cnt = Counter(board=game.nodes.board)
                         coords, killed = cnt.result()
                         for color in (Color.BLACK, Color.WHITE):
-                            killed[color] += game.stones.total_dead[color.other()] + len(
+                            killed[color] += game.nodes.total_dead[color.other()] + len(
                                 coords[color]
                             )
                         killed[Color.WHITE] += game.ruleset.komi

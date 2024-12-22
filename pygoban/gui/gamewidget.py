@@ -5,7 +5,7 @@ from copy import copy
 
 from PyQt5.QtCore import pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt5.QtMultimedia import QSound  # pylint: disable=no-name-in-module
-from PyQt5.QtWidgets import QMessageBox, QWidget  # pylint: disable=no-name-in-module
+from PyQt5.QtWidgets import QWidget  # QMessageBox, QWidget  # pylint: disable=no-name-in-module
 
 
 from .. import (  # ActionType,; GameResult,
@@ -85,6 +85,8 @@ class GameWidget(QWidget):
         self.parties = parties
         self.controller = controller
         self._deco = None
+
+        self.show_analyzed_variation = False
         self.last_turn: results.TurnDone | None = None
         self.stonesound = QSound(os.path.join(BASE_DIR, "gui/sounds/stone.wav"))
         self.gui_mode = gui_mode

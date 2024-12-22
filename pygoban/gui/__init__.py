@@ -1,8 +1,9 @@
 import os
 import signal
 from enum import Enum
-from typing import Callable
-
+from typing import Callable, Protocol
+from pygoban import results
+from dataclasses import dataclass
 from PyQt5 import QtWidgets
 
 # kill with strg c
@@ -15,6 +16,32 @@ class GUIMode(Enum):
     EDIT = "EDIT"
     PLAY = "PLAY"
     COUNT = "COUNT"
+
+
+@dataclass
+class InsParams:
+    """Values for all intersectionwidgets"""
+
+    size: int = 0
+    small_size: int = 0
+    small_pos: int = 0
+    hoshi_size: int = 0
+    hoshi_pos: int = 0
+    stone_size: int = 0
+    stone_pos: int = 0
+    font_height: int = 0
+    font_bottom: int = 0
+    small_font_height: int = 0
+    small_font_bottom: int = 0
+    small_bottom: int = 0
+
+
+class GameUI(Protocol):
+    gui_mode: GUIMode
+    last_turn: results.TurnDone
+    show_analyzed_variation: bool
+
+    def foo(self, x, y): ...
 
 
 class CenteredMixin:

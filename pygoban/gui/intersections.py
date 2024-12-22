@@ -18,12 +18,11 @@ from PyQt5.QtGui import (  # pylint: disable=no-name-in-module
 )
 from PyQt5.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
-from .. import Color, Intersection, Pos, node
-from . import BASE_DIR, GUIMode
+from .. import Color, Intersection, Pos
+from . import BASE_DIR, GUIMode, GameUI
 
 if TYPE_CHECKING:
     from .boardwidget import BoardWidget, InsParams
-    from .gamewindow import GameWindow  # type: ignore
 
 
 @lru_cache()
@@ -43,7 +42,7 @@ class IntersectionWidget(QWidget):
     def __init__(self, parent: "BoardWidget", board_pos: Pos, is_hoshi: bool):
         super().__init__(parent)
         self.board_pos: Pos = board_pos
-        self.game_ui: "GameWindow" = parent.parent()
+        self.game_ui: GameUI = parent.parent()
         self.is_hoshi = is_hoshi
         self._is_current = None
         self._hover = False
@@ -55,7 +54,7 @@ class IntersectionWidget(QWidget):
         self._hover = False
 
     def draw_number(self, painter, params):
-        self.draw_char(str(len(self.stone.annos.numbers)), painter, params)
+        self.draw_char(str(len(self.node.annos.numbers)), painter, params)
 
     def draw_char(self, txt, painter, params, color=None):
         font = painter.font()
@@ -171,7 +170,7 @@ class IntersectionWidget(QWidget):
         pen.setColor(QColor("black"))
         painter.setPen(pen)
         params: "InsParams" = self.parent().ins_params
-        analyzed_variation = last_turn.stone.annos.progress.get(self.board_pos)
+        analyzed_variation = last_turn.node.annos.progress.get(self.board_pos)
 
         if self.is_hoshi:
             brush = painter.brush()
@@ -183,8 +182,8 @@ class IntersectionWidget(QWidget):
 
         assert self.inter
         stone_pixmap = get_pixmap(self.inter.color)
-        if (not stone_pixmap) and (rate := last_turn.stone.annos.winrates.get(self.board_pos)):
-            if not self.parent().show_analyzed_variation:
+        if (not stone_pixmap) and (rate := last_turn.node.annos.winrates.get(self.board_pos)):
+            if not self.game_ui.show_analyzed_variation:
                 self.draw_winrate(rate, painter, params)
 
         if stone_pixmap:
@@ -197,7 +196,7 @@ class IntersectionWidget(QWidget):
                 ),
                 stone_pixmap,
             )
-            if self.board_pos == last_turn.stone.pos:
+            if self.board_pos == last_turn.node.pos:
                 painter.setBrush(QColor("red"))
                 painter.drawEllipse(
                     params.small_pos,
@@ -206,7 +205,7 @@ class IntersectionWidget(QWidget):
                     params.small_size,
                 )
         elif self.game_ui.gui_mode in (GUIMode.EDIT, GUIMode.PLAY):
-            for child in last_turn.stone.children:
+            for child in last_turn.node.children:
                 if self.board_pos == child.pos:
                     break
             else:
@@ -227,17 +226,17 @@ class IntersectionWidget(QWidget):
         # if self.board_pos == Pos(0, 0):
         #     print("SGU", self.game_ui.gui_mode, self.game_ui)
         if self.game_ui.gui_mode == GUIMode.EDIT:
-            if marker := last_turn.stone.annos.markers.get(self.board_pos):
+            if marker := last_turn.node.annos.markers.get(self.board_pos):
                 getattr(self, f"draw_{marker.value}")(painter, params)
-            if color := last_turn.stone.annos.owned.get(self.board_pos):
+            if color := last_turn.node.annos.owned.get(self.board_pos):
                 self.draw_owned(color, painter, params)
-            elif txt := last_turn.stone.annos.chars.get(self.board_pos):
+            elif txt := last_turn.node.annos.chars.get(self.board_pos):
                 self.draw_char(txt, painter, params)
-            elif txt := last_turn.stone.annos.numbers.get(self.board_pos):
+            elif txt := last_turn.node.annos.numbers.get(self.board_pos):
                 self.draw_char(txt, painter, params)
         if (not stone_pixmap) and self._hover:
             next_color = last_turn.next_color
-            hover_pixmap = get_pixmap(next_color)
+            assert (hover_pixmap := get_pixmap(next_color))
             painter.setOpacity(0.8)
             painter.drawPixmap(
                 QRect(
@@ -291,7 +290,7 @@ class IntersectionWidget(QWidget):
             type_ = event.type()
 
             analyzed_variation_stones = []
-            if rate := last_turn.stone.annos.winrates.get(self.board_pos):
+            if rate := last_turn.node.annos.winrates.get(self.board_pos):
                 analyzed_variation_stones = rate[2]
 
             if (
@@ -303,9 +302,10 @@ class IntersectionWidget(QWidget):
                 if analyzed_variation_stones:
                     color = self.controller.curr_action_result.next_color
                     for index, pos in enumerate(analyzed_variation_stones):
-                        last_turn.stone.annos.progress[pos] = index + 1, color
+                        last_turn.node.annos.progress[pos] = index + 1, color
                         color = Color.WHITE if color == Color.BLACK else Color.BLACK
-                    self.parent().show_analyzed_variation = True
+                    self.game_ui.show_analyzed_variation = True
+                    # TODO CHECK
                     self.parent().repaint()
                 else:
                     self.repaint()
@@ -319,10 +319,10 @@ class IntersectionWidget(QWidget):
             ):
                 # if not self.controller.is_annotating:
                 self._hover = False
-                self.parent().show_analyzed_variation = False
+                self.game_ui.show_analyzed_variation = False
                 self.repaint()
-                if last_turn.stone.annos.progress:
-                    last_turn.stone.annos.progress.clear()
+                if last_turn.node.annos.progress:
+                    last_turn.node.annos.progress.clear()
                     self.parent().repaint()
                 return True
 
