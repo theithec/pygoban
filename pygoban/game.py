@@ -1,54 +1,13 @@
-import abc
-from dataclasses import dataclass
-from re import M
 from threading import Thread
-from typing import TYPE_CHECKING, List, Optional
 
-# from .basecontroller import BaseGameControllerMixin
 from .board import Marker
 from .receivers import BaseReceiver
 
 # from .results import TurnDone, Event, AnnotationDone, Counted, ColorResult
 from . import results
-from .rulesets import Counter, Ruleset, RuleViolation, ThreePasses, WrongColor
+from .rulesets import Counter, Ruleset, RuleViolation, ThreePasses
 from .nodescontroller import Color, Pos, Node, NodesController
 from .timesettings import PlayerTime
-
-
-class AbstractCallbacks(abc.ABC):
-    """The callbacks a `Game` returns for interacting"""
-
-    @abc.abstractmethod
-    def play(self, color: Color, pos: Optional[Pos] = None) -> None: ...
-
-    @abc.abstractmethod
-    def undo(self) -> None: ...
-
-    @abc.abstractmethod
-    def set_cursor(self, node: Node) -> None: ...
-
-    @abc.abstractmethod
-    def start(self, receivers: List["BaseReceiver"], node: Optional[Node] = None) -> None: ...
-
-    @abc.abstractmethod
-    def toggle_status(self, pos: Pos) -> None: ...
-
-    @abc.abstractmethod
-    def annotate(self, pos: Pos, name: str | Color, next_color: Color) -> None: ...
-
-    @abc.abstractmethod
-    def annotate_winrates(self, infos: dict) -> None: ...
-
-    @abc.abstractmethod
-    def add_receiver(self, receiver: "BaseReceiver") -> None: ...
-
-    @abc.abstractmethod
-    def set_end_result(
-        self, result_type: results.GameResultType, color: Color | None = None
-    ) -> None: ...
-
-    @abc.abstractmethod
-    def quit(self) -> None: ...
 
 
 class Game:
@@ -66,10 +25,10 @@ class Game:
         if not nodes:
             nodes = NodesController(self.ruleset.boardsize, self.ruleset.handicap)
         assert nodes
-        self.receivers: List[BaseReceiver] = []
+        self.receivers: list[BaseReceiver] = []
         self.ruleset.set_node_controller(nodes)
         self.nodes = nodes
-        self._event_threads: List[Thread] = []
+        self._event_threads: list[Thread] = []
         self._started = False
         self.timers = (
             {
@@ -79,6 +38,8 @@ class Game:
             if ruleset.timesettings
             else None
         )
+
+        self.started = False
 
     def send_game_event(self, result: results.Event):
         """Send the event to all registered recivers"""
@@ -102,7 +63,7 @@ class Game:
             )
         self.send_game_event(result)
 
-    def _start(self, receivers: List[BaseReceiver], cursor: Optional[Node] = None):
+    def _start(self, receivers: list[BaseReceiver], cursor: Node | None = None):
         """Start a game, sending the emtpy root node"""
         assert not self._started
         self._started = True
@@ -169,114 +130,95 @@ class Game:
         print("RESET", end - start)
         self.send_game_event(result)
 
-    def callbacks(self) -> AbstractCallbacks:
-        """Return the callbacks for a game"""
-        game: "Game" = self
+    def undo(self):
+        if parent := self.nodes.cursor.parent:
+            self._reset(parent)  # pylint: disable=protected-access
 
-        # pylint: disable=protected-access
-        class Callbacks(AbstractCallbacks):
-            started = False
+    def start(self, receivers: list[BaseReceiver], node: Node | None = None):
+        assert not self.started
+        self._start(receivers=receivers, cursor=node)  # pylint: disable=protected-access
+        self.started = True
 
-            def play(self, color: Color, pos: Optional[Pos] = None):
-                game._place(color=color, pos=pos)  # pylint: disable=protected-access
+    def toggle_status(self, pos: Pos) -> None:
+        chain = self.nodes.board.get_chain(pos)
+        start = self.nodes.board.intersection(pos)
+        owner = (
+            None if start.owner else (Color.BLACK if start.color == Color.WHITE else Color.WHITE)
+        )
+        for cpos in chain:
+            inter = self.nodes.board.intersection(cpos)
+            inter.owner = owner
+        self._count()  # pylint
 
-            def undo(self):
-                if parent := game.nodes.cursor.parent:
-                    game._reset(parent)  # pylint: disable=protected-access
+    def annotate(self, pos: Pos, name: str | Color | Marker) -> None:
+        cursor = self.nodes.cursor
+        if isinstance(name, Color):
+            cursor.annos.stones[pos] = name
+            cursor.apply_permanent_annos(self.nodes.board)
 
-            def set_cursor(self, node: Node):
-                game._reset(node)  # pylint: disable=protected-access
+        elif isinstance(name, Marker):
+            cursor.annos.markers[pos] = name
+        elif isinstance(name, str):
+            if name == "A":
+                cursor.annos.chars[pos] = chr(65 + len(cursor.annos.chars))
+            elif name == "1":
+                cursor.annos.numbers[pos] = str(1 + len(cursor.annos.numbers))
 
-            def start(self, receivers: List[BaseReceiver], node: Optional[Node] = None):
-                assert not self.started
-                game._start(receivers=receivers, cursor=node)  # pylint: disable=protected-access
-                self.started = True
+        action_result = results.AnnotationDone()
+        self.send_game_event(action_result)
 
-            def toggle_status(self, pos):
-                chain = game.nodes.board.get_chain(pos)
-                start = game.nodes.board.intersection(pos)
-                owner = (
-                    None
-                    if start.owner
-                    else (Color.BLACK if start.color == Color.WHITE else Color.WHITE)
-                )
-                for cpos in chain:
-                    inter = game.nodes.board.intersection(cpos)
-                    inter.owner = owner
-                game._count()  # pylint
+    def annotate_winrates(self, infos: dict) -> None:
+        raise NotImplementedError()
+        # self.nodes.cursor.annos.winrates.clear()
+        # for pos, rate in infos.items():
+        #    self.nodes.cursor.annos.winrates[pos] = rate
+        # assert (last := self.last_action_result)
+        # assert last.stone_result
+        # action_result = ActionResult(
+        #    type=ActionType.ANNOTATED,
+        #    board=self.nodes.board,
+        #    stone_result=StoneResult(
+        #        next_color=last.stone_result.next_color,
+        #        node=last.stone_result.node,
+        #    ),
+        # )
+        # self.send_game_event(action_result)
 
-            def annotate(self, pos: Pos, name: str | Color | Marker, next_color: Color):
-                cursor = game.nodes.cursor
-                if isinstance(name, Color):
-                    cursor.annos.stones[pos] = name
-                    cursor.apply_permanent_annos(game.nodes.board)
+    def add_receiver(self, receiver: BaseReceiver):
+        if receiver not in self.receivers:
+            # receiver.game_callbacks = self
+            self.receivers.append(receiver)
 
-                elif isinstance(name, Marker):
-                    cursor.annos.markers[pos] = name
-                elif isinstance(name, str):
-                    if name == "A":
-                        cursor.annos.chars[pos] = chr(65 + len(cursor.annos.chars))
-                    elif name == "1":
-                        cursor.annos.numbers[pos] = str(1 + len(cursor.annos.numbers))
+    def set_end_result(self, result_type, color: Color | None = None):
+        print("Print TODO WRITE RESULT")
+        if self.timers:
+            for timer in self.timers.values():
+                timer.cancel_timer()
 
-                action_result = results.AnnotationDone()
-                game.send_game_event(action_result)
+        types = results.GameResultType
+        fmt = results.GAME_RESULT_STR_BY_TYPE[result_type]
+        msg = ""
+        match result_type:
+            case types.LOST_BY_TIME | types.RESIGN:
+                assert color
+                winner = color.other()
+                msg = fmt.format(color=winner)
+            case types.COUNTED:
+                cnt = Counter(board=self.nodes.board)
+                coords, killed = cnt.result()
+                for color in (Color.BLACK, Color.WHITE):
+                    killed[color] += self.nodes.total_dead[color.other()] + len(coords[color])
+                killed[Color.WHITE] += self.ruleset.komi
+                winner = max(killed, key=killed.get)
+                points_diff = killed[winner] - killed[winner.other()]
 
-            def annotate_winrates(self, infos: dict):
-                game.nodes.cursor.annos.winrates.clear()
-                for pos, rate in infos.items():
-                    game.nodes.cursor.annos.winrates[pos] = rate
-                assert (last := game.last_action_result)
-                assert last.stone_result
-                action_result = ActionResult(
-                    type=ActionType.ANNOTATED,
-                    board=game.nodes.board,
-                    stone_result=StoneResult(
-                        next_color=last.stone_result.next_color,
-                        node=last.stone_result.node,
-                    ),
-                )
-                game.send_game_event(action_result)
+                msg = fmt.format(color=winner, points_diff=points_diff)
 
-            def add_receiver(self, receiver: BaseReceiver):
-                if receiver not in game.receivers:
-                    # receiver.game_callbacks = self
-                    game.receivers.append(receiver)
+        result = results.GameResultDone(winner=winner, msg=msg, type=result_type)
+        self.send_game_event(result)
 
-            def set_end_result(self, result_type, color: Color | None = None):
-                print("Print TODO WRITE RESULT")
-                if game.timers:
-                    for timer in game.timers.values():
-                        timer.cancel_timer()
-
-                types = results.GameResultType
-                fmt = results.GAME_RESULT_STR_BY_TYPE[result_type]
-                msg = ""
-                match result_type:
-                    case types.LOST_BY_TIME | types.RESIGN:
-                        assert color
-                        winner = color.other()
-                        msg = fmt.format(color=winner)
-                    case types.COUNTED:
-                        cnt = Counter(board=game.nodes.board)
-                        coords, killed = cnt.result()
-                        for color in (Color.BLACK, Color.WHITE):
-                            killed[color] += game.nodes.total_dead[color.other()] + len(
-                                coords[color]
-                            )
-                        killed[Color.WHITE] += game.ruleset.komi
-                        winner = max(killed, key=killed.get)
-                        points_diff = killed[winner] - killed[winner.other()]
-
-                        msg = fmt.format(color=winner, points_diff=points_diff)
-
-                result = results.GameResultDone(winner=winner, msg=msg, type=result_type)
-                game.send_game_event(result)
-
-            def quit(self):
-                for rec in game.receivers:
-                    # rec.__del__()
-                    del rec
-                print("END")
-
-        return Callbacks()
+    def quit(self):
+        for rec in self.receivers:
+            # rec.__del__()
+            del rec
+        print("END")

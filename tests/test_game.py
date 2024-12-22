@@ -24,5 +24,5 @@ def test_game_start(mocker, receiver_cls) -> None:
     ctrl.callbacks.play(Color.BLACK, Pos(0, 0))
     for thread in game._event_threads:
         thread.join()
-    assert game.stones.board[0][0].color == Color.BLACK
+    assert game.nodes.board[0][0].color == Color.BLACK
     mocked_received_stone.assert_called()

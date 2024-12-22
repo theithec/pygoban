@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Set, Tuple, Union
+from typing import Optional, Tuple, Union
 
 from .board import Board, Color, Pos
 from .info import GameInfo
@@ -37,17 +37,17 @@ class ThreePasses(Exception):
 @dataclass
 class Group:
     owner: Optional[Union[Color, bool]] = None
-    coords: Set[Pos] = field(default_factory=set)
+    coords: set[Pos] = field(default_factory=set)
 
 
-PosSetByColor = dict[Color, Set[Pos]]
+PosSetByColor = dict[Color, set[Pos]]
 FloatByColor = dict[Color, float]
 
 
 class Counter:
     def __init__(self, board: Board):
         self.board = board
-        self.checked: Set[Pos] = set()
+        self.checked: set[Pos] = set()
 
     def check(self, pos: Pos, group: Optional[Group] = None):
         group = group or Group()
@@ -85,7 +85,7 @@ class Counter:
                 if inter.owner and inter.owner != inter.color:
                     if inter.color:
                         deadonboard[inter.color] += 1
-                        if inter.owner is not False:
+                        if group.owner is not False:
                             empties[group.owner].add(pos)
 
         return empties, deadonboard

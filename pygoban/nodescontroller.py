@@ -1,11 +1,10 @@
 from copy import deepcopy
-from typing import Dict, Optional, Tuple
 
 from .board import Board, Color, Pos
 from .results import TurnDone
 from .node import Annotations, Node
 
-HANDICAPS: Dict[int, Tuple] = {0: tuple(), 2: ((3, 15), (15, 3))}
+HANDICAPS: dict[int, tuple] = {0: tuple(), 2: ((3, 15), (15, 3))}
 HANDICAPS[3] = HANDICAPS[2] + ((3, 3),)
 HANDICAPS[4] = HANDICAPS[3] + ((15, 15),)
 HANDICAPS[5] = HANDICAPS[4] + ((9, 9),)
@@ -20,7 +19,7 @@ HANDICAPS[9] = HANDICAPS[8] + ((9, 9),)
 
 class NodesController:
     cursor: Node
-    total_dead: Dict[Color, int]
+    total_dead: dict[Color, int]
 
     def __init__(self, boardsize: int, handicap: int = 0) -> None:
         self.total_dead = {Color.BLACK: 0, Color.WHITE: 0}

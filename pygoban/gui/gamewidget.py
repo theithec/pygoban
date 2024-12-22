@@ -5,8 +5,6 @@ from copy import copy
 
 from PyQt5.QtCore import pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt5.QtMultimedia import QSound  # pylint: disable=no-name-in-module
-from PyQt5.QtWidgets import QWidget  # QMessageBox, QWidget  # pylint: disable=no-name-in-module
-
 
 from .. import (  # ActionType,; GameResult,
     BaseReceiver,
@@ -16,7 +14,7 @@ from .. import (  # ActionType,; GameResult,
     Parties,
     results,
 )
-from . import BASE_DIR, GUIMode
+from . import BASE_DIR, GameUI, GUIMode
 from .barwidget import BarWidget
 from .boardwidget import BoardWidget
 from .intersections import IntersectionWidget
@@ -57,7 +55,7 @@ class GuiReceiver(BaseReceiver):
     def received_result_done(self, result: results.GameResultDone) -> None:
         print("RESULT DONE", result)
         self.game_ui.gui_mode = GUIMode.EDIT
-        self.game_ui._initial_gui_mode = GUIMode.EDIT
+        # self.game_ui._initial_gui_mode = GUIMode.EDIT
         # self.game_ui.last_turn = result
         self.game_ui.boardwidget.boardupdate_signal.emit(result)
         self.game_ui.bar.result_done_signal.emit(result)
@@ -68,7 +66,7 @@ class GuiReceiver(BaseReceiver):
         # boxes[result.color.other()].clock_stop_signal.emit(0)
 
 
-class GameWidget(QWidget):
+class GameWidget(GameUI):
     gameended_signal = pyqtSignal(str)
 
     def __init__(
@@ -87,11 +85,10 @@ class GameWidget(QWidget):
         self._deco = None
 
         self.show_analyzed_variation = False
-        self.last_turn: results.TurnDone | None = None
+        # self.last_turn: results.TurnDone | None = None
         self.stonesound = QSound(os.path.join(BASE_DIR, "gui/sounds/stone.wav"))
         self.gui_mode = gui_mode
-        self._initial_gui_mode = gui_mode
-        self.callbacks = controller.callbacks
+        # self._initial_gui_mode = gui_mode
         self.boardwidget = BoardWidget(self, controller.ruleset.boardsize)
         self.bar = BarWidget(self)
         self.ruleset = controller.ruleset
@@ -110,18 +107,15 @@ class GameWidget(QWidget):
         inter = board.intersection(iwidget.board_pos)
         iwidget._hover = False
         if is_rightclick:
-            if (
-                self.gui_mode == GUIMode.EDIT
-                and self.bar.inner.boxes["EditBox"].decogroup.checkedButton()
-            ):
-                self.callbacks.annotate(iwidget.board_pos, Color.EMPTY, next_color=self.last_turn)
+            if self.gui_mode == GUIMode.EDIT and self.bar.inner.edit_box.decogroup.checkedButton():
+                self.controller.annotate(iwidget.board_pos, Color.EMPTY)
         else:
-            decobox = self.bar.inner.boxes["EditBox"].decobox
+            decobox = self.bar.inner.edit_box.decobox
             if self.gui_mode == GUIMode.COUNT:
                 if inter.color:
-                    self.callbacks.toggle_status(iwidget.board_pos)
+                    self.controller.toggle_status(iwidget.board_pos)
             elif self.gui_mode == GUIMode.EDIT and decobox.isChecked():
-                decogroup = self.bar.inner.boxes["EditBox"].decogroup
+                decogroup = self.bar.inner.edit_box.decogroup
                 if btn := decogroup.checkedButton():
                     name = btn.text()
                     print(btn, name)
@@ -143,15 +137,11 @@ class GameWidget(QWidget):
                             val = "A"
                     print("V", val)
                     if val:
-                        self.callbacks.annotate(
-                            pos=iwidget.board_pos,
-                            name=val,
-                            next_color=self.last_turn.next_color,
-                        )
+                        self.controller.annotate(pos=iwidget.board_pos, name=val)
             else:
                 # self.boardwidget.show_analyzed_variation = False
                 if isinstance(self.parties[color := self.last_turn.next_color], GUIPlayer):
-                    self.callbacks.play(
+                    self.controller.play(
                         color=color,
                         pos=iwidget.board_pos,
                     )

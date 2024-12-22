@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-
+from typing import cast
 from . import results
 
 
-class BaseReceiver(ABC):  # ABC later
+class BaseReceiver(ABC):
 
     def __init__(self) -> None:  # type: ignore
         self.last_turn: results.TurnDone | None = None
@@ -15,7 +15,7 @@ class BaseReceiver(ABC):  # ABC later
     # def received_resign(self, result: ActionResult) -> None: ...
 
     @abstractmethod
-    def received_annotated(self, result) -> None: ...
+    def received_annotated(self, result: results.AnnotationDone) -> None: ...
 
     @abstractmethod
     def received_count(self, result: results.Counted) -> None: ...
@@ -36,23 +36,14 @@ class BaseReceiver(ABC):  # ABC later
         print("Recevived", result)
         match result.__class__:
             case results.TurnDone:
+                result = cast(results.TurnDone, result)
                 self.last_turn = result
                 self.received_turn(result)
             case results.AnnotationDone:
-                self.received_annotated(result)
+                self.received_annotated(cast(results.AnnotationDone, result))
             case results.Counted:
-                self.received_count(result)
+                self.received_count(cast(results.Counted, result))
             case results.TimeDone:
-                self.received_period_ended(result)
+                self.received_period_ended(cast(results.TimeDone, result))
             case results.GameResultDone:
-                self.received_result_done(result)
-            case _:
-                pass
-            # case AnnotatedDone:
-            #    self.received_annotated(result)
-        # self.curr_action_result = result
-        # if result.stone_result:
-        #    self.curr_stone_result = result.stone_result
-        # print("received", result)
-        # func = getattr(self, "received_" + str(result.type.name).lower())
-        # func(result)
+                self.received_result_done(cast(results.GameResultDone, result))

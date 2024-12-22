@@ -62,7 +62,10 @@ class Node:
             board.intersection(pos, color)
 
     def __str__(self):
-        return f"Stone {self.color}: {self.pos} / {len(self.path())} C[{self.annos.comment[:(min(4, len(self.annos.comment)-1))]}]"
+        return (
+            f"Stone {self.color}: {self.pos} / {len(self.path())}"
+            f"C[{self.annos.comment[:(min(4, len(self.annos.comment) - 1))]}]"
+        )
 
     def __repr__(self):
         return self.__str__()

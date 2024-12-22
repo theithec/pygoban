@@ -1,6 +1,6 @@
 # pylint: disable=invalid-name, arguments-differ
 # because qt and do_-commands and Box overloading
-from typing import TYPE_CHECKING, Any, Callable, Dict, Type, Union
+from typing import Any, Callable, Dict, Type, Union, TypeVar, cast
 
 # from PyQt5.QtCore import Qt  # , QTimer, pyqtSignal
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal  # pylint: disable=no-name-in-module
@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import (  # pylint: disable=no-name-in-module
 
 from pygoban import Color, Party, results
 
-from . import GUIMode
+from . import GUIMode, GameUI
 
 # from .chart import MyChart
 from .tree import Tree
@@ -32,10 +32,6 @@ from .tree import Tree
 
 def _(txt):
     return txt
-
-
-if TYPE_CHECKING:
-    from .gamewidget import GameWidget
 
 
 def btn_adder(
@@ -61,8 +57,9 @@ def seconds_to_str(seconds):
 
 
 class Box(QGroupBox):
-    game_ui: "GameWidget"
+    game_ui: GameUI
     name: str
+    toggle_action: QAction
 
     def __init__(self, parent: Union["Box", "BarWidget", QFrame], **kwargs):
         super().__init__(parent=parent, visible=kwargs.pop("visible", True))  # type: ignore
@@ -74,6 +71,9 @@ class Box(QGroupBox):
         self.init(**kwargs)
 
     def init(self, **kwargs):
+        raise NotImplementedError()
+
+    def update_controlls(self, *args, **kwargs):
         raise NotImplementedError()
 
 
@@ -205,7 +205,6 @@ class PlayersBox(Box):
             self.boxlayout.addWidget(box)
             box.setVisible(True)
         self.setLayout(self.boxlayout)
-        self
 
     def set_boxes(self):
         print("SET BOXES", self.last_gui_mode, self.game_ui.gui_mode)
@@ -227,14 +226,15 @@ class GameBox(Box):
 
     def init(self, **kwargs) -> None:
         layout = QHBoxLayout()
-        callbacks = self.game_ui.callbacks
+        controller = self.game_ui.controller
         self.action_mapping = {
             "Pass": self.game_ui.controller.do_pass,
-            "Resign": lambda: callbacks.set_end_result(
-                results.GameResultType.RESIGN, color=self.game_ui.last_turn.next_color
+            "Resign": lambda: controller.set_end_result(
+                results.GameResultType.RESIGN,
+                color=cast(results.TurnDone, self.game_ui.last_turn).next_color,
             ),
-            "Undo": callbacks.undo,
-            "Done": lambda: callbacks.set_end_result(results.GameResultType.COUNTED),
+            "Undo": controller.undo,
+            "Done": lambda: controller.set_end_result(results.GameResultType.COUNTED),
         }
 
         add_gamebutton = btn_adder(layout)
@@ -322,19 +322,22 @@ class CommentsBox(Box):
             self.comments.setText(stone_result.stone.annos.comment)
 
 
-class ChartBox(Box):
-    name = "ChartBox"
+# class ChartBox(Box):
+#    name = "ChartBox"
+#
+#    def init(self):  # type: ignore
+#        layout = QHBoxLayout()
+#        self.chart = MyChart()
+#        layout.addWidget(self.chart)
+#        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+#        self.setLayout(layout)
+#
+#    def update_controlls(self, result):
+#        assert self.controller.curr_action_result
+#        self.chart.add_data()
 
-    def init(self):  # type: ignore
-        layout = QHBoxLayout()
-        self.chart = MyChart()
-        layout.addWidget(self.chart)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.setLayout(layout)
-
-    def update_controlls(self, result):
-        assert self.controller.curr_action_result
-        self.chart.add_data()
+# ]
+B = TypeVar("B", bound=Box)
 
 
 class InnerWidget(QFrame):
@@ -342,19 +345,19 @@ class InnerWidget(QFrame):
         super().__init__(parent)
         self._layout = QFormLayout()
         self.game_ui = parent.game_ui
-        self.boxes: BoxesByName = {}
+        self._boxes: BoxesByName = {}
         is_edit = self.game_ui.gui_mode == GUIMode.EDIT
         pbox = PlayersBox(self, players=self.game_ui.parties)
-        self.playersbox: PlayersBox = self.add_box(pbox, vis=True)
-        self.add_box(GameBox(self), vis=not is_edit)
-        self.add_box(EditBox(self), vis=is_edit)
+        self.players_box = self.add_box(pbox, vis=True)
+        self.game_box = self.add_box(GameBox(self), vis=not is_edit)
+        self.edit_box = self.add_box(EditBox(self), vis=is_edit)
         self.add_box(CommentsBox(self), vis=is_edit)
         # self.add_box(ChartBox(self), vis=True)
         self._layout.addRow("Ruleset", QLabel("Some data"))
         self.setLayout(self._layout)
 
-    def add_box(self, box: Box, vis: bool) -> Box:
-        self.boxes[box.name] = box
+    def add_box(self, box: B, vis: bool) -> B:
+        self._boxes[box.name] = box
         self._layout.addRow(box)
         box.setVisible(vis)
         return box
@@ -377,9 +380,9 @@ class BarWidget(QFrame):
     clock_update_signal = pyqtSignal(results.TimeDone)
     result_done_signal = pyqtSignal(results.GameResultDone)
 
-    game_ui: "GameWidget"
+    game_ui: GameUI
 
-    def __init__(self, parent: "GameWidget"):
+    def __init__(self, parent: GameUI):
         self.game_ui = parent
         super().__init__(parent)
         self._layout = QFormLayout()
@@ -390,7 +393,7 @@ class BarWidget(QFrame):
         splitter = QSplitter(self)
         self.inner = InnerWidget(self)
         splitter.addWidget(self.inner)
-        self.tree = Tree(self, callback=self.game_ui.controller.callbacks.set_cursor)
+        self.tree = Tree(self, callback=self.game_ui.controller.set_cursor)
         splitter.addWidget(self.tree)
         splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setStyleSheet(
@@ -408,7 +411,6 @@ class BarWidget(QFrame):
         self.setLayout(self._layout)
 
     def update_menu(self):
-        return
         found = False
         for action in self.engines_menu.actions():
             is_connected = action.iconText() not in self.game_ui.controller.connected_engines.keys()
@@ -428,7 +430,7 @@ class BarWidget(QFrame):
         #    new_.addAction(action)  # type: ignore
         #    action.triggered.connect(callback)
         vis = menu.addMenu("Show")
-        for name, box in self.inner.boxes.items():
+        for name, box in self.inner._boxes.items():
             action = QAction(name, self)
             action.triggered.connect(self.inner.vis_action_handler(box, action))
             action.setCheckable(True)
@@ -468,13 +470,12 @@ class BarWidget(QFrame):
 
     def handle_turn_done(self, result: results.TurnDone):  # type: ignore
 
-        game_box = self.inner.boxes[GameBox.name]
+        game_box = self.inner._boxes[GameBox.name]
         assert isinstance(game_box, GameBox)
         game_box.buttons["Done"].setVisible(False)
         game_box.buttons["Resign"].setVisible(True)
 
-        players_box = self.inner.playersbox
-        assert isinstance(players_box, PlayersBox)
+        players_box = self.inner.players_box
         player_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
         for color in (Color.BLACK, Color.WHITE):
             numdead = result.total_dead[color.other()]
@@ -485,45 +486,43 @@ class BarWidget(QFrame):
         self.tree.stones_signal.emit(result.node)
         print("GUIMODE", self.game_ui.gui_mode)
         if self.game_ui.gui_mode in (GUIMode.EDIT, GUIMode.COUNT):
-            self.inner.boxes[EditBox.name].update_controlls(result)
+            self.inner.edit_box.update_controlls(result)
 
-        if self.game_ui.ruleset.timesettings and result.node.color:
-
-            players_box = self.inner.playersbox
-            assert isinstance(players_box, PlayersBox)
+        if self.game_ui.controller.ruleset.timesettings and result.node.color:
             game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
-            game_boxes[result.node.color].stop_clockdisplay()
-            game_boxes[result.node.color.other()].set_clockdisplay(result.node.annos.time_left)
+            box = cast(PlayerGameBox, game_boxes[result.node.color])
+            box.stop_clockdisplay()
+            box.set_clockdisplay(result.node.annos.time_left)
+            box = cast(PlayerGameBox, game_boxes[result.node.color.other()])
+            box.set_clockdisplay(result.node.annos.time_left)
 
     def handle_result_done(self, result: results.GameResultDone):
 
         self.tree.setEnabled(True)
-        self.inner.playersbox.set_boxes()
-        self.inner.boxes[GameBox.name].setVisible(False)
-        self.inner.boxes[EditBox.name].setVisible(True)
-        if self.game_ui.ruleset.timesettings:
-            players_box = self.inner.playersbox
-            assert isinstance(players_box, PlayersBox)
+        self.inner.players_box.set_boxes()
+        self.inner.game_box.setVisible(False)
+        self.inner.edit_box.setVisible(True)
+        if self.game_ui.controller.ruleset.timesettings:
+            players_box = self.inner.players_box
             game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
-            game_boxes[result.winner].stop_clockdisplay()
+            assert result.winner
+            box = cast(PlayerGameBox, game_boxes[result.winner])
             num = 0 if result.type == results.GameResultType.LOST_BY_TIME else None
-            print("RE", result, result.type, num)
-            game_boxes[result.winner.other()].stop_clockdisplay(seconds=num)
-            game_boxes[result.winner].stop_clockdisplay()
+            box.stop_clockdisplay(seconds=num)
+            box = cast(PlayerGameBox, game_boxes[result.winner.other()])
+            box.stop_clockdisplay(seconds=num)
 
-        self.inner.boxes[EditBox.name].update_controlls(self.game_ui.last_turn)
+        self.inner.edit_box.update_controlls(self.game_ui.last_turn)
 
     def handle_counted(self, result: results.Counted) -> None:
         self.tree.setEnabled(False)
 
-        players_box = self.inner.playersbox
-        assert isinstance(players_box, PlayersBox)
+        players_box = self.inner.players_box
 
-        if self.game_ui._initial_gui_mode == GUIMode.PLAY:
-            game_box = self.inner.boxes[GameBox.name]
-            assert isinstance(game_box, GameBox)
-            game_box.buttons["Done"].setVisible(True)
-            game_box.buttons["Resign"].setVisible(False)
+        # if self.game_ui._initial_gui_mode == GUIMode.PLAY:
+        game_box = self.inner.game_box
+        game_box.buttons["Done"].setVisible(True)
+        #     game_box.buttons["Resign"].setVisible(False)
 
         next_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
         players_box.set_boxes()
@@ -542,10 +541,10 @@ class BarWidget(QFrame):
     def handle_period_done(self, result: results.TimeDone):
         print("HANDLE", result)
 
-        players_box = self.inner.playersbox
-        assert isinstance(players_box, PlayersBox)
+        players_box = self.inner.players_box
         game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
-        game_boxes[result.color].set_clockdisplay(result.next_time)
+        box = cast(PlayerGameBox, game_boxes[result.color])
+        box.set_clockdisplay(result.next_time)
         # game_boxes[result.color.other()].stop_clockdisplay()
 
     def save_as_file(self):

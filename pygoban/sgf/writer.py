@@ -1,12 +1,11 @@
-from ..pygoban.coords import pos_to_sgf
-from pygoban import Ruleset, Node
+from pygoban import Ruleset, Node, coords
 
 
 def to_sgf(node: Node, txt="(") -> str:
     print("ST", node, txt)
     col = node.color.short() if node.color else None
     if col:
-        pos = pos_to_sgf(node.pos) if node.pos else ""
+        pos = coords.pos_to_sgf(node.pos) if node.pos else ""
         txt = f"\n;{col}[{pos}]"
     for child in node.children:
         if len(node.children) > 1:

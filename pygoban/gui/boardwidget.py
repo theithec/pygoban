@@ -63,7 +63,6 @@ class BoardWidget(QWidget):
     def update_board(self):
         print("UPD BOARD")
         self.update()
-        # self.boardupdated_signal.emit()
 
     def _resize(self):
         ins = self.intersections
@@ -91,18 +90,12 @@ class BoardWidget(QWidget):
     def calc_intersize(self, size):
         """Calc for one - use for all"""
         params = self.ins_params
-
         params.size = size
-
         params.hoshi_size = size // 5
         params.hoshi_pos = (size - params.hoshi_size) // 2
-
         params.stone_size = int(size)
-        params.stone_pos = 0  # int((self.intersize - params.stone_size) // 2)
-
         params.font_height = int(size * 0.8)
         params.font_bottom = (params.font_height - size) // 2
-
         params.small_size = params.size // 2
         params.small_pos = (size - params.small_size) // 2
 

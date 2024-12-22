@@ -282,14 +282,5 @@ def parse(sgftxt: str, defaults: Dict) -> tuple[Ruleset, Node]:
 def load(path: str) -> tuple[Ruleset, Node]:
     with open(path) as fobj:
         sgftxt = fobj.read()
-    # print("LOADED")
-    # from .writer import write
-
-    import time
-
-    start = time.time()
     ruleset, cursor = parse(sgftxt, {})
-    end = time.time()
-    print("RESET", end - start)
     return ruleset, cursor
-    # write(cursor, ruleset)

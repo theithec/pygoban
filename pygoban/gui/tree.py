@@ -15,6 +15,7 @@ from .. import Color, Node
 class StoneNode(QLabel):
     WIDTH = 38
     tree: "TreeCanvas"
+    child_index: int | None
 
     def __init__(self, parent, stone: Node):
         super().__init__(parent)
@@ -25,8 +26,12 @@ class StoneNode(QLabel):
         )
         self.setText(str(len(self.bstone.path())))
         self.setAlignment(Qt.AlignCenter)  # type: ignore
-        # assert self.bstone.parent
-        self.child_index = self.bstone.parent.children.index(self.bstone) if stone.parent else None
+        if stone.parent:
+            assert self.bstone.parent
+            self.child_index = self.bstone.parent.children.index(self.bstone)
+        else:
+            self.child_index = None
+
         self.setMinimumSize(self.WIDTH, self.WIDTH)
         self.setMaximumSize(self.WIDTH, self.WIDTH)
 

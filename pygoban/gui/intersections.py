@@ -1,7 +1,7 @@
 # pylint: disable=invalid-name, comparison-with-callable, using-constant-test
 import os
 from functools import lru_cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from PyQt5.QtCore import (  # type: ignore  # pylint: disable=no-name-in-module
     QEvent,
@@ -42,7 +42,7 @@ class IntersectionWidget(QWidget):
     def __init__(self, parent: "BoardWidget", board_pos: Pos, is_hoshi: bool):
         super().__init__(parent)
         self.board_pos: Pos = board_pos
-        self.game_ui: GameUI = parent.parent()
+        self.game_ui: GameUI = cast(GameUI, parent.parent())
         self.is_hoshi = is_hoshi
         self._is_current = None
         self._hover = False
@@ -169,7 +169,7 @@ class IntersectionWidget(QWidget):
         pen.setWidth(2)
         pen.setColor(QColor("black"))
         painter.setPen(pen)
-        params: "InsParams" = self.parent().ins_params
+        params: "InsParams" = cast("BoardWidget", self.parent()).ins_params
         analyzed_variation = last_turn.node.annos.progress.get(self.board_pos)
 
         if self.is_hoshi:

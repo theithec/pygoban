@@ -1,10 +1,12 @@
 import os
 import signal
-from enum import Enum
-from typing import Callable, Protocol
-from pygoban import results
 from dataclasses import dataclass
+from enum import Enum
+from typing import Callable
+
 from PyQt5 import QtWidgets
+
+from pygoban import GameController, Parties, results
 
 # kill with strg c
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -36,12 +38,12 @@ class InsParams:
     small_bottom: int = 0
 
 
-class GameUI(Protocol):
+class GameUI(QtWidgets.QWidget):
     gui_mode: GUIMode
-    last_turn: results.TurnDone
     show_analyzed_variation: bool
-
-    def foo(self, x, y): ...
+    controller: GameController
+    parties: Parties
+    last_turn: results.TurnDone | None = None
 
 
 class CenteredMixin:
