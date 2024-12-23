@@ -1,14 +1,13 @@
 [project]
-name = "pygoban5"
+name = "pygoban"
 version = "0.1.0"
-description = "Default template for PDM package"
+description = "Just another Go Board/ SGF Reader"
 authors = [
     {name = "Tim Heithecker", email = "tim.heithecker@gmail.com"},
 ]
 
 dependencies = [
     "PyQt5>=5.15.11",
-    #"pip>=23.3.1",
     "PyQtChart>=5.15.6",
 ]
 requires-python = ">=3.12"
@@ -19,9 +18,45 @@ license = {text = "MIT"}
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
+
+
+
+
+[dependency-groups]
+dev = [
+    "coverage",
+    "pytest",
+    "pytest-mock>=3.12.0",
+    "PyQt5-stubs>=5.15.6.0",
+    "python-lsp-server>=1.12.0",
+]
+
+[pytest]
+testpaths = "tests"
+
+[tool.pylint.format]
+max-line-length = 100
+[tool.pylint."messages control"]
+disable = [
+  "raw-checker-failed", 
+  "bad-inline-option", 
+  "locally-disabled", 
+  "file-ignored", 
+  "suppressed-message", 
+  "useless-suppression", 
+  "deprecated-pragma", 
+  "use-symbolic-message-instead", 
+  "use-implicit-booleaness-not-comparison-to-string", 
+  "use-implicit-booleaness-not-comparison-to-zero",
+  "missing-module-docstring",
+  "missing-class-docstring",
+  "missing-function-docstring"
+  
+  ]
+
 [tool.black]
 line-length = 100
-target-version = ['py310']
+target-version = ['py312']
 include = '\.pyi?$'
 exclude = '''
 (
@@ -48,28 +83,3 @@ distribution = false
 name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
-
-
-[tool.pylint.format]
-max_line_length = 100
-[dependency-groups]
-dev = [
-    "coverage",
-    "pytest",
-    "pytest-mock>=3.12.0",
-    "mypy",
-    "PyQt5-stubs>=5.15.6.0",
-    "python-lsp-server>=1.12.0",
-    "pylint>=3.3.2",
-    "black>=24.10.0",
-    "pylsp-mypy>=0.6.9",
-    "python-lsp-black>=2.0.0",
-    "python-lsp-isort>=0.1",
-    "python-lsp-server>=1.12.0",
-    "rope>=1.13.0",
-    "pylsp-rope>=0.1.17",
-]
-
-[pytest]
-testpaths = "tests"
-

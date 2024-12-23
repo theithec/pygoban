@@ -1,4 +1,4 @@
-# pylint: disable=invalid-name  # because qt
+# pylint: disable=invalid-name2  # because qt
 import os
 from itertools import permutations
 
@@ -15,7 +15,7 @@ from .. import Pos
 from . import BASE_DIR, GameUI, InsParams
 from .intersections import IntersectionWidget
 
-
+i = 9
 COORDS = [chr(i) for i in list(range(97, 117))]
 
 

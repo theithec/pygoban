@@ -1,3 +1,14 @@
 {
-    "python.createEnvironment.contentButton": "show"
+    "python.createEnvironment.contentButton": "show",
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "keyboard.dispatch": "keyCode",
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "editor.formatOnSave": true,
+    "python.missingPackage.severity": "Warning",
+    "[python]": { // Here
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true
+    }
 }

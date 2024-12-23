@@ -5,8 +5,7 @@ from enum import Enum, IntEnum
 from typing import Dict, List, Optional, Set, Tuple
 
 from . import coords, Pos
-
-
+i=3
 class Color(IntEnum):
     """The 'color' of an intersection (and of 'stone.Stone)'"""
 
