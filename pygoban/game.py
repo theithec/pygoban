@@ -122,21 +122,17 @@ class Game:
 
     def _reset(self, node: Node):
         """Reset the board to given Situation"""
-        import time
 
-        start = time.time()
         result: results.TurnDone = self.nodes.set_cursor(node)
-        end = time.time()
-        print("RESET", end - start)
         self.send_game_event(result)
 
     def undo(self):
         if parent := self.nodes.cursor.parent:
-            self._reset(parent)  # pylint: disable=protected-access
+            self._reset(parent)
 
     def start(self, receivers: list[BaseReceiver], node: Node | None = None):
         assert not self.started
-        self._start(receivers=receivers, cursor=node)  # pylint: disable=protected-access
+        self._start(receivers=receivers, cursor=node)
         self.started = True
 
     def toggle_status(self, pos: Pos) -> None:
@@ -148,7 +144,7 @@ class Game:
         for cpos in chain:
             inter = self.nodes.board.intersection(cpos)
             inter.owner = owner
-        self._count()  # pylint
+        self._count()
 
     def annotate(self, pos: Pos, name: str | Color | Marker) -> None:
         cursor = self.nodes.cursor

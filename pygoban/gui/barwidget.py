@@ -1,6 +1,6 @@
 # pylint: disable=invalid-name, arguments-differ
 # because qt and do_-commands and Box overloading
-from typing import Any, Callable, Dict, Type, Union, TypeVar, cast
+from typing import Any, Callable, Type, TypeVar, cast, Union
 
 # from PyQt5.QtCore import Qt  # , QTimer, pyqtSignal
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal  # pylint: disable=no-name-in-module
@@ -66,18 +66,15 @@ class Box(QGroupBox):
         curr: Any = parent
         while str(curr.__class__.__name__) != "GameWidget":
             curr = curr.parent()
-        self.game_ui = curr
+        self.game_ui: GameUI = curr
         self.kwargs = kwargs
         self.init(**kwargs)
 
     def init(self, **kwargs):
         raise NotImplementedError()
 
-    def update_controlls(self, *args, **kwargs):
-        raise NotImplementedError()
 
-
-BoxesByName = Dict[str, Box]
+BoxesByName = dict[str, Box]
 
 
 class _PlayerBox(Box):
@@ -133,6 +130,7 @@ class _PlayerBox(Box):
 
 class PlayerGameBox(_PlayerBox):
     timer = None
+    _seconds: int
 
     def clockdisplay_tick(self):
         self._seconds -= 1
@@ -158,7 +156,7 @@ class PlayerGameBox(_PlayerBox):
         else:
             self.clock.display("00:00")
 
-    def init(self, player: Party, **kwargs) -> None:  # type: ignore
+    def init(self, player: Party, **_kwargs) -> None:  # type: ignore
         super().init(player)
         self.clock = QLCDNumber()
         self.byoyomi_label = QLabel("")
@@ -240,10 +238,13 @@ class GameBox(Box):
         add_gamebutton = btn_adder(layout)
         self.buttons = {}
 
-        for action in self.action_mapping:
-            self.buttons[action] = add_gamebutton(action, self.action_mapping[action])
+        for action, mapping in self.action_mapping.items():
+            self.buttons[action] = add_gamebutton(action, mapping)
 
         self.setLayout(layout)
+
+    def update_controlls(self, result: results.TurnDone):
+        pass
 
 
 class EditBox(Box):
@@ -295,7 +296,7 @@ class EditBox(Box):
     def do_char(self):
         pass
 
-    def update_controlls(self, result):
+    def update_controlls(self, result: results.TurnDone):
         stone = result.node
         has_parent = bool(stone.parent)
         has_children = bool(stone.children)
@@ -317,9 +318,8 @@ class CommentsBox(Box):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setLayout(layout)
 
-    def update_controlls(self, result):
-        if stone_result := result.stone_result:
-            self.comments.setText(stone_result.stone.annos.comment)
+    def update_controlls(self, result: results.TurnDone):
+        self.comments.setText(result.node.annos.comment)
 
 
 # class ChartBox(Box):
@@ -345,7 +345,7 @@ class InnerWidget(QFrame):
         super().__init__(parent)
         self._layout = QFormLayout()
         self.game_ui = parent.game_ui
-        self._boxes: BoxesByName = {}
+        self.boxes: BoxesByName = {}
         is_edit = self.game_ui.gui_mode == GUIMode.EDIT
         pbox = PlayersBox(self, players=self.game_ui.parties)
         self.players_box = self.add_box(pbox, vis=True)
@@ -357,7 +357,7 @@ class InnerWidget(QFrame):
         self.setLayout(self._layout)
 
     def add_box(self, box: B, vis: bool) -> B:
-        self._boxes[box.name] = box
+        self.boxes[box.name] = box
         self._layout.addRow(box)
         box.setVisible(vis)
         return box
@@ -367,8 +367,8 @@ class InnerWidget(QFrame):
             checked = action.isChecked()
             box.setVisible(checked)
             if checked:
-                assert self.game_ui.curr_action_result
-                self.update_controlls(result=self.game_ui.curr_action_result)
+                assert self.game_ui.last_turn
+                box.update_controlls(result=self.game_ui.last_turn)
 
         return handle
 
@@ -430,12 +430,13 @@ class BarWidget(QFrame):
         #    new_.addAction(action)  # type: ignore
         #    action.triggered.connect(callback)
         vis = menu.addMenu("Show")
-        for name, box in self.inner._boxes.items():
+        for name, box in self.inner.boxes.items():
             action = QAction(name, self)
             action.triggered.connect(self.inner.vis_action_handler(box, action))
             action.setCheckable(True)
             box.toggle_action = action
-            vis.addAction(action)  # type: ignore
+            vis.addAction(action)
+            action.setChecked(box.isVisibleTo(self))
 
         settings_action = QAction("Settings", self)
         menu.addAction(settings_action)
@@ -470,7 +471,7 @@ class BarWidget(QFrame):
 
     def handle_turn_done(self, result: results.TurnDone):  # type: ignore
 
-        game_box = self.inner._boxes[GameBox.name]
+        game_box = self.inner.boxes[GameBox.name]
         assert isinstance(game_box, GameBox)
         game_box.buttons["Done"].setVisible(False)
         game_box.buttons["Resign"].setVisible(True)
@@ -484,7 +485,6 @@ class BarWidget(QFrame):
 
         self.tree.setEnabled(self.game_ui.gui_mode == GUIMode.EDIT)
         self.tree.stones_signal.emit(result.node)
-        print("GUIMODE", self.game_ui.gui_mode)
         if self.game_ui.gui_mode in (GUIMode.EDIT, GUIMode.COUNT):
             self.inner.edit_box.update_controlls(result)
 
@@ -512,6 +512,7 @@ class BarWidget(QFrame):
             box = cast(PlayerGameBox, game_boxes[result.winner.other()])
             box.stop_clockdisplay(seconds=num)
 
+        assert self.game_ui.last_turn
         self.inner.edit_box.update_controlls(self.game_ui.last_turn)
 
     def handle_counted(self, result: results.Counted) -> None:
