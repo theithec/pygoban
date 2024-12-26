@@ -57,7 +57,7 @@ class SettingsDialog(QDialog, CenteredMixin):
         self.tabs.addTab(widget, name)
 
     def add_row(self, layout, name, widget):
-        setting = self.settings.get(name)
+        setting = getattr(self.settings, name)
         if widget is None:
             widget = QLineEdit()
             widget.setText(str(setting))
@@ -81,23 +81,22 @@ class SettingsDialog(QDialog, CenteredMixin):
         sizewidget = self.elems["boardsize"]
         assert isinstance(sizewidget, QComboBox)
         sizewidget.addItems(("5", "9", "13", "19"))
-        index = sizewidget.findText(str(self.settings.get("boardsize")))
+        index = sizewidget.findText(str(self.settings.boardsize))
         sizewidget.setCurrentIndex(index)
         return layout
 
     def get_timelayout(self):
         layout = QFormLayout()
 
-        parts = self.settings["time"].split(":")
         names = (
-            "maintime",
+            "main_time",
             "byoyomi_time",
             "byoyomi_num",
             "byoyomi_stones",
         )
-        for name, part in zip(names, parts):
+        for name in names:
             self.add_row(layout, name, None)
-            self.elems[name].setText(part)
+            self.elems[name].setText(str(getattr(self.settings, name)))
 
         return layout
 
@@ -116,7 +115,7 @@ class SettingsDialog(QDialog, CenteredMixin):
 
         autowidget = self.elems["auto_save"]
         assert isinstance(autowidget, QCheckBox)
-        autowidget.setChecked(bool(self.settings.get("auto_save")))
+        # autowidget.setChecked(bool(self.settings.get("auto_save")))
         return layout
 
     def get_gtplayout(self):
@@ -128,7 +127,7 @@ class SettingsDialog(QDialog, CenteredMixin):
         labels.setLayout(label_layout)
         layout.addWidget((labels))
 
-        items = list(self.settings["gtp_engines"].items())
+        items = list(self.settings.gtp_engines.items())
         items.append(("", ""))
 
         for name, cmd in items:
@@ -159,7 +158,7 @@ class SettingsDialog(QDialog, CenteredMixin):
             "boardsize": "board/size",
             "komi": "board/komi",
             "handicap": "board/handicap",
-            "maintime": "clock/main",
+            "main_time": "clock/main_time",
             "byoyomi_num": "clock/byoyomi_num",
             "byoyomi_time": "clock/byoyomi_time",
             "byoyomi_stones": "clock/byoyomi_stones",
@@ -172,7 +171,7 @@ class SettingsDialog(QDialog, CenteredMixin):
             full_name = full_names.get(name, name)
             print("SAVE", name, full_name, val)
             self.qsettings.setValue(full_name, val)
-            self.settings[name] = val
+            setattr(self.settings, name, val)
 
         self.qsettings.sync()
         self.accept()

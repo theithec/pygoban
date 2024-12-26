@@ -3,7 +3,6 @@ from threading import Thread
 from .board import Marker
 from .receivers import BaseReceiver
 
-# from .results import TurnDone, Event, AnnotationDone, Counted, ColorResult
 from . import results
 from .rulesets import Counter, Ruleset, RuleViolation, ThreePasses
 from .nodescontroller import Color, Pos, Node, NodesController
@@ -14,7 +13,7 @@ class Game:
     """Represents a game of go. A 'game' is any tree of placements/passes"""
 
     nodes: NodesController
-    cursor: Node
+    # cursor: Node
 
     def __init__(
         self,
@@ -68,7 +67,9 @@ class Game:
         assert not self._started
         self._started = True
 
-        self.receivers = receivers
+        # self.receivers = receivers
+        for receiver in receivers:
+            self.add_receiver(receiver)
         if cursor:
             curr = cursor
             while curr:
@@ -121,8 +122,7 @@ class Game:
             self.send_game_event(result)
 
     def _reset(self, node: Node):
-        """Reset the board to given Situation"""
-
+        """Reset the board to given situation"""
         result: results.TurnDone = self.nodes.set_cursor(node)
         self.send_game_event(result)
 
@@ -164,25 +164,13 @@ class Game:
         self.send_game_event(action_result)
 
     def annotate_winrates(self, infos: dict) -> None:
-        raise NotImplementedError()
-        # self.nodes.cursor.annos.winrates.clear()
-        # for pos, rate in infos.items():
-        #    self.nodes.cursor.annos.winrates[pos] = rate
-        # assert (last := self.last_action_result)
-        # assert last.stone_result
-        # action_result = ActionResult(
-        #    type=ActionType.ANNOTATED,
-        #    board=self.nodes.board,
-        #    stone_result=StoneResult(
-        #        next_color=last.stone_result.next_color,
-        #        node=last.stone_result.node,
-        #    ),
-        # )
-        # self.send_game_event(action_result)
+        self.nodes.cursor.annos.winrates.clear()
+        for pos, rate in infos.items():
+            self.nodes.cursor.annos.winrates[pos] = rate
+        self.send_game_event(results.AnnotationDone())
 
     def add_receiver(self, receiver: BaseReceiver):
         if receiver not in self.receivers:
-            # receiver.game_callbacks = self
             self.receivers.append(receiver)
 
     def set_end_result(self, result_type, color: Color | None = None):
@@ -214,7 +202,12 @@ class Game:
         self.send_game_event(result)
 
     def quit(self):
-        for rec in self.receivers:
-            # rec.__del__()
+        while self.receivers:
+            rec = self.receivers.pop()
+            print("GAME -- DEL ", rec)
             del rec
-        print("END")
+        print("GAME END")
+
+    def __del__(self):
+        print("DEL GAME")
+        self.quit()

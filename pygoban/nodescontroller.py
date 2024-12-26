@@ -46,7 +46,7 @@ class NodesController:
         if not result:  # path is empty -> only root
             next_color = Color.BLACK if not self.handicap else Color.WHITE
             result = TurnDone(board=self.board, node=self.root, next_color=next_color)
-
+        result.reset = True
         return result
 
     def apply_result(self, result: TurnDone):

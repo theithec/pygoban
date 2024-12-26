@@ -1,12 +1,21 @@
 import os
+import logging
 import signal
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable
 
-from PyQt5 import QtWidgets
+from PyQt5.QtCore import QSettings  # pylint: disable=no-name-in-module
+from PyQt5.QtWidgets import (  # pylint: disable=no-name-in-module
+    QDesktopWidget,
+    QLayout,
+    QMainWindow,
+    QPushButton,
+    QWidget,
+)
 
-from pygoban import GameController, Parties, results
+from pygoban import GameController, Node, Parties, Ruleset, results, Settings, get_argparser, Game
+
 
 # kill with strg c
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -22,7 +31,7 @@ class GUIMode(Enum):
 
 @dataclass
 class InsParams:
-    """Values for all intersectionwidgets"""
+    """Shared values for all 'Intersection' widgets"""
 
     size: int = 0
     small_size: int = 0
@@ -38,7 +47,87 @@ class InsParams:
     small_bottom: int = 0
 
 
-class GameUI(QtWidgets.QWidget):
+def get_qsettings() -> QSettings:
+    def ensure(groupname: str, data: dict):
+        defaults = Settings()
+        qsettings.beginGroup(groupname)
+        for key, val in data.items():
+            if (qval := qsettings.value(key)) is None:
+                logging.debug("No value for '%s' in qsettings. Use default '%s'", key, val)
+                qsettings.setValue(key, val)
+            else:
+                logging.debug("Value for '%s' from  qsettings: '%s'", key, qval)
+        qsettings.endGroup()
+
+    qsettings = QSettings("theithec", "pygoban")
+    defaults = Settings()
+    ensure(
+        "board", {"size": defaults.boardsize, "komi": defaults.komi, "handicap": defaults.handicap}
+    )
+    ensure(
+        "clock",
+        {
+            "main_time": defaults.main_time,
+            "byoyomi_time": defaults.byoyomi_time,
+            "byoyomi_num": defaults.byoyomi_num,
+            "byoyomi_stones": defaults.byoyomi_stones,
+        },
+    )
+    ensure("players", {"black_name": "Black", "white_name": "White"})
+    ensure("gtp", {"engines": {}})
+    return qsettings
+
+
+def merged_config() -> Settings:
+    qsettings = get_qsettings()
+    parser = get_argparser()
+    argsdict = vars(parser.parse_args())
+    if argsdict["time"]:
+        parts = argsdict["time"].strip().split(":")
+        timedict = dict(zip(("main_time", "byoyomi_time", "byoyomi_num", "byoyomi_stones"), parts))
+        argsdict.update(timedict)
+    else:
+        for key in ("main_time", "byoyomi_time", "byoyomi_num", "byoyomi_stones"):
+            argsdict[key] = qsettings.value(f"clock/{key}")
+
+    argsdict["boardsize"] = int(argsdict["boardsize"] or qsettings.value("board/size"))
+    argsdict["komi"] = float(argsdict["komi"] or qsettings.value("board/komi"))
+    argsdict["handicap"] = int(argsdict["handicap"] or qsettings.value("board/handicap"))
+    argsdict["gtp_engines"] = qsettings.value("gtp/engines")
+
+    argsdict.pop("time")
+    logging.debug("Use settings %s", argsdict)
+    return Settings(**argsdict)
+
+
+class MainUI(QMainWindow):
+    settings: Settings
+
+    def add_game(
+        self, mode: GUIMode, ruleset: Ruleset, cursor: Node | None = None
+    ) -> tuple[Game, GameController]:
+        raise NotImplementedError()
+
+    def add_game_from_atomic_values(
+        self,
+        boardsize: int,
+        komi: float,
+        handicap: int,
+        black_name: str,
+        white_name: str,
+        modestr: str,
+        timestr: str,
+    ) -> tuple[Game, GameController]:
+        raise NotImplementedError()
+
+    def show_add_game_dialog(self):
+        raise NotImplementedError()
+
+    def show_edit_board_dialog(self):
+        raise NotImplementedError()
+
+
+class GameUI(QWidget):
     gui_mode: GUIMode
     show_analyzed_variation: bool
     controller: GameController
@@ -48,15 +137,15 @@ class GameUI(QtWidgets.QWidget):
 
 class CenteredMixin:
     def center(self):
-        qtRectangle = self.frameGeometry()
-        centerPoint = QtWidgets.QDesktopWidget().availableGeometry().center()
-        qtRectangle.moveCenter(centerPoint)
-        self.move(qtRectangle.topLeft())
+        qt_rectangle = self.frameGeometry()
+        center_point = QDesktopWidget().availableGeometry().center()
+        qt_rectangle.moveCenter(center_point)
+        self.move(qt_rectangle.topLeft())
 
 
-def btn_adder(layout: QtWidgets.QLayout):
+def btn_adder(layout: QLayout):
     def add_button(label: str, callback: Callable):
-        button = QtWidgets.QPushButton(label)
+        button = QPushButton(label)
         button.clicked.connect(callback)
         layout.addWidget(button)
         return button

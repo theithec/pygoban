@@ -5,6 +5,8 @@ from .board import Color, Marker
 
 
 class GameController:
+    receiver: BaseReceiver
+
     def __init__(self, game: Game) -> None:
         self.ruleset = game.ruleset
         self.__game = game
@@ -16,7 +18,7 @@ class GameController:
         return self.receiver.last_turn.node
 
     def start(self, receiver: BaseReceiver, node: Node | None = None) -> None:
-        self.receiver = receiver  #: BaseReceiver = receiver_cls(controller=self)
+        self.receiver = receiver
         self.__game.start([self.receiver], node=node)
 
     def undo(self):
@@ -70,8 +72,14 @@ class GameController:
     def annotate(self, pos: Pos, name: str | Color | Marker):
         self.__game.annotate(pos=pos, name=name)
 
+    def annotate_winrates(self, infos: dict) -> None:
+        self.__game.annotate_winrates(infos=infos)
+
     def set_end_result(self, result_type, color: Color | None = None):
         self.__game.set_end_result(result_type, color)
 
     def toggle_status(self, pos):
         self.__game.toggle_status(pos)
+
+    def add_receiver(self, receiver: BaseReceiver):
+        self.__game.add_receiver(receiver=receiver)

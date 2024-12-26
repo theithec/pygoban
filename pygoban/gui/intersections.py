@@ -39,7 +39,7 @@ def get_pixmap(status: Color) -> QPixmap | None:
 class IntersectionWidget(QWidget):
     """Visual representation of a intersection in a go board"""
 
-    def __init__(self, parent: "BoardWidget", board_pos: Pos, is_hoshi: bool):
+    def __init__(self, parent: "BoardWidget", board_pos: Pos, is_hoshi: bool) -> None:
         super().__init__(parent)
         self.board_pos: Pos = board_pos
         self.game_ui: GameUI = cast(GameUI, parent.parent())
@@ -49,11 +49,11 @@ class IntersectionWidget(QWidget):
         self.installEventFilter(self)
         self.inter: Intersection | None = None
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         self.game_ui.inter_clicked(self, is_rightclick=event.button() == Qt.RightButton)
         self._hover = False
 
-    def draw_number(self, painter, params):
+    def draw_number(self, painter, params) -> None:
         self.draw_char(str(len(self.node.annos.numbers)), painter, params)
 
     def draw_char(self, txt, painter, params, color=None):
@@ -72,15 +72,15 @@ class IntersectionWidget(QWidget):
         font.setPixelSize(int(params.size / (len(info[0]) / 1.4)))
         fwidth = 4
         perc = float(info[0])
-        val = perc * 2.5
-        green = int(val)
-        red = int(255 - val)
-        blue = 255 - abs(red - green)  # 2*455 - red - green)  # int(abs(125 - val / 2))  # int(red)
+        val = int(perc * 2.55)
+        red = 255 - val
+        green = val // 1
+        blue = 0
         painter.setBrush(QColor(red, green, blue))
         painter.drawEllipse(fwidth, fwidth, params.size - (fwidth * 2), params.size - (fwidth * 2))
-        fg = QColor(
-            abs(int(122 - (red * 0.3))), abs(122 - green), (abs(122 - blue))
-        )  # abs(122 - blue)))
+        # luminace = float(0.2126 * red + 0.7152 * green + 0.0722 * blue)
+        fg = QColor("black" if perc > 25 else "white")
+        # fg = QColor.black if luminace > 70 else QColor.white
         font = painter.font()
         txt = info[0]
         font.setPixelSize(int(params.size / (len(txt) / 1.4)))
@@ -300,7 +300,7 @@ class IntersectionWidget(QWidget):
             ):
                 self._hover = True
                 if analyzed_variation_stones:
-                    color = self.controller.curr_action_result.next_color
+                    color = self.game_ui.last_turn.next_color
                     for index, pos in enumerate(analyzed_variation_stones):
                         last_turn.node.annos.progress[pos] = index + 1, color
                         color = Color.WHITE if color == Color.BLACK else Color.BLACK

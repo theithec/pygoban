@@ -6,7 +6,8 @@ from copy import copy
 from PyQt5.QtCore import pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt5.QtMultimedia import QSound  # pylint: disable=no-name-in-module
 
-from .. import (  # ActionType,; GameResult,
+from PyQt5.QtGui import QCloseEvent  # pylint: disable=no-name-in-module
+from .. import (
     BaseReceiver,
     Color,
     GameController,
@@ -14,14 +15,11 @@ from .. import (  # ActionType,; GameResult,
     Parties,
     results,
 )
-from . import BASE_DIR, GameUI, GUIMode
+from . import BASE_DIR, GameUI, GUIMode, MainUI
 from .barwidget import BarWidget
 from .boardwidget import BoardWidget
 from .intersections import IntersectionWidget
 from .players import GUIPlayer
-
-# if TYPE_CHECKING:
-#    from .mainwindow import MainWindow
 
 
 class GuiReceiver(BaseReceiver):
@@ -30,8 +28,6 @@ class GuiReceiver(BaseReceiver):
         self.game_ui: "GameWidget" = game_ui
 
     def received_turn(self, result: results.TurnDone) -> None:
-
-        # self.game_ui.gui_mode = self.game_ui._initial_gui_mode
         self.game_ui.last_turn = result
         self.game_ui.boardwidget.update()
         self.game_ui.bar.turn_done_signal.emit(result)
@@ -73,22 +69,19 @@ class GameWidget(GameUI):
         self,
         parties: Parties,
         gui_mode: GUIMode,
-        parent,  # "MainWindow",
+        parent: MainUI,
         controller: GameController,
         # gtp_conns: dict,
     ) -> None:
-        super().__init__(  # pylint: disable=unexpected-keyword-arg
-            parent=parent,  # type:ignore
-        )
+        super().__init__(parent=parent)
         self.parties = parties
+        self.main_ui = parent
         self.controller = controller
         self._deco = None
 
         self.show_analyzed_variation = False
-        # self.last_turn: results.TurnDone | None = None
         self.stonesound = QSound(os.path.join(BASE_DIR, "gui/sounds/stone.wav"))
         self.gui_mode = gui_mode
-        # self._initial_gui_mode = gui_mode
         self.boardwidget = BoardWidget(self, controller.ruleset.boardsize)
         self.bar = BarWidget(self)
         self.ruleset = controller.ruleset
@@ -146,12 +139,12 @@ class GameWidget(GameUI):
                         pos=iwidget.board_pos,
                     )
 
-    def open_as_new(self):
+    def open_as_new(self) -> None:
         ruleset = copy(self.ruleset)
-        assert self.curr_action_result
-        cpy = self.curr_action_result.stone.as_copy()
-        self.controller._add_game(
-            mode=GUIMode.EDIT.value,
+        assert self.last_turn
+        cpy = self.last_turn.node.as_copy()
+        self.main_ui.add_game(
+            mode=GUIMode.EDIT,
             ruleset=ruleset,
             cursor=cpy,
         )
@@ -170,6 +163,9 @@ class GameWidget(GameUI):
             left += width - MAX_WIDTH  # / 2
             width = MAX_WIDTH  # - mindim
         self.bar.setGeometry(left, 0, width, height)
-
-        # self.bar.inner.setMinimumWidth(180)
         self.boardwidget.resize(mindim, mindim)
+
+    def closeEvent(self, event: QCloseEvent) -> None:  # pylint: disable=invalid-name
+        print("CLOSE GAMEWINDOW")
+        del self.controller
+        return super().closeEvent(event)

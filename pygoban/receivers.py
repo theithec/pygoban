@@ -33,7 +33,6 @@ class BaseReceiver(ABC):
     # def received_lost_by_time(self, result: ActionResult) -> None: ...
 
     def receive_game_event(self, result: results.Event) -> None:
-        print("Recevived", result)
         match result.__class__:
             case results.TurnDone:
                 result = cast(results.TurnDone, result)

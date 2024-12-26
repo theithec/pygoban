@@ -21,8 +21,6 @@ class Annotations:
 
 
 class Node:
-    children: List["Node"]
-
     def __init__(
         self,
         color: Color,

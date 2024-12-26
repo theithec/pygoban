@@ -24,6 +24,7 @@ class TurnDone(Event):
     libs: Set[Pos] = field(default_factory=set)
     total_dead: Dict[Color, int] = field(default_factory=lambda: {Color.BLACK: 0, Color.WHITE: 0})
     ko: Pos | None = None
+    reset: bool = False
 
 
 @dataclass
