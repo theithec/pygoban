@@ -12,8 +12,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QPushButton,
     QWidget,
 )
-from PyQt6.QtGui import QScreen
-
+from PyQt6.QtGui import QScreen  # pylint: disable=no-name-in-module
 from pygoban import GameController, Node, Parties, Ruleset, results, Settings, get_argparser, Game
 
 
@@ -49,7 +48,6 @@ class InsParams:
 
 def get_qsettings() -> QSettings:
     def ensure(groupname: str, data: dict):
-        defaults = Settings()
         qsettings.beginGroup(groupname)
         for key, val in data.items():
             if (qval := qsettings.value(key)) is None:
@@ -105,7 +103,7 @@ class MainUI(QMainWindow):
 
     def add_game(
         self, mode: GUIMode, ruleset: Ruleset, cursor: Node | None = None
-    ) -> tuple[Game, GameController]:
+    ) -> GameController:
         raise NotImplementedError()
 
     def add_game_from_atomic_values(
@@ -117,7 +115,7 @@ class MainUI(QMainWindow):
         white_name: str,
         modestr: str,
         timestr: str,
-    ) -> tuple[Game, GameController]:
+    ) -> GameController:
         raise NotImplementedError()
 
     def show_add_game_dialog(self):
@@ -128,11 +126,15 @@ class MainUI(QMainWindow):
 
 
 class GameUI(QWidget):
+    main_ui: MainUI
     gui_mode: GUIMode
     show_analyzed_variation: bool
     controller: GameController
     parties: Parties
     last_turn: results.TurnDone | None = None
+
+    def open_as_new(self):
+        raise NotImplementedError()
 
 
 class CenteredMixin:

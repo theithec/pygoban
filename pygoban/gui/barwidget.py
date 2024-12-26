@@ -1,7 +1,7 @@
 # pylint: disable=invalid-name, arguments-differ
 # because qt and do_-commands and Box overloading
 from typing import Any, Callable, Type, TypeVar, cast, Union
-
+from copy import copy
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QButtonGroup,
@@ -21,7 +21,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
 )
 from PyQt6.QtGui import QAction  # pylint: disable=no-name-in-module
 
-from pygoban import Color, Party, results
+from pygoban import Color, Party, results, gtp
 
 from . import GUIMode, GameUI
 
@@ -421,15 +421,15 @@ class BarWidget(QFrame):
 
     def get_menu(self) -> QMenu:
         menu = QMenu(self)
-        # new_ = menu.addMenu("New")
-        # for name, callback in (
-        #    (_("New Game"), self.parent().show_add_game_dialog),
-        #    (_("Edit Board"), self.controller.parent().show_edit_board_dialog),
-        # ):
-        #    action = QAction(name, self)
-        #    new_.addAction(action)  # type: ignore
-        #    action.triggered.connect(callback)
-        vis = menu.addMenu("Show")
+        new_ = menu.addMenu("New")
+        for name, callback in (
+            (_("New Game"), self.game_ui.main_ui.show_add_game_dialog),
+            (_("Edit Board"), self.game_ui.main_ui.show_edit_board_dialog),
+        ):
+            action = QAction(name, self)
+            new_.addAction(action)  # type: ignore
+            action.triggered.connect(callback)
+        vis = cast(QMenu, menu.addMenu("Show"))
         for name, box in self.inner.boxes.items():
             action = QAction(name, self)
             action.triggered.connect(self.inner.vis_action_handler(box, action))
@@ -449,23 +449,34 @@ class BarWidget(QFrame):
         save_action = QAction("Save", self)
         save_action.triggered.connect(self.save_as_file)
         menu.addAction(save_action)
-        self.engines_menu = menu.addMenu("Engines")
+        self.engines_menu = cast(QMenu, menu.addMenu("Engines"))
 
         def mk_handler(name, cmd, key):
             def handler():
-                self.game_ui.connect_engine(name, cmd, key)
+                print("handle", cmd, key)
+                gtpctrl, created = self.game_ui.controller.add_controller(
+                    gtp.GTPController, cmd_line=cmd, actions=[key]
+                )
+                if not created:
+                    gtpctrl.set_action(key, True)
+                self.game_ui.controller.add_receiver(gtpctrl)
+                if self.game_ui.last_turn:
+                    cpy = copy(self.game_ui.last_turn)
+                    cpy.reset = True
+                    gtpctrl.receive_game_event(cpy)
 
             return handler
 
-        # for name in self.controller.controller.settings["gtp_engines"].keys():
-        #    engine_menu = self.engines_menu.addMenu(name)
+        engines = self.game_ui.main_ui.settings.gtp_engines
+        for name in engines.keys():
+            engine_menu = cast(QMenu, self.engines_menu.addMenu(name))
 
-        #    cmd = self.controller.controller.settings["gtp_engines"][name]
-        #    for key in ("analyze", Color.BLACK.name, Color.WHITE.name):
-        #        action = QAction(key, self)
-        #        action.triggered.connect(mk_handler(name, cmd, key))
-        #        engine_menu.addAction(action)
-        #    self.engines_menu.addMenu(engine_menu)
+            cmd = engines[name]
+            for key in ("analyze", Color.BLACK, Color.WHITE):
+                action = QAction(str(key), self)
+                action.triggered.connect(mk_handler(name, cmd, key))
+                engine_menu.addAction(action)
+            self.engines_menu.addMenu(engine_menu)
 
         return menu
 

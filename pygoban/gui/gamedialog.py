@@ -92,18 +92,22 @@ class NewGameBaseDialog(QDialog):
             modestr=self.GUI_MODE.value,
             timestr=timestr,
         )
-        game, controller = self.manager.add_game_from_atomic_values(**data)
+        controller = self.manager.add_game_from_atomic_values(**data)
         if self.SHOW_PLAYER_TYPE:
             for color in (Color.BLACK, Color.WHITE):
                 txt = self.for_player[color]["type"].currentText()
                 if txt != "human":
                     cmd = self.manager.settings.gtp_engines[txt]
-                    gtpctrl = gtp.GTPController(cmd_line=cmd, game=game)
-                    gtpctrl.set_action(color, True)
-                    assert controller.receiver.last_turn
-                    gtpctrl.receive_game_event(controller.receiver.last_turn)
-                    controller.add_receiver(gtpctrl)
-                    data[color.name.lower() + "_engine"] = txt
+                    gtpctrl, created = controller.add_controller(
+                        cls=gtp.GTPController, cmd_line=cmd, actions=[color]
+                    )
+                    if created:
+                        assert controller.receiver.last_turn
+                        gtpctrl.receive_game_event(controller.receiver.last_turn)
+                        controller.add_receiver(gtpctrl)
+                        data[color.name.lower() + "_engine"] = txt
+                    else:
+                        gtpctrl.set_action(color, True)
 
         self.close()
 

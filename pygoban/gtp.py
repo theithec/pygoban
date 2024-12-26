@@ -5,6 +5,7 @@ import re
 import subprocess
 import threading
 import time
+from collections.abc import Iterable
 
 from .coords import gtp_coord_to_pos, pos_to_gtp_coord
 from .receivers import BaseReceiver
@@ -29,7 +30,7 @@ class GTPException(Exception):
 
 
 class GTPController(BaseReceiver, GameController):
-    def __init__(self, cmd_line: str, game: Game, *args, **kwargs):
+    def __init__(self, cmd_line: str, game: Game, actions: Iterable[str] | None = None):
         BaseReceiver.__init__(self)
         GameController.__init__(self, game=game)
         self.process = self.get_process(cmd_line)
@@ -37,6 +38,11 @@ class GTPController(BaseReceiver, GameController):
         self.is_running = True
         self.actions: set[str] = set()
         self.is_analyzing = False
+        if actions:
+            for action in actions:
+                self.set_action(action, True)
+        print("START LOOP", self)
+        self.got_turn = False
         thread = threading.Thread(target=self.loop, args=tuple())
         thread.start()
 
@@ -140,6 +146,7 @@ class GTPController(BaseReceiver, GameController):
     def received_turn(self, result: results.TurnDone) -> None:
         if result.reset:
             self.is_resetting = True
+            self.got_turn = False
             self.do_cmd(cmd="clear_board")
             self.do_cmd(f"boardsize {self.ruleset.boardsize}")
             komi = self.ruleset.komi
@@ -164,13 +171,16 @@ class GTPController(BaseReceiver, GameController):
                 if node.pos:
                     coord = pos_to_gtp_coord(node.pos, boardsize=self.ruleset.boardsize)
                     self.do_cmd(cmd=f"play {node.color.name} {coord}")
-        is_undo = result.reset and result.node.pos
+        is_undo = result.reset and result.node.pos and self.got_turn
+        print("REC", is_undo, self.got_turn, result, self.actions)
         if result.next_color in self.actions and not is_undo:
             self.do_cmd(f"genmove {result.next_color}")
 
         if "analyze" in self.actions:  # and not self.is_analyzing:
             self.is_analyzing = True
             self.do_cmd(f"kata-analyze {result.next_color.name} 100")
+
+        self.got_turn = True
 
     def received_annotated(self, result: results.AnnotationDone) -> None: ...
 

@@ -1,7 +1,10 @@
+from typing import Type, TypeVar
 from .game import Game, Node
 from .receivers import BaseReceiver
 from .pos import Pos
 from .board import Color, Marker
+
+G = TypeVar("G", bound="GameController")
 
 
 class GameController:
@@ -10,6 +13,7 @@ class GameController:
     def __init__(self, game: Game) -> None:
         self.ruleset = game.ruleset
         self.__game = game
+        self._subs: dict[Type[G], G] = {}
         self.delete_requested = False
 
     @property
@@ -83,3 +87,11 @@ class GameController:
 
     def add_receiver(self, receiver: BaseReceiver):
         self.__game.add_receiver(receiver=receiver)
+
+    def add_controller(self, cls: Type[G], **kwargs) -> tuple[G, bool]:
+        created = False
+        if cls not in self._subs:
+            ctrl = cls(game=self.__game, **kwargs)
+            self._subs[cls] = ctrl
+            created = True
+        return self._subs[cls], created

@@ -54,7 +54,7 @@ class MainWindow(MainUI):
 
     def add_game(
         self, mode: GUIMode, ruleset: Ruleset, cursor: Node | None = None
-    ) -> tuple[Game, GameController]:
+    ) -> GameController:
         game = Game(ruleset=ruleset)
         gamecontroller = GameController(game=game)
         parties = {
@@ -72,7 +72,7 @@ class MainWindow(MainUI):
         if self.startwidget.isVisible():
             self.close_tab(0)
         self.tabs.setCurrentWidget(gamewidget)
-        return game, gamecontroller
+        return gamecontroller
 
     def add_game_from_atomic_values(
         self,
@@ -83,7 +83,7 @@ class MainWindow(MainUI):
         white_name: str,
         modestr: str,
         timestr: str,
-    ) -> tuple[Game, GameController]:
+    ) -> GameController:
         mode: GUIMode = GUIMode[modestr]
         info = GameInfo(names={Color.BLACK: black_name, Color.WHITE: white_name})
         if timestr:
@@ -99,7 +99,7 @@ class MainWindow(MainUI):
         ruleset, cursor = reader.load(path)
         self.add_game(mode=GUIMode.EDIT, ruleset=ruleset, cursor=cursor)
 
-    def closeEvent(self, a0: QCloseEvent) -> None:  # pylint: disable=invalid-name
+    def closeEvent(self, event: QCloseEvent | None) -> None:  # pylint: disable=invalid-name
         for index in range(self.tabs.count()):
             self.close_tab(index)
-        return super().closeEvent(a0)
+        return super().closeEvent(event)
