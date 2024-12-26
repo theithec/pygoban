@@ -26,6 +26,13 @@ from .players import GUIPlayer
 class GuiReceiver(BaseReceiver):
     def __init__(self, game_ui: "GameWidget"):
         super().__init__()
+        self.events = {
+            results.TurnDone,
+            results.AnnotationDone,
+            results.ColorResult,
+            results.Counted,
+            results.GameResultDone,
+        }
         self.game_ui: "GameWidget" = game_ui
 
     def received_turn(self, result: results.TurnDone) -> None:
@@ -167,7 +174,6 @@ class GameWidget(GameUI):
         self.bar.setGeometry(left, 0, width, height)
         self.boardwidget.resize(mindim, mindim)
 
-    def closeEvent(self, event: QCloseEvent) -> None:  # pylint: disable=invalid-name
-        print("CLOSE GAMEWINDOW")
-        del self.controller
+    def closeEvent(self, event: QCloseEvent | None) -> None:  # pylint: disable=invalid-name
+        self.controller.quit()
         return super().closeEvent(event)

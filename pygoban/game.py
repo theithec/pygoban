@@ -43,6 +43,8 @@ class Game:
     def send_game_event(self, result: results.Event):
         """Send the event to all registered recivers"""
         for receiver in self.receivers:
+            if not result.__class__ in receiver.events:
+                continue
             thread = Thread(target=receiver.receive_game_event, args=(result,))
             self._event_threads.append(thread)
             thread.start()
@@ -200,14 +202,3 @@ class Game:
 
         result = results.GameResultDone(winner=winner, msg=msg, type=result_type)
         self.send_game_event(result)
-
-    def quit(self):
-        while self.receivers:
-            rec = self.receivers.pop()
-            print("GAME -- DEL ", rec)
-            del rec
-        print("GAME END")
-
-    def __del__(self):
-        print("DEL GAME")
-        self.quit()

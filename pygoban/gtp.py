@@ -33,6 +33,10 @@ class GTPController(BaseReceiver, GameController):
     def __init__(self, cmd_line: str, game: Game, actions: Iterable[str] | None = None):
         BaseReceiver.__init__(self)
         GameController.__init__(self, game=game)
+        self.events = {
+            results.TurnDone,
+            results.GameResultDone,
+        }
         self.process = self.get_process(cmd_line)
         self.is_resetting = False
         self.is_running = True
@@ -127,7 +131,8 @@ class GTPController(BaseReceiver, GameController):
         self.annotate_winrates(infos)
         self.is_analyzing = False
 
-    def __del__(self, *_args):
+    def quit(self):
+        self.do_cmd("quit")
         self.is_running = False
         print("DEL engine", self.is_running)
         try:

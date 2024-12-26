@@ -1,36 +1,27 @@
-from abc import ABC, abstractmethod
-from typing import cast
+from typing import cast, Type
 from . import results
 
 
-class BaseReceiver(ABC):
+class BaseReceiver:
 
     def __init__(self) -> None:  # type: ignore
         self.last_turn: results.TurnDone | None = None
+        self.events: set[Type[results.Event]] = []
 
-    @abstractmethod
-    def received_turn(self, result: results.TurnDone) -> None: ...
+    def received_turn(self, result: results.TurnDone) -> None:
+        raise NotImplementedError()
 
-    # @abstractmethod
-    # def received_resign(self, result: ActionResult) -> None: ...
+    def received_annotated(self, result: results.AnnotationDone) -> None:
+        raise NotImplementedError()
 
-    @abstractmethod
-    def received_annotated(self, result: results.AnnotationDone) -> None: ...
+    def received_count(self, result: results.Counted) -> None:
+        raise NotImplementedError()
 
-    @abstractmethod
-    def received_count(self, result: results.Counted) -> None: ...
+    def received_period_ended(self, result: results.TimeDone) -> None:
+        raise NotImplementedError()
 
-    # @abstractmethod
-    # def received_count_done(self, result: ActionResult) -> None: ...
-
-    @abstractmethod
-    def received_period_ended(self, result: results.TimeDone) -> None: ...
-
-    @abstractmethod
-    def received_result_done(self, result: results.GameResultDone) -> None: ...
-
-    # @abstractmethod
-    # def received_lost_by_time(self, result: ActionResult) -> None: ...
+    def received_result_done(self, result: results.GameResultDone) -> None:
+        raise NotImplementedError()
 
     def receive_game_event(self, result: results.Event) -> None:
         match result.__class__:

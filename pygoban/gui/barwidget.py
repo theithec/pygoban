@@ -453,7 +453,6 @@ class BarWidget(QFrame):
 
         def mk_handler(name, cmd, key):
             def handler():
-                print("handle", cmd, key)
                 gtpctrl, created = self.game_ui.controller.add_controller(
                     gtp.GTPController, cmd_line=cmd, actions=[key]
                 )

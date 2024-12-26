@@ -95,3 +95,7 @@ class GameController:
             self._subs[cls] = ctrl
             created = True
         return self._subs[cls], created
+
+    def quit(self):
+        for ctrl in self._subs.values():
+            ctrl.quit()
