@@ -1,8 +1,8 @@
 # pylint: disable=invalid-name
 # because qt
-from PyQt5.QtCore import QPoint, Qt, pyqtSignal  # pylint: disable=no-name-in-module
-from PyQt5.QtGui import QColor, QPainter, QPen  # pylint: disable=no-name-in-module
-from PyQt5.QtWidgets import (  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import QPoint, Qt, pyqtSignal  # pylint: disable=no-name-in-module
+from PyQt6.QtGui import QColor, QPainter, QPen, QColorConstants  # pylint: disable=no-name-in-module
+from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QLabel,
     QScrollArea,
     QSizePolicy,
@@ -25,7 +25,7 @@ class StoneNode(QLabel):
             "QLabel { color: %s }" % ("white" if self.bstone.color == Color.BLACK else "black")
         )
         self.setText(str(len(self.bstone.path())))
-        self.setAlignment(Qt.AlignCenter)  # type: ignore
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         if stone.parent:
             assert self.bstone.parent
             self.child_index = self.bstone.parent.children.index(self.bstone)
@@ -39,11 +39,11 @@ class StoneNode(QLabel):
         painter = QPainter()
         painter.begin(self)
         if self.bstone.color == Color.BLACK:
-            qcol = Qt.black  # type: ignore
+            qcol = QColorConstants.Black  # type: ignore
         elif self.bstone.color == Color.WHITE:
-            qcol = Qt.white  # type: ignore
+            qcol = QColorConstants.White  # type: ignore
         else:
-            qcol = Qt.gray  # type: ignore
+            qcol = QColorConstants.Gray  # type: ignore
 
         pen = QPen()
         pen.setBrush(qcol)
@@ -55,11 +55,11 @@ class StoneNode(QLabel):
         painter.end()
         painter = QPainter()
         painter.begin(self)
-        painter.setPen(Qt.gray)  # type: ignore
+        painter.setPen(QColorConstants.Gray)  # type: ignore
 
         if self is self.tree.tree_cursor:
             pen = QPen()
-            pen.setBrush(Qt.red)  # type: ignore
+            pen.setBrush(QColorConstants.Red)  # type: ignore
             pen.setCosmetic(True)
             painter.setPen(pen)
         painter.drawEllipse(self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2)
@@ -124,7 +124,8 @@ class TreeCanvas(QWidget):
 
     def paintEvent(self, event):
         super().paintEvent(event)
-        visible_rect = self.visibleRegion().rects()[0]
+        # visible_rect = self.visibleRegion().rects()[0]
+        visible_rect = self.visibleRegion().boundingRect()
         width = visible_rect.width()
         assert self.tree_cursor
         path = self.tree_cursor.bstone.path()
@@ -144,11 +145,11 @@ class TreeCanvas(QWidget):
                             half = width - half
                         painter.fillRect(0, pos.y(), half, height, Qt.darkGray)
                         painter.fillRect(half, pos.y(), width - half, height, Qt.lightGray)
-                    painter.setBrush(Qt.white)
-                    painter.setPen(Qt.white)
+                    painter.setBrush(QColorConstants.White)
+                    painter.setPen(QColorConstants.White)
                 else:
-                    painter.setBrush(QColor(Qt.gray))
-                    painter.setPen(QColor(Qt.gray))
+                    painter.setBrush(QColorConstants.Gray)
+                    painter.setPen(QColorConstants.Gray)
                 painter.drawLine(
                     centered(pos),
                     centered(self.nodes[id(node.bstone.parent)].pos()),
@@ -175,15 +176,19 @@ class Tree(QScrollArea):
     def __init__(self, parent, callback):
         super().__init__(parent)
         self.canvas = TreeCanvas(parent=None, callback=callback)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setWidget(self.canvas)
         self.stones_signal.connect(self.set_cursor)
         self.setMinimumWidth(int(StoneNode.WIDTH * 1.5))
+        self.horizontalScrollBar().valueChanged.connect(self.moved)
+
+    def moved(self, *args, **kwargs):
+        pass  # print("Moved", args, kwargs)
 
     def set_cursor(self, stone: Node):
         if node := self.canvas.nodes.get(id(stone)):
             self.canvas.tree_cursor = node
-            self.canvas.repaint()
+            # self.canvas.repaint()
             # TODO check auto
             # self.ensureWidgetVisible(self.canvas.tree_cursor)
         else:
@@ -191,3 +196,4 @@ class Tree(QScrollArea):
         self.ensureWidgetVisible(self.canvas.tree_cursor)
         if self.canvas.tree_cursor.bstone != stone:
             self.set_cursor(stone)
+        self.canvas.repaint()

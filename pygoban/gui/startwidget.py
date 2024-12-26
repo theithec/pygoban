@@ -1,15 +1,15 @@
 from typing import TYPE_CHECKING, Callable
 
 #  from OpenGL import GL  # noqa: F401
-from PyQt5.QtWidgets import (  # pylint: disable=no-name-in-module
+from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QLayout,
     QFrame,
     QPushButton,
     QGridLayout,
     QVBoxLayout,
 )
-from PyQt5.QtCore import QCoreApplication, QMetaObject  # pylint: disable=no-name-in-module
-from PyQt5.QtGui import QIcon  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import QCoreApplication, QMetaObject  # pylint: disable=no-name-in-module
+from PyQt6.QtGui import QIcon  # pylint: disable=no-name-in-module
 
 from . import BASE_DIR, CenteredMixin, MainUI
 from .filedialog import filename_from_opendialog

@@ -2,14 +2,14 @@
 import os
 from itertools import permutations
 
-from PyQt5.QtCore import QRect, Qt, pyqtSignal  # pylint: disable=no-name-in-module
-from PyQt5.QtGui import (  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import QRect, Qt, pyqtSignal  # pylint: disable=no-name-in-module
+from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
     # QBrush,
     QColor,
     QImage,
     QPainter,
 )
-from PyQt5.QtWidgets import QWidget  # pylint: disable=no-name-in-module
+from PyQt6.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
 from .. import Pos
 from . import BASE_DIR, GameUI, InsParams
@@ -117,7 +117,9 @@ class BoardWidget(QWidget):
         pen.setWidth(1)  # if pos in (0, self.boardsize - 1) else 2)
         painter.setPen(pen)
         painter.setRenderHints(
-            painter.Antialiasing | painter.SmoothPixmapTransform | painter.HighQualityAntialiasing
+            # painter.Antialiasing | painter.SmoothPixmapTransform | painter.HighQualityAntialiasing
+            QPainter.RenderHint.Antialiasing
+            | QPainter.RenderHint.SmoothPixmapTransform
         )
         hdist = dist // 2
         # painter.fillRect(
@@ -139,23 +141,23 @@ class BoardWidget(QWidget):
                 letter_index += 1
             painter.drawText(
                 QRect(x, int(self.borderspace / 4), dist, dist),
-                Qt.AlignCenter,
+                Qt.AlignmentFlag.AlignCenter,
                 COORDS[letter_index].upper(),
             )
             painter.drawText(
                 QRect(x, int(self.borderspace) + self.boardwidth, dist, dist),
-                Qt.AlignCenter,
+                Qt.AlignmentFlag.AlignCenter,
                 COORDS[letter_index].upper(),
             )
 
             painter.drawText(
                 QRect(int(self.borderspace / 4), x, dist, dist),
-                Qt.AlignCenter,
+                Qt.AlignmentFlag.AlignCenter,
                 str(self.boardsize - pos),
             )
             painter.drawText(
                 QRect(int(self.borderspace) + self.boardwidth, x, dist, dist),
-                Qt.AlignCenter,
+                Qt.AlignmentFlag.AlignCenter,
                 str(self.boardsize - pos),
             )
 

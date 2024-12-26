@@ -3,12 +3,12 @@ import os
 from functools import lru_cache
 from typing import TYPE_CHECKING, cast
 
-from PyQt5.QtCore import (  # type: ignore  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import (  # type: ignore  # pylint: disable=no-name-in-module
     QEvent,
     QRect,
     Qt,
 )
-from PyQt5.QtGui import (  # pylint: disable=no-name-in-module
+from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
     QColor,
     QImage,
     QPainter,
@@ -16,7 +16,7 @@ from PyQt5.QtGui import (  # pylint: disable=no-name-in-module
     QPen,
     QPixmap,
 )
-from PyQt5.QtWidgets import QWidget  # pylint: disable=no-name-in-module
+from PyQt6.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
 from .. import Color, Intersection, Pos
 from . import BASE_DIR, GUIMode, GameUI
@@ -50,7 +50,7 @@ class IntersectionWidget(QWidget):
         self.inter: Intersection | None = None
 
     def mousePressEvent(self, event) -> None:
-        self.game_ui.inter_clicked(self, is_rightclick=event.button() == Qt.RightButton)
+        self.game_ui.inter_clicked(self, is_rightclick=event.button() == Qt.MouseButton.RightButton)
         self._hover = False
 
     def draw_number(self, painter, params) -> None:
@@ -163,7 +163,7 @@ class IntersectionWidget(QWidget):
         painter = QPainter()
         painter.begin(self)
         painter.setRenderHints(
-            painter.Antialiasing | painter.SmoothPixmapTransform | painter.HighQualityAntialiasing
+            painter.RenderHint.Antialiasing | painter.RenderHint.SmoothPixmapTransform
         )
         pen = painter.pen()
         pen.setWidth(2)
@@ -293,11 +293,8 @@ class IntersectionWidget(QWidget):
             if rate := last_turn.node.annos.winrates.get(self.board_pos):
                 analyzed_variation_stones = rate[2]
 
-            if (
-                type_
-                == QEvent.Enter
+            if type_ == QEvent.Type.Enter:
                 # and not self.controller.bar.inner.boxes["EditBox"].decogroup.checkedButton()
-            ):
                 self._hover = True
                 if analyzed_variation_stones:
                     color = self.game_ui.last_turn.next_color
@@ -314,7 +311,7 @@ class IntersectionWidget(QWidget):
 
             if (
                 type_
-                == QEvent.Leave
+                == QEvent.Type.Leave
                 # and not self.controller.bar.inner.boxes["EditBox"].decogroup.checkedButton()
             ):
                 # if not self.controller.is_annotating:

@@ -5,14 +5,14 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Callable
 
-from PyQt5.QtCore import QSettings  # pylint: disable=no-name-in-module
-from PyQt5.QtWidgets import (  # pylint: disable=no-name-in-module
-    QDesktopWidget,
+from PyQt6.QtCore import QSettings  # pylint: disable=no-name-in-module
+from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QLayout,
     QMainWindow,
     QPushButton,
     QWidget,
 )
+from PyQt6.QtGui import QScreen
 
 from pygoban import GameController, Node, Parties, Ruleset, results, Settings, get_argparser, Game
 
@@ -138,7 +138,7 @@ class GameUI(QWidget):
 class CenteredMixin:
     def center(self):
         qt_rectangle = self.frameGeometry()
-        center_point = QDesktopWidget().availableGeometry().center()
+        center_point = self.screen().availableGeometry().center()
         qt_rectangle.moveCenter(center_point)
         self.move(qt_rectangle.topLeft())
 

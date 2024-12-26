@@ -1,5 +1,5 @@
-from PyQt5.QtCore import QCoreApplication  # pylint: disable=no-name-in-module
-from PyQt5.QtWidgets import QWidget, QFileDialog  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import QCoreApplication  # pylint: disable=no-name-in-module
+from PyQt6.QtWidgets import QWidget, QFileDialog  # pylint: disable=no-name-in-module
 
 
 def filename_from_opendialog(parent: QWidget):

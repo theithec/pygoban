@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication  # pylint: disable=no-name-in-module
+from PyQt6.QtWidgets import QApplication  # pylint: disable=no-name-in-module
 
 
 from .mainwindow import MainWindow

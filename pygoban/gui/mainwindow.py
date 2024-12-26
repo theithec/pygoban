@@ -1,5 +1,5 @@
-from PyQt5.QtGui import QCloseEvent, QIcon  # pylint: disable=no-name-in-module
-from PyQt5.QtWidgets import QTabWidget  # pylint: disable=no-name-in-module
+from PyQt6.QtGui import QCloseEvent, QIcon  # pylint: disable=no-name-in-module
+from PyQt6.QtWidgets import QTabWidget  # pylint: disable=no-name-in-module
 
 
 from pygoban import Color, Ruleset, TimeSettings, Game, GameInfo, Node, GameController, Parties

@@ -3,10 +3,11 @@
 import os
 from copy import copy
 
-from PyQt5.QtCore import pyqtSignal  # pylint: disable=no-name-in-module
-from PyQt5.QtMultimedia import QSound  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import pyqtSignal, QUrl  # pylint: disable=no-name-in-module
 
-from PyQt5.QtGui import QCloseEvent  # pylint: disable=no-name-in-module
+# from PyQt6.QtMultimedia import QSound  # pylint: disable=no-name-in-module
+from PyQt6.QtMultimedia import QSoundEffect
+from PyQt6.QtGui import QCloseEvent  # pylint: disable=no-name-in-module
 from .. import (
     BaseReceiver,
     Color,
@@ -80,7 +81,8 @@ class GameWidget(GameUI):
         self._deco = None
 
         self.show_analyzed_variation = False
-        self.stonesound = QSound(os.path.join(BASE_DIR, "gui/sounds/stone.wav"))
+        self.stonesound = QSoundEffect()
+        self.stonesound.setSource(QUrl(os.path.join(BASE_DIR, "gui/sounds/stone.wav")))
         self.gui_mode = gui_mode
         self.boardwidget = BoardWidget(self, controller.ruleset.boardsize)
         self.bar = BarWidget(self)

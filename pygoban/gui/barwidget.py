@@ -2,10 +2,8 @@
 # because qt and do_-commands and Box overloading
 from typing import Any, Callable, Type, TypeVar, cast, Union
 
-# from PyQt5.QtCore import Qt  # , QTimer, pyqtSignal
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal  # pylint: disable=no-name-in-module
-from PyQt5.QtWidgets import (  # pylint: disable=no-name-in-module
-    QAction,
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal  # pylint: disable=no-name-in-module
+from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QButtonGroup,
     QFormLayout,
     QFrame,
@@ -21,6 +19,7 @@ from PyQt5.QtWidgets import (  # pylint: disable=no-name-in-module
     QSplitter,
     QTextEdit,
 )
+from PyQt6.QtGui import QAction  # pylint: disable=no-name-in-module
 
 from pygoban import Color, Party, results
 
@@ -315,7 +314,7 @@ class CommentsBox(Box):
         layout = QHBoxLayout()
         self.comments = QTextEdit()
         layout.addWidget(self.comments)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setLayout(layout)
 
     def update_controlls(self, result: results.TurnDone):
@@ -388,14 +387,15 @@ class BarWidget(QFrame):
         self._layout = QFormLayout()
         self.btn_settings = QPushButton("\u2630")
         settings_layout = QHBoxLayout()
-        settings_layout.addWidget(self.btn_settings, 0, Qt.AlignRight)
+        # label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        settings_layout.addWidget(self.btn_settings, 0, Qt.AlignmentFlag.AlignRight)
         self._layout.addRow(settings_layout)
         splitter = QSplitter(self)
         self.inner = InnerWidget(self)
         splitter.addWidget(self.inner)
         self.tree = Tree(self, callback=self.game_ui.controller.set_cursor)
         splitter.addWidget(self.tree)
-        splitter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        splitter.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setStyleSheet(
             """BarWidget {
                padding-right: 20px;

@@ -1,8 +1,8 @@
 from collections import defaultdict
 
-from PyQt5.QtCore import QCoreApplication  # pylint: disable=no-name-in-module
-from PyQt5.QtCore import QSettings  # pylint: disable=no-name-in-module
-from PyQt5.QtWidgets import (  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import QCoreApplication  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import QSettings  # pylint: disable=no-name-in-module
+from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QCheckBox,
     QComboBox,
     QDialog,
