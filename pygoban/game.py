@@ -45,9 +45,10 @@ class Game:
         for receiver in self.receivers:
             if not result.__class__ in receiver.events:
                 continue
-            thread = Thread(target=receiver.receive_game_event, args=(result,))
-            self._event_threads.append(thread)
-            thread.start()
+            receiver.receive_game_event(result)
+            # thread = Thread(target=receiver.receive_game_event, args=(result,))
+            # self._event_threads.append(thread)
+            # thread.start()
 
     def period_ended(self, color: Color, next_time: int):
         """A time period ended"""
