@@ -128,10 +128,12 @@ class MainUI(QMainWindow):
 class GameUI(QWidget):
     main_ui: MainUI
     gui_mode: GUIMode
+    initial_gui_mode: GUIMode
     show_analyzed_variation: bool
     controller: GameController
     parties: Parties
     last_turn: results.TurnDone | None = None
+    annotation_type: str = ""
 
     def open_as_new(self):
         raise NotImplementedError()

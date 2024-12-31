@@ -3,7 +3,7 @@
 from copy import copy
 from typing import TypeVar, cast
 
-from PyQt6.QtCore import Qt, pyqtSignal  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import Qt  # , pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt6.QtGui import QAction  # pylint: disable=no-name-in-module
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QFormLayout,
@@ -14,21 +14,20 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QPushButton,
     QSizePolicy,
     QSplitter,
+    QWidget,
 )
 
-from pygoban import Color, gtp, results
+from pygoban import Color, gtp  # , results
 
 from . import GameUI, GUIMode
 from .boxes import (
     Box,
     BoxesByName,
     CommentsBox,
-    EditBox,
-    GameBox,
-    PlayerCountBox,
-    PlayerGameBox,
-    PlayersBox,
 )
+from .boxes.controlsbox import ControllsBox
+
+from .boxes.playersbox import PlayersBox
 
 # from .chart import MyChart
 from .tree import Tree
@@ -41,7 +40,7 @@ def _(txt):
 B = TypeVar("B", bound=Box)
 
 
-class InnerWidget(QFrame):
+class BoxesWidget(QWidget):
     def __init__(self, parent: "BarWidget"):
         super().__init__(parent)
         self._layout = QFormLayout()
@@ -50,8 +49,9 @@ class InnerWidget(QFrame):
         is_edit = self.game_ui.gui_mode == GUIMode.EDIT
         pbox = PlayersBox(self, players=self.game_ui.parties)
         self.players_box = self.add_box(pbox, vis=True)
-        self.game_box = self.add_box(GameBox(self), vis=not is_edit)
-        self.edit_box = self.add_box(EditBox(self), vis=is_edit)
+        # self.game_box = self.add_box(GameBox(self), vis=not is_edit)
+        # self.edit_box = self.add_box(EditBox(self), vis=is_edit)
+        self.ctrl_box = self.add_box(ControllsBox(self), vis=True)
         self.add_box(CommentsBox(self), vis=is_edit)
         self._layout.addRow("Ruleset", QLabel("Some data"))
         self.setLayout(self._layout)
@@ -74,15 +74,11 @@ class InnerWidget(QFrame):
 
 
 class BarWidget(QFrame):
-    turn_done_signal = pyqtSignal(results.TurnDone)
-    counted_signal = pyqtSignal(results.Counted)
-    clock_stop_signal = pyqtSignal(int)
-    clock_update_signal = pyqtSignal(results.TimeDone)
-    result_done_signal = pyqtSignal(results.GameResultDone)
 
     game_ui: GameUI
 
     def __init__(self, parent: GameUI):
+
         self.game_ui = parent
         super().__init__(parent)
         self._layout = QFormLayout()
@@ -92,7 +88,7 @@ class BarWidget(QFrame):
         settings_layout.addWidget(self.btn_settings, 0, Qt.AlignmentFlag.AlignRight)
         self._layout.addRow(settings_layout)
         splitter = QSplitter(self)
-        self.inner = InnerWidget(self)
+        self.inner = BoxesWidget(self)
         splitter.addWidget(self.inner)
         self.tree = Tree(self, callback=self.game_ui.controller.set_cursor)
         splitter.addWidget(self.tree)
@@ -104,10 +100,10 @@ class BarWidget(QFrame):
             """
         )
         self.btn_settings.setMenu(self.get_menu())
-        self.turn_done_signal.connect(self.handle_turn_done)
-        self.counted_signal.connect(self.handle_counted)
-        self.clock_update_signal.connect(self.handle_period_done)
-        self.result_done_signal.connect(self.handle_result_done)
+        # self.turn_done_signal.connect(self.handle_turn_done)
+        # self.counted_signal.connect(self.handle_counted)
+        # self.clock_update_signal.connect(self.handle_period_done)
+        # self.result_done_signal.connect(self.handle_result_done)
         self._layout.addRow(splitter)
         self.setLayout(self._layout)
 
@@ -152,7 +148,7 @@ class BarWidget(QFrame):
         menu.addAction(save_action)
         self.engines_menu = cast(QMenu, menu.addMenu("Engines"))
 
-        def mk_handler(name, cmd, key):
+        def mk_handler(cmd, key):
             def handler():
                 gtpctrl, created = self.game_ui.controller.add_controller(
                     gtp.GTPController, cmd_line=cmd, actions=[key]
@@ -174,90 +170,11 @@ class BarWidget(QFrame):
             cmd = engines[name]
             for key in ("analyze", Color.BLACK, Color.WHITE):
                 action = QAction(str(key), self)
-                action.triggered.connect(mk_handler(name, cmd, key))
+                action.triggered.connect(mk_handler(cmd, key))
                 engine_menu.addAction(action)
             self.engines_menu.addMenu(engine_menu)
 
         return menu
-
-    def handle_turn_done(self, result: results.TurnDone):  # type: ignore
-
-        game_box = self.inner.boxes[GameBox.name]
-        assert isinstance(game_box, GameBox)
-        game_box.buttons["Done"].setVisible(False)
-        game_box.buttons["Resign"].setVisible(True)
-
-        players_box = self.inner.players_box
-        player_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
-        for color in (Color.BLACK, Color.WHITE):
-            numdead = result.total_dead[color.other()]
-            player_box = player_boxes[color]
-            player_box.prisoners_label.setText(str(numdead))
-
-        self.tree.setEnabled(self.game_ui.gui_mode == GUIMode.EDIT)
-        self.tree.stones_signal.emit(result.node)
-        if self.game_ui.gui_mode in (GUIMode.EDIT, GUIMode.COUNT):
-            self.inner.edit_box.update_controlls(result)
-
-        if self.game_ui.controller.ruleset.timesettings and result.node.color:
-            game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
-            box = cast(PlayerGameBox, game_boxes[result.node.color])
-            box.stop_clockdisplay()
-            box.set_clockdisplay(result.node.annos.time_left)
-            box = cast(PlayerGameBox, game_boxes[result.node.color.other()])
-            box.set_clockdisplay(result.node.annos.time_left)
-
-    def handle_result_done(self, result: results.GameResultDone):
-
-        self.tree.setEnabled(True)
-        self.inner.players_box.set_boxes()
-        self.inner.game_box.setVisible(False)
-        self.inner.edit_box.setVisible(True)
-        if self.game_ui.controller.ruleset.timesettings:
-            players_box = self.inner.players_box
-            game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
-            assert result.winner
-            box = cast(PlayerGameBox, game_boxes[result.winner])
-            num = 0 if result.type == results.GameResultType.LOST_BY_TIME else None
-            box.stop_clockdisplay(seconds=num)
-            box = cast(PlayerGameBox, game_boxes[result.winner.other()])
-            box.stop_clockdisplay(seconds=num)
-
-        assert self.game_ui.last_turn
-        self.inner.edit_box.update_controlls(self.game_ui.last_turn)
-
-    def handle_counted(self, result: results.Counted) -> None:
-        self.tree.setEnabled(False)
-
-        players_box = self.inner.players_box
-
-        # if self.game_ui._initial_gui_mode == GUIMode.PLAY:
-        game_box = self.inner.game_box
-        game_box.buttons["Done"].setVisible(True)
-        #     game_box.buttons["Resign"].setVisible(False)
-
-        next_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
-        players_box.set_boxes()
-        for color in (Color.BLACK, Color.WHITE):
-            box = next_boxes[color]
-            assert isinstance(box, PlayerCountBox), box
-            playerresult = result[color]
-            numcoords = len(playerresult.coords)
-            box.libs_label.setText(str(numcoords))
-            box.prisoners_label.setText(str(playerresult.killed))
-            total = playerresult.total()
-            if box.player.color == Color.WHITE:
-                total += self.game_ui.controller.ruleset.komi
-            box.total_label.setText(str(total))
-
-    def handle_period_done(self, result: results.TimeDone):
-        print("HANDLE", result)
-
-        players_box = self.inner.players_box
-        game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
-        box = cast(PlayerGameBox, game_boxes[result.color])
-        box.set_clockdisplay(result.next_time)
-        # game_boxes[result.color.other()].stop_clockdisplay()
 
     def save_as_file(self):
         pass
@@ -269,3 +186,91 @@ class BarWidget(QFrame):
     #    with open(name, "w") as fileobj:
     #        fileobj.write(self.gamewidget.to_sgf())
     #        fileobj.write(self.gamewidget.to_sgf())
+
+
+# class DDD:
+#    turn_done_signal = pyqtSignal(results.TurnDone)
+#    counted_signal = pyqtSignal(results.Counted)
+#    clock_stop_signal = pyqtSignal(int)
+#    clock_update_signal = pyqtSignal(results.TimeDone)
+#    result_done_signal = pyqtSignal(results.GameResultDone)
+#
+#    def handle_turn_done(self, result: results.TurnDone):  # type: ignore
+#
+#        game_box = self.inner.boxes[GameBox.name]
+#        assert isinstance(game_box, GameBox)
+#        game_box.buttons["Done"].setVisible(False)
+#        game_box.buttons["Resign"].setVisible(True)
+#
+#        players_box = self.inner.players_box
+#        player_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
+#        for color in (Color.BLACK, Color.WHITE):
+#            numdead = result.total_dead[color.other()]
+#            player_box = player_boxes[color]
+#            player_box.prisoners_label.setText(str(numdead))
+#
+#        self.tree.setEnabled(self.game_ui.gui_mode == GUIMode.EDIT)
+#        self.tree.stones_signal.emit(result.node)
+#        if self.game_ui.gui_mode in (GUIMode.EDIT, GUIMode.COUNT):
+#            self.inner.edit_box.update_controlls(result)
+#
+#        if self.game_ui.controller.ruleset.timesettings and result.node.color:
+#            game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
+#            box = cast(PlayerGameBox, game_boxes[result.node.color])
+#            box.stop_clockdisplay()
+#            box.set_clockdisplay(result.node.annos.time_left)
+#            box = cast(PlayerGameBox, game_boxes[result.node.color.other()])
+#            box.set_clockdisplay(result.node.annos.time_left)
+#
+#    def handle_result_done(self, result: results.GameResultDone):
+#
+#        self.tree.setEnabled(True)
+#        self.inner.players_box.set_boxes()
+#        self.inner.game_box.setVisible(False)
+#        self.inner.edit_box.setVisible(True)
+#        if self.game_ui.controller.ruleset.timesettings:
+#            players_box = self.inner.players_box
+#            game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
+#            assert result.winner
+#            box = cast(PlayerGameBox, game_boxes[result.winner])
+#            num = 0 if result.type == results.GameResultType.LOST_BY_TIME else None
+#            box.stop_clockdisplay(seconds=num)
+#            box = cast(PlayerGameBox, game_boxes[result.winner.other()])
+#            box.stop_clockdisplay(seconds=num)
+#
+#        assert self.game_ui.last_turn
+#        self.inner.edit_box.update_controlls(self.game_ui.last_turn)
+#
+#    def handle_counted(self, result: results.Counted) -> None:
+#        self.tree.setEnabled(False)
+#
+#        players_box = self.inner.players_box
+#
+#        # if self.game_ui._initial_gui_mode == GUIMode.PLAY:
+#        game_box = self.inner.game_box
+#        game_box.buttons["Done"].setVisible(True)
+#        #     game_box.buttons["Resign"].setVisible(False)
+#
+#        next_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
+#        players_box.set_boxes()
+#        for color in (Color.BLACK, Color.WHITE):
+#            box = next_boxes[color]
+#            assert isinstance(box, PlayerCountBox), box
+#            playerresult = result[color]
+#            numcoords = len(playerresult.coords)
+#            box.libs_label.setText(str(numcoords))
+#            box.prisoners_label.setText(str(playerresult.killed))
+#            total = playerresult.total()
+#            if box.player.color == Color.WHITE:
+#                total += self.game_ui.controller.ruleset.komi
+#            box.total_label.setText(str(total))
+#
+#    def handle_period_done(self, result: results.TimeDone):
+#        print("HANDLE", result)
+#
+#        players_box = self.inner.players_box
+#        game_boxes = players_box.boxes_by_mode[self.game_ui.gui_mode]
+#        box = cast(PlayerGameBox, game_boxes[result.color])
+#        box.set_clockdisplay(result.next_time)
+#        # game_boxes[result.color.other()].stop_clockdisplay()
+#

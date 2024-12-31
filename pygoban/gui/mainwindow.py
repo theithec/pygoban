@@ -61,6 +61,7 @@ class MainWindow(MainUI):
             color.name.lower(): GUIPlayer(color=color, name=ruleset.info.names[color], members=[])
             for color in (Color.BLACK, Color.WHITE)
         }
+
         gamewidget = GameWidget(
             parent=self,
             parties=Parties(**parties),

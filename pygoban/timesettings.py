@@ -52,17 +52,16 @@ class PlayerTime:
         self.timer = None
         self.last_started = None
         self.ended = False
-        self.first_time = True
+        # self.first_time = True
 
     def start_timer(self):
+        print("START TIMER", self.color, self)
         assert not self.ended
         self.last_started = datetime.now()
         self.timer = _PlayerTimer(self.nexttime(), self.period_ended)
-        if self.first_time:
-            self.first_time = False
-            self.game.period_ended(self.color, self.nexttime())
 
     def cancel_timer(self):
+        print("CANCEL TIMER", self.color, self)
         if self.timer:
             self.timer.cancel()
         if self.last_started:
@@ -104,4 +103,4 @@ class PlayerTime:
                 self.byoyomi.stones_left = self.byoyomi_stones_org
 
     def __str__(self):
-        return f"{self.maintime}:{self.byoyomi.left}x{self.byoyomi.time}"
+        return f"Timer {self.color} "

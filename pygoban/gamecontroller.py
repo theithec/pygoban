@@ -25,8 +25,8 @@ class GameController:
         self.receiver = receiver
         self.__game.start([self.receiver], node=node)
 
-    def undo(self):
-        self.__game.undo()
+    # def undo(self):
+    #     self.__game.undo()
 
     def play(self, color: Color, pos: Pos | None = None):
         self.__game._place(color=color, pos=pos)  # pylint: disable=protected-access
@@ -99,3 +99,4 @@ class GameController:
     def quit(self):
         for ctrl in self._subs.values():
             ctrl.quit()
+        self.__game.quit()

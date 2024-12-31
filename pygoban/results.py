@@ -19,7 +19,9 @@ class TurnDone(Event):
     board: Board
     node: "Node"
     next_color: Color
-    next_time: int | None = None
+    next_time: dict[Color, int | None] = field(
+        default_factory=lambda: {Color.BLACK: None, Color.WHITE: None}
+    )
     killed: Set[Pos] = field(default_factory=set)
     libs: Set[Pos] = field(default_factory=set)
     total_dead: Dict[Color, int] = field(default_factory=lambda: {Color.BLACK: 0, Color.WHITE: 0})

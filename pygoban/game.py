@@ -10,17 +10,16 @@ from .timesettings import PlayerTime
 
 
 class Game:
-    """Represents a game of go. A 'game' is any tree of placements/passes"""
+    """A game of go (or just some moves/annotations)"""
 
     nodes: NodesController
-    # cursor: Node
 
     def __init__(
         self,
-        ruleset: Ruleset,  # | None = None,
+        ruleset: Ruleset,
         nodes: NodesController | None = None,
     ):
-        self.ruleset = ruleset  # if ruleset else Ruleset(boardsize=9, komi=0.5, handicap=0)
+        self.ruleset = ruleset
         if not nodes:
             nodes = NodesController(self.ruleset.boardsize, self.ruleset.handicap)
         assert nodes
@@ -42,9 +41,11 @@ class Game:
 
     def send_game_event(self, result: results.Event):
         """Send the event to all registered recivers"""
+        print("WITH", result)
         for receiver in self.receivers:
             if not result.__class__ in receiver.events:
                 continue
+            print("CALL", receiver)
             receiver.receive_game_event(result)
             # thread = Thread(target=receiver.receive_game_event, args=(result,))
             # self._event_threads.append(thread)
@@ -71,6 +72,8 @@ class Game:
         self._started = True
 
         # self.receivers = receivers
+        receiver = receivers.pop(0)
+        self.receivers.insert(0, receiver)
         for receiver in receivers:
             self.add_receiver(receiver)
         if cursor:
@@ -86,6 +89,11 @@ class Game:
         result = self.nodes.set_cursor(cursor)
         if self.timers:
             self.timers[result.next_color].start_timer()
+            result.node.annos.time_left = {
+                Color.BLACK: self.timers[result.next_color].nexttime(),
+                Color.WHITE: self.timers[result.next_color.other()].nexttime(),
+            }
+
         self.send_game_event(result)
 
     def _count(self):
@@ -115,13 +123,14 @@ class Game:
         else:
             self.nodes.apply_result(result)
             if self.timers:
-                own_timer = self.timers[result.next_color]
-                if not own_timer.ended:
-                    own_timer.start_timer()
-                self.nodes.cursor.annos.time_left = own_timer.nexttime()
-                other_timer = self.timers[result.next_color.other()]
+                next_next_time = self.timers[color].cancel_timer()
+                curr_next_time = (other_timer := self.timers[color.other()]).nexttime()
+                self.nodes.cursor.annos.time_left = {
+                    color.other(): curr_next_time,
+                    color: next_next_time,
+                }
                 if not other_timer.ended:
-                    other_timer.cancel_timer()
+                    other_timer.start_timer()
             self.send_game_event(result)
 
     def _reset(self, node: Node):
@@ -129,9 +138,9 @@ class Game:
         result: results.TurnDone = self.nodes.set_cursor(node)
         self.send_game_event(result)
 
-    def undo(self):
-        if parent := self.nodes.cursor.parent:
-            self._reset(parent)
+    # def undo(self):
+    #    if parent := self.nodes.cursor.parent:
+    #        self._reset(parent)
 
     def start(self, receivers: list[BaseReceiver], node: Node | None = None):
         assert not self.started
@@ -203,3 +212,8 @@ class Game:
 
         result = results.GameResultDone(winner=winner, msg=msg, type=result_type)
         self.send_game_event(result)
+
+    def quit(self):
+        if self.timers:
+            for timer in self.timers.values():
+                timer.cancel_timer()

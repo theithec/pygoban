@@ -38,7 +38,7 @@ class GuiReceiver(BaseReceiver):
     def received_turn(self, result: results.TurnDone) -> None:
         self.game_ui.last_turn = result
         self.game_ui.boardwidget.update()
-        self.game_ui.bar.turn_done_signal.emit(result)
+        # self.game_ui.bar.turn_done_signal.emit(result)
 
     def received_resign(self, result) -> None:
         pass
@@ -49,25 +49,26 @@ class GuiReceiver(BaseReceiver):
 
     def received_count(self, result) -> None:
         self.game_ui.gui_mode = GUIMode.COUNT
-        self.game_ui.boardwidget.boardupdate_signal.emit(result)
+        # self.game_ui.boardwidget.boardupdate_signal.emit(result)
+        self.game_ui.boardwidget.update()
         assert self.game_ui.last_turn
         for color in (Color.BLACK, Color.WHITE):
             result[color].killed += self.game_ui.last_turn.total_dead[color.other()]
         print("rN", result)
-        self.game_ui.bar.counted_signal.emit(result)
+        # self.game_ui.bar.counted_signal.emit(result)
 
     def received_result_done(self, result: results.GameResultDone) -> None:
         print("RESULT DONE", result)
         self.game_ui.gui_mode = GUIMode.EDIT
         # self.game_ui._initial_gui_mode = GUIMode.EDIT
         # self.game_ui.last_turn = result
-        self.game_ui.boardwidget.boardupdate_signal.emit(result)
-        self.game_ui.bar.result_done_signal.emit(result)
+        # self.game_ui.boardwidget.boardupdate_signal.emit(result)
+        self.game_ui.boardwidget.update()
+        # self.game_ui.bar.result_done_signal.emit(result)
 
     def received_period_ended(self, result: results.TimeDone) -> None:
-        self.game_ui.bar.clock_update_signal.emit(result)
-        # boxes[result.color].clock_update_signal.emit(result)
-        # boxes[result.color.other()].clock_stop_signal.emit(0)
+        pass
+        # self.game_ui.bar.clock_update_signal.emit(result)
 
 
 class GameWidget(GameUI):
@@ -91,6 +92,7 @@ class GameWidget(GameUI):
         self.stonesound = QSoundEffect()
         self.stonesound.setSource(QUrl(os.path.join(BASE_DIR, "gui/sounds/stone.wav")))
         self.gui_mode = gui_mode
+        self.initial_gui_mode = gui_mode
         self.boardwidget = BoardWidget(self, controller.ruleset.boardsize)
         self.bar = BarWidget(self)
         self.ruleset = controller.ruleset
@@ -103,43 +105,42 @@ class GameWidget(GameUI):
     #    msg.setText(reason)
     #    msg.show()
 
+    # @propery
+    # def gui_mode(self):
+    #    return s
+
     def inter_clicked(self, iwidget: IntersectionWidget, is_rightclick: bool):
         assert self.last_turn
         board = self.last_turn.board
         inter = board.intersection(iwidget.board_pos)
         iwidget._hover = False
         if is_rightclick:
-            if self.gui_mode == GUIMode.EDIT and self.bar.inner.edit_box.decogroup.checkedButton():
+            if self.gui_mode == GUIMode.EDIT and self.annotation_type:
                 self.controller.annotate(iwidget.board_pos, Color.EMPTY)
         else:
-            decobox = self.bar.inner.edit_box.decobox
             if self.gui_mode == GUIMode.COUNT:
                 if inter.color:
                     self.controller.toggle_status(iwidget.board_pos)
-            elif self.gui_mode == GUIMode.EDIT and decobox.isChecked():
-                decogroup = self.bar.inner.edit_box.decogroup
-                if btn := decogroup.checkedButton():
-                    name = btn.text()
-                    print(btn, name)
-                    val: str | Marker | Color | None = None
-                    match name:
-                        case "B":
-                            val = Color.BLACK
-                        case "W":
-                            val = Color.WHITE
-                        case "TR":
-                            val = Marker.TR
-                        case "SQ":
-                            val = Marker.SQ
-                        case "CR":
-                            val = Marker.CR
-                        case "1":
-                            val = "1"
-                        case "A":
-                            val = "A"
-                    print("V", val)
-                    if val:
-                        self.controller.annotate(pos=iwidget.board_pos, name=val)
+            elif self.annotation_type:
+                val: str | Marker | Color | None = None
+                match self.annotation_type:
+                    case "B":
+                        val = Color.BLACK
+                    case "W":
+                        val = Color.WHITE
+                    case "TR":
+                        val = Marker.TR
+                    case "SQ":
+                        val = Marker.SQ
+                    case "CR":
+                        val = Marker.CR
+                    case "1":
+                        val = "1"
+                    case "A":
+                        val = "A"
+                print("V", val)
+                if val:
+                    self.controller.annotate(pos=iwidget.board_pos, name=val)
             else:
                 # self.boardwidget.show_analyzed_variation = False
                 if isinstance(self.parties[color := self.last_turn.next_color], GUIPlayer):
@@ -147,6 +148,10 @@ class GameWidget(GameUI):
                         color=color,
                         pos=iwidget.board_pos,
                     )
+
+    def undo(self):
+        self.gui_mode = self.initial_gui_mode
+        self.controller.do_prev_stone()
 
     def open_as_new(self) -> None:
         ruleset = copy(self.ruleset)

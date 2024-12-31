@@ -31,7 +31,7 @@ HOSHIS = {
 
 
 class BoardWidget(QWidget):
-    boardupdate_signal = pyqtSignal(object)
+    # boardupdate_signal = pyqtSignal(object)
 
     def __init__(self, parent: GameUI, boardsize: int):
         super().__init__(parent=parent)
@@ -42,7 +42,7 @@ class BoardWidget(QWidget):
         self.intersections: dict[Pos, IntersectionWidget] = {}
         self.boardrange = range(self.boardsize)
         self.current_in = None  # "Active" intersection
-        self.boardupdate_signal.connect(self.update_board)
+        # self.boardupdate_signal.connect(self.update_board)
         self.ins_params = InsParams()
         self.create_intersections()
         self.setAutoFillBackground(True)
@@ -60,9 +60,9 @@ class BoardWidget(QWidget):
 
         self._resize()
 
-    def update_board(self):
-        print("UPD BOARD")
-        self.update()
+    # def update_board(self):
+    #    print("UPD BOARD")
+    #    self.update()
 
     def _resize(self):
         ins = self.intersections

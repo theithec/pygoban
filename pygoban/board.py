@@ -5,7 +5,10 @@ from enum import Enum, IntEnum
 from typing import Dict, List, Optional, Set, Tuple
 
 from . import coords, Pos
-i=3
+
+i = 3
+
+
 class Color(IntEnum):
     """The 'color' of an intersection (and of 'stone.Stone)'"""
 
@@ -143,7 +146,6 @@ class Board(List[List[Intersection]]):
             elif findkilled:
                 result = self._analyze(axy, findkilled=False)
                 enemylibs = result[3]
-                # print("enemylibs", enemylibs)
                 if not enemylibs:
                     enemygroup = result[1]
                     killed |= enemygroup

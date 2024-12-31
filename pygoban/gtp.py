@@ -45,7 +45,7 @@ class GTPController(BaseReceiver, GameController):
         if actions:
             for action in actions:
                 self.set_action(action, True)
-        print("START LOOP", self)
+        logging.debug("START GTP LOOP %s", self)
         self.got_turn = False
         thread = threading.Thread(target=self.loop, args=tuple())
         thread.start()
@@ -89,7 +89,6 @@ class GTPController(BaseReceiver, GameController):
             # time.sleep(0.01)
             if not self.is_running:
                 break
-        print("LOOP DONE")
 
     def get_process(self, cmd_line: str):
         return subprocess.Popen(
@@ -103,7 +102,7 @@ class GTPController(BaseReceiver, GameController):
     def do_cmd(self, cmd: str):
         try:
             assert self.process.stdin
-            print("DO CMD", cmd)
+            logging.debug("GTP CMD: %s", cmd)
             self.process.stdin.write(f"{cmd}\r\n".encode())
             self.process.stdin.flush()
         except (BrokenPipeError, ValueError):
@@ -134,13 +133,12 @@ class GTPController(BaseReceiver, GameController):
     def quit(self):
         self.do_cmd("quit")
         self.is_running = False
-        print("DEL engine", self.is_running)
         try:
             outs, errs = self.process.communicate(timeout=15)
         except subprocess.TimeoutExpired:
             self.process.kill()
             outs, errs = self.process.communicate()
-        print("END", outs, errs)
+        logging.debug("KILLED %s - out: '%s', errs: '%s'", self, outs, errs)
 
     def set_action(self, action, status):
         if status:
@@ -177,7 +175,6 @@ class GTPController(BaseReceiver, GameController):
                     coord = pos_to_gtp_coord(node.pos, boardsize=self.ruleset.boardsize)
                     self.do_cmd(cmd=f"play {node.color.name} {coord}")
         is_undo = result.reset and result.node.pos and self.got_turn
-        print("REC", is_undo, self.got_turn, result, self.actions)
         if result.next_color in self.actions and not is_undo:
             self.do_cmd(f"genmove {result.next_color}")
 
