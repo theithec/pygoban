@@ -66,9 +66,9 @@ class BoxesWidget(QWidget):
         def handle():
             checked = action.isChecked()
             box.setVisible(checked)
-            if checked:
-                assert self.game_ui.last_turn
-                box.update_controlls(result=self.game_ui.last_turn)
+            # if checked:
+            #    assert self.game_ui.last_turn
+            #    box.update_controlls(result=self.game_ui.last_turn)
 
         return handle
 
@@ -91,6 +91,7 @@ class BarWidget(QFrame):
         self.inner = BoxesWidget(self)
         splitter.addWidget(self.inner)
         self.tree = Tree(self, callback=self.game_ui.controller.set_cursor)
+        self.game_ui.controller.add_receiver(self.tree)
         splitter.addWidget(self.tree)
         splitter.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setStyleSheet(

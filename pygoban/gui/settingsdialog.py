@@ -150,9 +150,7 @@ class SettingsDialog(QDialog, CenteredMixin):
             name = fields[0].text()
             if name:
                 gtp_engines[name] = fields[1].text()
-        print("SAVE", gtp_engines)
         self.qsettings.setValue("gtp/engines", gtp_engines)
-        print("K", handled.keys())
 
         full_names = {
             "boardsize": "board/size",

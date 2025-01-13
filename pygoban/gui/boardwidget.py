@@ -60,10 +60,6 @@ class BoardWidget(QWidget):
 
         self._resize()
 
-    # def update_board(self):
-    #    print("UPD BOARD")
-    #    self.update()
-
     def _resize(self):
         ins = self.intersections
         if not ins:

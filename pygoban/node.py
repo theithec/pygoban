@@ -77,7 +77,6 @@ class Node:
         if not any((self.pos, self.color, other.pos, other.color)):
             cmprs.append((self.annos, other.annos))
             return self.annos == other.annos
-        # print("CMPRS", cmprs)
         return not any(sval != oval for (sval, oval) in cmprs)
 
     def _as_copy(
@@ -85,7 +84,6 @@ class Node:
     ) -> Tuple["Node", Optional["Node"]]:
         pos = Pos(*self.pos) if self.pos else None
         move: "Node" = self.__class__(color=self.color, pos=pos)
-        # print("COPY ANNOS")
         move.annos = Annotations(**vars(self.annos))
         for child in self.children:
             child_cpy, found = child._as_copy(target=target, found=found)

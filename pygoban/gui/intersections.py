@@ -223,8 +223,7 @@ class IntersectionWidget(QWidget):
                     child_pixmap,
                 )
             painter.setOpacity(1)
-        # if self.board_pos == Pos(0, 0):
-        #     print("SGU", self.game_ui.gui_mode, self.game_ui)
+
         if self.game_ui.gui_mode == GUIMode.EDIT:
             if marker := last_turn.node.annos.markers.get(self.board_pos):
                 getattr(self, f"draw_{marker.value}")(painter, params)

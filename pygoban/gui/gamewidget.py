@@ -38,37 +38,23 @@ class GuiReceiver(BaseReceiver):
     def received_turn(self, result: results.TurnDone) -> None:
         self.game_ui.last_turn = result
         self.game_ui.boardwidget.update()
-        # self.game_ui.bar.turn_done_signal.emit(result)
 
     def received_resign(self, result) -> None:
         pass
 
     def received_annotated(self, result) -> None:
-        print("ANNO", result)
         self.game_ui.boardwidget.update()
 
     def received_count(self, result) -> None:
         self.game_ui.gui_mode = GUIMode.COUNT
-        # self.game_ui.boardwidget.boardupdate_signal.emit(result)
-        self.game_ui.boardwidget.update()
         assert self.game_ui.last_turn
         for color in (Color.BLACK, Color.WHITE):
             result[color].killed += self.game_ui.last_turn.total_dead[color.other()]
-        print("rN", result)
-        # self.game_ui.bar.counted_signal.emit(result)
+        self.game_ui.boardwidget.update()
 
     def received_result_done(self, result: results.GameResultDone) -> None:
-        print("RESULT DONE", result)
         self.game_ui.gui_mode = GUIMode.EDIT
-        # self.game_ui._initial_gui_mode = GUIMode.EDIT
-        # self.game_ui.last_turn = result
-        # self.game_ui.boardwidget.boardupdate_signal.emit(result)
         self.game_ui.boardwidget.update()
-        # self.game_ui.bar.result_done_signal.emit(result)
-
-    def received_period_ended(self, result: results.TimeDone) -> None:
-        pass
-        # self.game_ui.bar.clock_update_signal.emit(result)
 
 
 class GameWidget(GameUI):
@@ -91,9 +77,10 @@ class GameWidget(GameUI):
         self.show_analyzed_variation = False
         self.stonesound = QSoundEffect()
         self.stonesound.setSource(QUrl(os.path.join(BASE_DIR, "gui/sounds/stone.wav")))
-        self.gui_mode = gui_mode
+        self._gui_mode = gui_mode
         self.initial_gui_mode = gui_mode
         self.boardwidget = BoardWidget(self, controller.ruleset.boardsize)
+        self.mode_change_listeners = []
         self.bar = BarWidget(self)
         self.ruleset = controller.ruleset
         self.bar.btn_settings.setFocus()
@@ -105,9 +92,15 @@ class GameWidget(GameUI):
     #    msg.setText(reason)
     #    msg.show()
 
-    # @propery
-    # def gui_mode(self):
-    #    return s
+    @property
+    def gui_mode(self):
+        return self._gui_mode
+
+    @gui_mode.setter
+    def gui_mode(self, mode: GUIMode):
+        self._gui_mode = mode
+        for widget in self.mode_change_listeners:
+            widget.mode_changed(mode)
 
     def inter_clicked(self, iwidget: IntersectionWidget, is_rightclick: bool):
         assert self.last_turn

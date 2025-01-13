@@ -41,11 +41,10 @@ class Game:
 
     def send_game_event(self, result: results.Event):
         """Send the event to all registered recivers"""
-        print("WITH", result)
+        print("GAME SEND", result)
         for receiver in self.receivers:
             if not result.__class__ in receiver.events:
                 continue
-            print("CALL", receiver)
             receiver.receive_game_event(result)
             # thread = Thread(target=receiver.receive_game_event, args=(result,))
             # self._event_threads.append(thread)

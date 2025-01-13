@@ -55,7 +55,6 @@ class PlayerTime:
         # self.first_time = True
 
     def start_timer(self):
-        print("START TIMER", self.color, self)
         assert not self.ended
         self.last_started = datetime.now()
         self.timer = _PlayerTimer(self.nexttime(), self.period_ended)

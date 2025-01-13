@@ -61,7 +61,6 @@ class EditBox(Box):
 
         def mk_decobutton_callback(text: str):
             def callback(*args, **kwargs):
-                print("CALLBACK", args, kwargs)
                 self.game_ui.annotation_type = text
 
             return callback
@@ -102,9 +101,8 @@ class EditBox(Box):
         pass
 
     def update_controlls(self, result: results.TurnDone):
-        stone = result.node
-        has_parent = bool(stone.parent)
-        has_children = bool(stone.children)
+        has_parent = bool(result.node.parent)
+        has_children = bool(result.node.children)
         self.btn_first_stone.setEnabled(has_parent)
         self.btn_prev_var.setEnabled(has_parent)
         self.btn_prev_stone.setEnabled(has_parent)
@@ -125,15 +123,26 @@ class ControllsBox(Box):
         self.edit_box = EditBox(self, visible=gui_mode == GUIMode.EDIT)
         layout.addWidget(self.edit_box)
         self.setLayout(layout)
-        self.events = {results.TurnDone, results.Counted}
+        self.events = {results.TurnDone}
 
     def received_turn(self, result: results.TurnDone):
 
         self.game_box.buttons["Done"].setVisible(False)
         self.game_box.buttons["Pass"].setVisible(True)
+        self.game_box.buttons["Undo"].setVisible(bool(result.node.is_root))
         if self.game_ui.gui_mode == GUIMode.EDIT:
             self.edit_box.update_controlls(result)
 
-    def received_count(self, result: results.Counted):
-        self.game_box.buttons["Done"].setVisible(True)
-        self.game_box.buttons["Pass"].setVisible(False)
+    def mode_changed(self, gui_mode):
+        match gui_mode:
+            case GUIMode.COUNT:
+                self.game_box.buttons["Done"].setVisible(True)
+                self.game_box.buttons["Pass"].setVisible(False)
+            case GUIMode.PLAY:
+                self.game_box.setVisible(True)
+                self.edit_box.setVisible(False)
+                self.game_box.buttons["Done"].setVisible(False)
+                self.game_box.buttons["Pass"].setVisible(True)
+            case GUIMode.EDIT:
+                self.game_box.setVisible(False)
+                self.edit_box.setVisible(True)

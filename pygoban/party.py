@@ -10,9 +10,6 @@ class Member:
     def __init__(self, name="Unknown"):
         self.name = name
 
-    # def receive_game_event(self, result: ActionResult):
-    #    print(self, result)
-
 
 class Party:
     interact: Optional[Callable]
@@ -22,13 +19,6 @@ class Party:
         self.name = name or str(color)
         self.members = members
         # self.interact = None
-
-    # def receive_game_event(self, result: ActionResult):
-    #    for member in self.members:
-    #        member.receive_game_event(result)
-
-    # def send(self, *args, **kwargs) -> None:
-    #    self.interact(self.color, *args, **kwargs)  # pylint: disable=not-callable  # type:ignore
 
     def __str__(self):
         return f"Player {self.color.name}"

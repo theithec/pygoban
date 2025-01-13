@@ -125,6 +125,11 @@ class MainUI(QMainWindow):
         raise NotImplementedError()
 
 
+class ModeChangeListenerMixin:
+    def mode_changed(self, gui_mode: GUIMode):
+        pass
+
+
 class GameUI(QWidget):
     main_ui: MainUI
     gui_mode: GUIMode
@@ -134,6 +139,10 @@ class GameUI(QWidget):
     parties: Parties
     last_turn: results.TurnDone | None = None
     annotation_type: str = ""
+    mode_change_listeners: list[ModeChangeListenerMixin]
+
+    def undo(self):
+        raise NotImplementedError()
 
     def open_as_new(self):
         raise NotImplementedError()

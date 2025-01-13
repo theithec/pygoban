@@ -165,21 +165,7 @@ class PlayersBox(Box):
         self.events = {results.TurnDone, results.GameResultDone, results.Counted}
         self.setLayout(self.boxlayout)
 
-    def set_boxes(self):
-        if self.last_gui_mode != self.game_ui.gui_mode:
-            curr_boxes = self.boxes_by_mode[self.last_gui_mode]
-            next_boxes = self.boxes_by_mode[self.game_ui.gui_mode]
-            for color in (Color.BLACK, Color.WHITE):
-                self.boxlayout.replaceWidget(
-                    curr_boxes[color],
-                    next_boxes[color],
-                )
-                curr_boxes[color].setVisible(False)
-                next_boxes[color].setVisible(True)  # True)
-        self.last_gui_mode = self.game_ui.gui_mode
-
     def received_result_done(self, result: results.GameResultDone):
-        print("R2", self.game_ui.gui_mode)
         if not self.game_ui.controller.ruleset.timesettings:
             return
         boxes = self.boxes_by_mode[GUIMode.PLAY]
@@ -199,7 +185,6 @@ class PlayersBox(Box):
 
     def received_count(self, result: results.Counted):
 
-        self.set_boxes()
         boxes = self.boxes_by_mode[self.game_ui.gui_mode]
         for color in (Color.BLACK, Color.WHITE):
             box = boxes[color]
@@ -212,3 +197,16 @@ class PlayersBox(Box):
             if box.player.color == Color.WHITE:
                 total += self.game_ui.controller.ruleset.komi
             box.total_label.setText(str(total))
+
+    def mode_changed(self, gui_mode: GUIMode):
+        if self.last_gui_mode != gui_mode:
+            curr_boxes = self.boxes_by_mode[self.last_gui_mode]
+            next_boxes = self.boxes_by_mode[gui_mode]
+            for color in (Color.BLACK, Color.WHITE):
+                self.boxlayout.replaceWidget(
+                    curr_boxes[color],
+                    next_boxes[color],
+                )
+                curr_boxes[color].setVisible(False)
+                next_boxes[color].setVisible(True)  # True)
+        self.last_gui_mode = gui_mode

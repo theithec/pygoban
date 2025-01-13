@@ -24,7 +24,7 @@ from PyQt6.QtGui import QAction  # pylint: disable=no-name-in-module
 
 from pygoban import Color, Party, results, gtp, BaseReceiver
 
-from .. import GUIMode, GameUI
+from .. import GUIMode, GameUI, ModeChangeListenerMixin
 
 # from .chart import MyChart
 
@@ -46,7 +46,7 @@ def btn_adder(
     return add_button
 
 
-class Box(QGroupBox, BaseReceiver):
+class Box(QGroupBox, BaseReceiver, ModeChangeListenerMixin):
     game_ui: GameUI
     name: str
     toggle_action: QAction
@@ -59,6 +59,7 @@ class Box(QGroupBox, BaseReceiver):
         while str(curr.__class__.__name__) != "GameWidget":
             curr = curr.parent()
         self.game_ui: GameUI = curr
+        self.game_ui.mode_change_listeners.append(self)
         self.kwargs = kwargs
         self.init(**kwargs)
         if self.events:
@@ -80,6 +81,3 @@ class CommentsBox(Box):
         layout.addWidget(self.comments)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setLayout(layout)
-
-    def update_controlls(self, result: results.TurnDone):
-        self.comments.setText(result.node.annos.comment)

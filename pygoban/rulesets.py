@@ -113,8 +113,6 @@ class Ruleset:
         self.nodes: Optional[NodesController] = None
         self.info: GameInfo = info
         self.timesettings = timesettings
-        # if timesettings:
-        #     print("Timesettings", timesettings)
 
     def set_node_controller(self, nodes: NodesController) -> "Ruleset":
         self.nodes = nodes

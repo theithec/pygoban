@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QWidget,
 )
 
-from .. import Color, Node
+from .. import Color, Node, results, BaseReceiver
 
 
 class StoneNode(QLabel):
@@ -170,7 +170,7 @@ class TreeCanvas(QWidget):
         painter.end()
 
 
-class Tree(QScrollArea):
+class Tree(QScrollArea, BaseReceiver):
     stones_signal = pyqtSignal(Node)
 
     def __init__(self, parent, callback):
@@ -181,6 +181,8 @@ class Tree(QScrollArea):
         self.stones_signal.connect(self.set_cursor)
         self.setMinimumWidth(int(StoneNode.WIDTH * 1.5))
         self.horizontalScrollBar().valueChanged.connect(self.moved)
+        self.events = {results.TurnDone}
+        parent.game_ui.controller.add_receiver(self)
 
     def moved(self, *args, **kwargs):
         pass  # print("Moved", args, kwargs)
@@ -188,12 +190,12 @@ class Tree(QScrollArea):
     def set_cursor(self, stone: Node):
         if node := self.canvas.nodes.get(id(stone)):
             self.canvas.tree_cursor = node
-            # self.canvas.repaint()
-            # TODO check auto
-            # self.ensureWidgetVisible(self.canvas.tree_cursor)
         else:
             self.canvas.add_stone(stone)
         self.ensureWidgetVisible(self.canvas.tree_cursor)
         if self.canvas.tree_cursor.bstone != stone:
             self.set_cursor(stone)
         self.canvas.repaint()
+
+    def received_turn(self, result: results.TurnDone):
+        self.set_cursor(result.node)
