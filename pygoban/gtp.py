@@ -84,9 +84,6 @@ class GTPController(BaseReceiver, GameController):
 
             if res.startswith("?"):
                 raise GTPException(f"{res}")
-                # res = res.lower()
-            # logging.debug("INPUT DONE %s", res[: min(10, len(res))])
-            # time.sleep(0.01)
             if not self.is_running:
                 break
 
@@ -191,52 +188,3 @@ class GTPController(BaseReceiver, GameController):
     def received_period_ended(self, result: results.TimeDone) -> None: ...
 
     def received_result_done(self, result: results.GameResultDone) -> None: ...
-
-    #                # self.do_cmd(f"kata-analyze {result.next_color.name} 500")
-    # return super().set_action(action, status)
-
-    # def receive_game_event2(self, result: results.Event):
-    #    if isinstance(result, ActionResult):
-    #        print("R", result, self.actions)
-    #        self.curr_action_result = result
-
-    #        if result.type == ActionType.ANNOTATED:
-    #            return
-    #        if result.type == ActionType.STONE:
-    #            assert not self.is_resetting
-    #            stone = result.stone
-
-    #            if stone.color.name not in self.actions:
-    #                if stone.pos:
-    #                    coord = pos_to_gtp_coord(stone.pos, boardsize=self.ruleset.boardsize)
-    #                    self.do_cmd(cmd=f"play {stone.color.name} {coord}")
-
-    #                # self.do_cmd(f"kata-analyze {result.next_color.name} 500")
-    #        elif result.type == ActionType.RESET:
-    #            self.is_resetting = True
-    #            self.do_cmd(cmd="clear_board")
-    #            self.do_cmd(f"boardsize {self.ruleset.boardsize}")
-    #            komi = self.ruleset.komi
-    #            if int(komi == 375):  # fox
-    #                komi = 7.5
-
-    #            self.do_cmd(f"komi {komi}")
-    #            if self.ruleset.handicap:
-    #                self.do_cmd(f"fixed_handicap {self.ruleset.handicap}")
-    #            for pos, color in self.curr_action_result.stone.annos.stones.items():
-    #                coord = pos_to_gtp_coord(pos, self.ruleset.boardsize)
-    #                self.do_cmd(cmd=f"play {color.name} {coord}")
-
-    #            for stone in result.stone.path():
-    #                if stone.pos:
-    #                    coord = pos_to_gtp_coord(stone.pos, boardsize=self.ruleset.boardsize)
-    #                    self.do_cmd(cmd=f"play {stone.color.name} {coord}")
-    #            self.do_cmd(cmd="showboard")
-
-    #            self.is_resetting = False
-
-    #        if "analyze" in self.actions:  # and not self.is_analyzing:
-    #            self.is_analyzing = True
-    #            self.do_cmd(f"kata-analyze {result.next_color.name} 100")
-    #        if result.next_color.name in self.actions:
-    #            self.do_cmd(f"genmove {result.next_color}")

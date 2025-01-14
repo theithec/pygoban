@@ -35,7 +35,6 @@ class MainWindow(MainUI):
     def close_tab(self, index: int):
         widget = self.tabs.widget(index)
         self.tabs.removeTab(index)
-        print("DEL", widget)
         if isinstance(widget, GameWidget):
             widget.close()
             pass  # del widget

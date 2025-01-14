@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 import logging
-import time
 from dataclasses import dataclass
 from datetime import datetime
 from threading import Timer
 from typing import TYPE_CHECKING
-
-from pygoban.results import TurnDone
 
 if TYPE_CHECKING:
     from pygoban.board import Color
@@ -60,7 +57,6 @@ class PlayerTime:
         self.timer = _PlayerTimer(self.nexttime(), self.period_ended)
 
     def cancel_timer(self):
-        print("CANCEL TIMER", self.color, self)
         if self.timer:
             self.timer.cancel()
         if self.last_started:

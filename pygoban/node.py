@@ -102,5 +102,4 @@ class Node:
         root = self if not self.parent else path[0].parent
         assert root
         rcpy = root._as_copy(target=self)
-        # print("RCOPY", rcpy)
         return rcpy[1]

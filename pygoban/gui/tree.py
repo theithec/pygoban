@@ -143,8 +143,8 @@ class TreeCanvas(QWidget):
                         half = int((width / 100) * best)
                         if node.bstone.color == Color.BLACK:
                             half = width - half
-                        painter.fillRect(0, pos.y(), half, height, Qt.darkGray)
-                        painter.fillRect(half, pos.y(), width - half, height, Qt.lightGray)
+                        painter.fillRect(0, pos.y(), half, height, QColor("darkGray"))
+                        painter.fillRect(half, pos.y(), width - half, height, QColor("lightGray"))
                     painter.setBrush(QColorConstants.White)
                     painter.setPen(QColorConstants.White)
                 else:
@@ -181,11 +181,12 @@ class Tree(QScrollArea, BaseReceiver):
         self.stones_signal.connect(self.set_cursor)
         self.setMinimumWidth(int(StoneNode.WIDTH * 1.5))
         self.horizontalScrollBar().valueChanged.connect(self.moved)
+        self.verticalScrollBar().valueChanged.connect(self.moved)
         self.events = {results.TurnDone}
         parent.game_ui.controller.add_receiver(self)
 
     def moved(self, *args, **kwargs):
-        pass  # print("Moved", args, kwargs)
+        self.canvas.update()
 
     def set_cursor(self, stone: Node):
         if node := self.canvas.nodes.get(id(stone)):
@@ -195,7 +196,7 @@ class Tree(QScrollArea, BaseReceiver):
         self.ensureWidgetVisible(self.canvas.tree_cursor)
         if self.canvas.tree_cursor.bstone != stone:
             self.set_cursor(stone)
-        self.canvas.repaint()
+        self.canvas.update()
 
     def received_turn(self, result: results.TurnDone):
         self.set_cursor(result.node)

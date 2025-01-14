@@ -76,7 +76,9 @@ class GameWidget(GameUI):
 
         self.show_analyzed_variation = False
         self.stonesound = QSoundEffect()
-        self.stonesound.setSource(QUrl(os.path.join(BASE_DIR, "gui/sounds/stone.wav")))
+        self.stonesound.setSource(
+            QUrl.fromLocalFile(os.path.join(BASE_DIR, "gui/sounds/stone.wav"))
+        )
         self._gui_mode = gui_mode
         self.initial_gui_mode = gui_mode
         self.boardwidget = BoardWidget(self, controller.ruleset.boardsize)
@@ -131,7 +133,6 @@ class GameWidget(GameUI):
                         val = "1"
                     case "A":
                         val = "A"
-                print("V", val)
                 if val:
                     self.controller.annotate(pos=iwidget.board_pos, name=val)
             else:

@@ -6,6 +6,7 @@ from .board import Board, Color, Pos
 
 if TYPE_CHECKING:
     from .node import Node
+    from timesettings import Byoyomi
 
 
 class Event:
@@ -40,6 +41,7 @@ class TimeDone(Event):
 
     color: Color
     next_time: int
+    byoyomi: "Byoyomi"
 
 
 @dataclass

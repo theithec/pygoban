@@ -91,9 +91,12 @@ class PlayerGameBox(_PlayerBox):
         self.clock.display(txt)
 
     def stop_clockdisplay(self, seconds: int | None = None):
+
+        print("STOP DISPLAY", self.player, seconds)
         if self.timer:
             self.timer.stop()
-        if seconds is not None:
+
+        if seconds != -1:  # 'None' does  not work with signals
             self.clock.display(seconds_to_str(seconds))
 
     def set_clockdisplay(self, seconds):
@@ -111,17 +114,26 @@ class PlayerGameBox(_PlayerBox):
     def init(self, player: Party, **_kwargs) -> None:  # type: ignore
         super().init(player)
         self.clock = QLCDNumber()
-        self.byoyomi_label = QLabel("")
+        if time := self.game_ui.controller.ruleset.timesettings:
+            btxt = f"{time.byoyomi_num}x{time.byoyomi_stones}"
+        else:
+            btxt = ""
+        self.byoyomi_label = QLabel(btxt)
         self.clock.display(seconds_to_str(0))
         self.formlayout.addRow(self.clock)
+        self.formlayout.addRow(self.byoyomi_label)
         self.setLayout(self.formlayout)
         self.clock_stop_signal.connect(self.stop_clockdisplay)
         self.clock_update_signal.connect(self.set_clockdisplay)
         self.events = {results.TurnDone, results.TimeDone}
 
     def received_period_ended(self, result: results.TimeDone):
-        if self.player.color == result.color:
-            self.clock_update_signal.emit(result.next_time)
+        if self.player.color != result.color:
+            return
+        b = result.byoyomi
+        print("B", b)
+        self.byoyomi_label.setText(f"{b.periods_left}x{b.stones_left}")
+        self.clock_update_signal.emit(result.next_time)
 
 
 class PlayerCountBox(_PlayerBox):
@@ -170,7 +182,8 @@ class PlayersBox(Box):
             return
         boxes = self.boxes_by_mode[GUIMode.PLAY]
         for box in boxes.values():
-            cast(PlayerGameBox, box).clock_stop_signal.emit(None)
+            print("SET DISPLAY", box.player)
+            cast(PlayerGameBox, box).clock_stop_signal.emit(-1)
 
     def received_turn(self, result: results.TurnDone):
         if not self.game_ui.controller.ruleset.timesettings:

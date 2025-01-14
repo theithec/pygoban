@@ -1,0 +1,545 @@
+qt.core.plugin.factoryloader: checking directory path "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms" ...
+qt.core.plugin.factoryloader: looking at "libqminimal.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms/libqminimal.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+    "MetaData": {
+        "Keys": [
+            "minimal"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QMinimalIntegrationPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("minimal")
+qt.core.plugin.factoryloader: looking at "libqxcb.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms/libqxcb.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+    "MetaData": {
+        "Keys": [
+            "xcb"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QXcbIntegrationPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("xcb")
+qt.core.plugin.factoryloader: looking at "libqwayland-generic.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms/libqwayland-generic.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+    "MetaData": {
+        "Keys": [
+            "wayland"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QWaylandIntegrationPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("wayland")
+qt.core.plugin.factoryloader: looking at "libqeglfs.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms/libqeglfs.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+    "MetaData": {
+        "Keys": [
+            "eglfs"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QEglFSIntegrationPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("eglfs")
+qt.core.plugin.factoryloader: looking at "libqwayland-egl.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms/libqwayland-egl.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+    "MetaData": {
+        "Keys": [
+            "wayland-egl"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QWaylandEglPlatformIntegrationPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("wayland-egl")
+qt.core.plugin.factoryloader: looking at "libqvnc.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms/libqvnc.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+    "MetaData": {
+        "Keys": [
+            "vnc"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QVncIntegrationPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("vnc")
+qt.core.plugin.factoryloader: looking at "libqvkkhrdisplay.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms/libqvkkhrdisplay.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+    "MetaData": {
+        "Keys": [
+            "vkkhrdisplay"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QVkKhrDisplayIntegrationPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("vkkhrdisplay")
+qt.core.plugin.factoryloader: looking at "libqminimalegl.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms/libqminimalegl.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+    "MetaData": {
+        "Keys": [
+            "minimalegl"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QMinimalEglIntegrationPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("minimalegl")
+qt.core.plugin.factoryloader: looking at "libqoffscreen.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms/libqoffscreen.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+    "MetaData": {
+        "Keys": [
+            "offscreen"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QOffscreenIntegrationPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("offscreen")
+qt.core.plugin.factoryloader: looking at "libqlinuxfb.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms/libqlinuxfb.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+    "MetaData": {
+        "Keys": [
+            "linuxfb"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QLinuxFbIntegrationPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("linuxfb")
+qt.core.plugin.factoryloader: checking directory path "/usr/bin/platforms" ...
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms/libqxcb.so" loaded library
+qt.core.plugin.factoryloader: checking directory path "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platformthemes" ...
+qt.core.plugin.factoryloader: looking at "libqxdgdesktopportal.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platformthemes/libqxdgdesktopportal.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformThemeFactoryInterface.5.1",
+    "MetaData": {
+        "Keys": [
+            "xdgdesktopportal",
+            "flatpak",
+            "snap"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QXdgDesktopPortalThemePlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("xdgdesktopportal", "flatpak", "snap")
+qt.core.plugin.factoryloader: looking at "libqgtk3.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platformthemes/libqgtk3.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformThemeFactoryInterface.5.1",
+    "MetaData": {
+        "Keys": [
+            "gtk3"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QGtk3ThemePlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("gtk3")
+qt.core.plugin.factoryloader: checking directory path "/usr/bin/platformthemes" ...
+qt.core.plugin.factoryloader: checking directory path "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforminputcontexts" ...
+qt.core.plugin.factoryloader: looking at "libibusplatforminputcontextplugin.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforminputcontexts/libibusplatforminputcontextplugin.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPlatformInputContextFactoryInterface.5.1",
+    "MetaData": {
+        "Keys": [
+            "ibus"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QIbusPlatformInputContextPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("ibus")
+qt.core.plugin.factoryloader: looking at "libcomposeplatforminputcontextplugin.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforminputcontexts/libcomposeplatforminputcontextplugin.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPlatformInputContextFactoryInterface.5.1",
+    "MetaData": {
+        "Keys": [
+            "compose",
+            "xim"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QComposePlatformInputContextPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("compose", "xim")
+qt.core.plugin.factoryloader: checking directory path "/usr/bin/platforminputcontexts" ...
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforminputcontexts/libcomposeplatforminputcontextplugin.so" loaded library
+qt.core.plugin.factoryloader: checking directory path "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/iconengines" ...
+qt.core.plugin.factoryloader: looking at "libqsvgicon.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/iconengines/libqsvgicon.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QIconEngineFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "svg",
+            "svgz",
+            "svg.gz"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QSvgIconPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("svg", "svgz", "svg.gz")
+qt.core.plugin.factoryloader: checking directory path "/usr/bin/iconengines" ...
+qt.core.plugin.factoryloader: checking directory path "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/styles" ...
+qt.core.plugin.factoryloader: checking directory path "/usr/bin/styles" ...
+DEBUG:root:Value for 'size' from  qsettings: '19'
+DEBUG:root:Value for 'komi' from  qsettings: '7.5'
+DEBUG:root:Value for 'handicap' from  qsettings: '0'
+DEBUG:root:Value for 'main_time' from  qsettings: '10'
+DEBUG:root:Value for 'byoyomi_time' from  qsettings: '10'
+DEBUG:root:Value for 'byoyomi_num' from  qsettings: '3'
+DEBUG:root:Value for 'byoyomi_stones' from  qsettings: '1'
+DEBUG:root:Value for 'black_name' from  qsettings: 'Black'
+DEBUG:root:Value for 'white_name' from  qsettings: 'White'
+DEBUG:root:Value for 'engines' from  qsettings: '{'gnugo': '/usr/games/gnugo --mode gtp', 'kata': '/home/lotek/lib/katago-cuda/katago gtp -model /home/lotek/.local/pipx/venvs/katrain/lib/python3.12/site-packages/katrain/models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz'}'
+DEBUG:root:Use settings {'sgf_path': None, 'black_name': None, 'white_name': None, 'handicap': 0, 'boardsize': 19, 'komi': 7.5, 'mode': 'PLAY', 'main_time': '10', 'byoyomi_time': '10', 'byoyomi_num': '3', 'byoyomi_stones': '1', 'gtp_engines': {'gnugo': '/usr/games/gnugo --mode gtp', 'kata': '/home/lotek/lib/katago-cuda/katago gtp -model /home/lotek/.local/pipx/venvs/katrain/lib/python3.12/site-packages/katrain/models/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz'}}
+qt.core.plugin.factoryloader: checking directory path "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats" ...
+qt.core.plugin.factoryloader: looking at "libqsvg.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqsvg.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "svg",
+            "svgz"
+        ],
+        "MimeTypes": [
+            "image/svg+xml",
+            "image/svg+xml-compressed"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QSvgPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("svg", "svgz")
+qt.core.plugin.factoryloader: looking at "libqico.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqico.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "ico",
+            "cur"
+        ],
+        "MimeTypes": [
+            "image/vnd.microsoft.icon",
+            "image/vnd.microsoft.icon"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QICOPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("ico", "cur")
+qt.core.plugin.factoryloader: looking at "libqjpeg.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqjpeg.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "jpg",
+            "jpeg",
+            "jfif"
+        ],
+        "MimeTypes": [
+            "image/jpeg",
+            "image/jpeg",
+            "image/jpeg"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QJpegPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("jpg", "jpeg", "jfif")
+qt.core.plugin.factoryloader: looking at "libqwbmp.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqwbmp.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "wbmp"
+        ],
+        "MimeTypes": [
+            "image/vnd.wap.wbmp"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QWbmpPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("wbmp")
+qt.core.plugin.factoryloader: looking at "libqtiff.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqtiff.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "tiff",
+            "tif"
+        ],
+        "MimeTypes": [
+            "image/tiff",
+            "image/tiff"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QTiffPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("tiff", "tif")
+qt.core.plugin.factoryloader: looking at "libqtga.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqtga.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "tga"
+        ],
+        "MimeTypes": [
+            "image/x-tga"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QTgaPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("tga")
+qt.core.plugin.factoryloader: looking at "libqgif.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqgif.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "gif"
+        ],
+        "MimeTypes": [
+            "image/gif"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QGifPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("gif")
+qt.core.plugin.factoryloader: looking at "libqicns.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqicns.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "icns"
+        ],
+        "MimeTypes": [
+            "image/x-icns"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QICNSPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("icns")
+qt.core.plugin.factoryloader: looking at "libqwebp.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqwebp.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "webp"
+        ],
+        "MimeTypes": [
+            "image/webp"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QWebpPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("webp")
+qt.core.plugin.factoryloader: looking at "libqpdf.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqpdf.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "pdf"
+        ],
+        "MimeTypes": [
+            "application/pdf"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QPdfPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("pdf")
+qt.core.plugin.factoryloader: checking directory path "/usr/bin/imageformats" ...
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqsvg.so" loaded library
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqico.so" loaded library
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqjpeg.so" loaded library
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqwbmp.so" loaded library
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqtiff.so" loaded library
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqtga.so" loaded library
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqgif.so" loaded library
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqicns.so" loaded library
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqwebp.so" loaded library
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqpdf.so" loaded library
+qt.core.plugin.factoryloader: checking directory path "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/accessible" ...
+qt.core.plugin.factoryloader: checking directory path "/usr/bin/accessible" ...
+qt.core.plugin.factoryloader: checking directory path "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/accessiblebridge" ...
+qt.core.plugin.factoryloader: checking directory path "/usr/bin/accessiblebridge" ...
+qt.core.plugin.factoryloader: checking directory path "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/multimedia" ...
+qt.core.plugin.factoryloader: looking at "libffmpegmediaplugin.so"
+qt.core.plugin.loader: Found metadata in lib /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/multimedia/libffmpegmediaplugin.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPlatformMediaPlugin",
+    "MetaData": {
+        "Keys": [
+            "ffmpeg"
+        ]
+    },
+    "archlevel": 1,
+    "className": "QFFmpegMediaPlugin",
+    "debug": false,
+    "version": 395264
+}
+
+
+qt.core.plugin.factoryloader: Got keys from plugin meta data QList("ffmpeg")
+qt.core.plugin.factoryloader: checking directory path "/usr/bin/multimedia" ...
+qt.core.library: "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/multimedia/libffmpegmediaplugin.so" cannot load: Cannot load library /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/multimedia/libffmpegmediaplugin.so: libavformat.so.61: Kann die Shared-Object-Datei nicht öffnen: Datei oder Verzeichnis nicht gefunden
+qt.core.plugin.loader: QLibraryPrivate::loadPlugin failed on "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/multimedia/libffmpegmediaplugin.so" : "Cannot load library /home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/multimedia/libffmpegmediaplugin.so: libavformat.so.61: Kann die Shared-Object-Datei nicht öffnen: Datei oder Verzeichnis nicht gefunden"
+No QtMultimedia backends found. Only QMediaDevices, QAudioDevice, QSoundEffect, QAudioSink, and QAudioSource are available.
+qt.core.plugin.factoryloader: checking directory path "/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/networkaccess" ...
+qt.core.plugin.factoryloader: checking directory path "/usr/bin/networkaccess" ...
+"/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqgif.so" unloaded library 
+"/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqicns.so" unloaded library 
+"/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqico.so" unloaded library 
+"/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqjpeg.so" unloaded library 
+"/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqpdf.so" unloaded library 
+"/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqsvg.so" unloaded library 
+"/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqtga.so" unloaded library 
+"/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqtiff.so" unloaded library 
+"/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqwbmp.so" unloaded library 
+"/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/imageformats/libqwebp.so" unloaded library 
+"/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforminputcontexts/libcomposeplatforminputcontextplugin.so" unloaded library 
+"/home/lotek/workspaces/python/pygoban5/.venv/lib/python3.12/site-packages/PyQt6/Qt6/plugins/platforms/libqxcb.so" unloaded library 

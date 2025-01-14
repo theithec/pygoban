@@ -8,6 +8,8 @@ from .rulesets import Counter, Ruleset, RuleViolation, ThreePasses
 from .nodescontroller import Color, Pos, Node, NodesController
 from .timesettings import PlayerTime
 
+from typing import cast
+
 
 class Game:
     """A game of go (or just some moves/annotations)"""
@@ -41,7 +43,6 @@ class Game:
 
     def send_game_event(self, result: results.Event):
         """Send the event to all registered recivers"""
-        print("GAME SEND", result)
         for receiver in self.receivers:
             if not result.__class__ in receiver.events:
                 continue
@@ -52,11 +53,14 @@ class Game:
 
     def period_ended(self, color: Color, next_time: int):
         """A time period ended"""
+        if not (timers := self.timers):
+            return
         if next_time:
-            result: results.Event = results.TimeDone(color=color, next_time=next_time)
+            result: results.Event = results.TimeDone(
+                color=color, next_time=next_time, byoyomi=timers[color].byoyomi
+            )
         else:
-            assert self.timers
-            for timer in self.timers.values():
+            for timer in timers.values():
                 timer.cancel_timer()
             result_type = results.GameResultType.LOST_BY_TIME
             msg = results.GAME_RESULT_STR_BY_TYPE[result_type].format(color=color.other())
@@ -204,6 +208,7 @@ class Game:
                 for color in (Color.BLACK, Color.WHITE):
                     killed[color] += self.nodes.total_dead[color.other()] + len(coords[color])
                 killed[Color.WHITE] += self.ruleset.komi
+                killed.get
                 winner = max(killed, key=killed.get)
                 points_diff = killed[winner] - killed[winner.other()]
 

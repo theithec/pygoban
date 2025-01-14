@@ -62,7 +62,7 @@ class IntersectionWidget(QWidget):
         font.setBold(True)
         painter.setFont(font)
         painter.setPen(color or QColor("green"))
-        painter.drawText(QRect(0, 0, params.size, params.size), Qt.AlignCenter, txt)
+        painter.drawText(QRect(0, 0, params.size, params.size), Qt.AlignmentFlag.AlignCenter, txt)
 
     def draw_x(self, painter, params, color=None):
         self.draw_char("X", painter, params)
@@ -88,7 +88,7 @@ class IntersectionWidget(QWidget):
         painter.setPen(fg)
         painter.drawText(
             QRect(0, params.font_bottom, params.size, params.size),
-            Qt.AlignCenter,
+            Qt.AlignmentFlag.AlignCenter,
             txt,
         )
         txt = info[1]
@@ -99,7 +99,7 @@ class IntersectionWidget(QWidget):
         painter.setFont(font)
         painter.drawText(
             QRect(psize, int(psize * 0.7), params.small_size, params.size),
-            Qt.AlignCenter,
+            Qt.AlignmentFlag.AlignCenter,
             txt,
         )
 

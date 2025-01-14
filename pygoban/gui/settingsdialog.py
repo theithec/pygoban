@@ -17,6 +17,8 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QWidget,
 )
 
+from pygoban import Settings
+
 from . import CenteredMixin
 
 _translate = QCoreApplication.translate
@@ -27,7 +29,8 @@ class SettingsDialog(QDialog, CenteredMixin):
 
     def __init__(self, parent) -> None:
         super().__init__(parent)
-        self.settings = parent.settings
+        self.settings: Settings = parent.settings
+        print(self.settings)
         self.elems: dict[str, QComboBox | QLineEdit | QCheckBox] = {}
         self.qsettings = QSettings("theithec", "pygoban")
         self.widgets = defaultdict((lambda: QLineEdit), boardsize=QComboBox)  # type: ignore
@@ -151,6 +154,7 @@ class SettingsDialog(QDialog, CenteredMixin):
             if name:
                 gtp_engines[name] = fields[1].text()
         self.qsettings.setValue("gtp/engines", gtp_engines)
+        self.settings.gtp_engines = gtp_engines
 
         full_names = {
             "boardsize": "board/size",
