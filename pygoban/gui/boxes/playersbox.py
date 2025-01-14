@@ -85,22 +85,32 @@ class PlayerGameBox(_PlayerBox):
     clock_stop_signal = pyqtSignal(int)
     clock_update_signal = pyqtSignal(int)
 
+    def init(self, player: Party, **_kwargs) -> None:  # type: ignore
+        super().init(player)
+        self.clock = QLCDNumber()
+        self.byoyomi_label = QLabel("")
+        if time := self.game_ui.controller.ruleset.timesettings:
+            self.set_byoyomi_text(periods_left=time.byoyomi_num, stones_left=time.byoyomi_stones)
+            self.clock.display(seconds_to_str(0))
+            self.formlayout.addRow(self.clock)
+            self.formlayout.addRow(self.byoyomi_label)
+        self.setLayout(self.formlayout)
+        self.clock_stop_signal.connect(self.stop_clockdisplay)
+        self.clock_update_signal.connect(self.set_clockdisplay)
+        self.events = {results.TurnDone, results.TimeDone}
+
     def clockdisplay_tick(self):
         self._seconds -= 1
         txt = seconds_to_str(self._seconds)
         self.clock.display(txt)
 
-    def stop_clockdisplay(self, seconds: int | None = None):
-
-        print("STOP DISPLAY", self.player, seconds)
+    def stop_clockdisplay(self, seconds: int):
         if self.timer:
             self.timer.stop()
-
         if seconds != -1:  # 'None' does  not work with signals
             self.clock.display(seconds_to_str(seconds))
 
     def set_clockdisplay(self, seconds):
-        # seconds = seconds or self._seconds
         self.stop_clockdisplay(seconds)
         self._seconds = seconds
         if seconds > 0:
@@ -111,29 +121,30 @@ class PlayerGameBox(_PlayerBox):
         else:
             self.clock.display("00:00")
 
-    def init(self, player: Party, **_kwargs) -> None:  # type: ignore
-        super().init(player)
-        self.clock = QLCDNumber()
-        if time := self.game_ui.controller.ruleset.timesettings:
-            btxt = f"{time.byoyomi_num}x{time.byoyomi_stones}"
-        else:
-            btxt = ""
-        self.byoyomi_label = QLabel(btxt)
-        self.clock.display(seconds_to_str(0))
-        self.formlayout.addRow(self.clock)
-        self.formlayout.addRow(self.byoyomi_label)
-        self.setLayout(self.formlayout)
-        self.clock_stop_signal.connect(self.stop_clockdisplay)
-        self.clock_update_signal.connect(self.set_clockdisplay)
-        self.events = {results.TurnDone, results.TimeDone}
+    def set_byoyomi_text(self, periods_left, stones_left):
+        if not (time := self.game_ui.controller.ruleset.timesettings):
+            return
+        txt = ""
+        if time.byoyomi_num > 1:
+            txt = f"{periods_left}/{time.byoyomi_num} periods"
+        if time.byoyomi_stones > 1:
+            if txt:
+                txt += ", "
+            txt += f"{stones_left}/{time.byoyomi_stones} stones"
+        self.byoyomi_label.setText(txt)
 
     def received_period_ended(self, result: results.TimeDone):
         if self.player.color != result.color:
             return
         b = result.byoyomi
-        print("B", b)
-        self.byoyomi_label.setText(f"{b.periods_left}x{b.stones_left}")
+        self.set_byoyomi_text(periods_left=b.periods_left, stones_left=b.stones_left)
         self.clock_update_signal.emit(result.next_time)
+
+    def received_turn(self, result: results.TurnDone):
+        if result.node.color == self.player.color:
+            super().received_turn(result=result)
+            if byo := result.byoyomi:
+                self.set_byoyomi_text(periods_left=byo.periods_left, stones_left=byo.stones_left)
 
 
 class PlayerCountBox(_PlayerBox):

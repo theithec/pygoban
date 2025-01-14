@@ -53,21 +53,22 @@ class Game:
 
     def period_ended(self, color: Color, next_time: int):
         """A time period ended"""
+        print("Game.preiod_ended", color, next_time)
         if not (timers := self.timers):
             return
-        if next_time:
-            result: results.Event = results.TimeDone(
-                color=color, next_time=next_time, byoyomi=timers[color].byoyomi
-            )
-        else:
-            for timer in timers.values():
-                timer.cancel_timer()
+        result: results.Event = results.TimeDone(
+            color=color, next_time=next_time, byoyomi=timers[color].byoyomi
+        )
+        self.send_game_event(result)
+        if not next_time:
+            # for timer in timers.values():
+            #    timer.cancel_timer()
             result_type = results.GameResultType.LOST_BY_TIME
             msg = results.GAME_RESULT_STR_BY_TYPE[result_type].format(color=color.other())
             result = results.GameResultDone(
                 winner=color.other(), msg=msg, type=results.GameResultType.LOST_BY_TIME
             )
-        self.send_game_event(result)
+            self.send_game_event(result)
 
     def _start(self, receivers: list[BaseReceiver], cursor: Node | None = None):
         """Start a game, sending the emtpy root node"""
@@ -126,7 +127,7 @@ class Game:
         else:
             self.nodes.apply_result(result)
             if self.timers:
-                next_next_time = self.timers[color].cancel_timer()
+                next_next_time = self.timers[color].cancel_timer(is_turn=True)
                 curr_next_time = (other_timer := self.timers[color.other()]).nexttime()
                 self.nodes.cursor.annos.time_left = {
                     color.other(): curr_next_time,
@@ -134,6 +135,7 @@ class Game:
                 }
                 if not other_timer.ended:
                     other_timer.start_timer()
+                result.byoyomi = self.timers[color].byoyomi
             self.send_game_event(result)
 
     def _reset(self, node: Node):
@@ -208,7 +210,6 @@ class Game:
                 for color in (Color.BLACK, Color.WHITE):
                     killed[color] += self.nodes.total_dead[color.other()] + len(coords[color])
                 killed[Color.WHITE] += self.ruleset.komi
-                killed.get
                 winner = max(killed, key=killed.get)
                 points_diff = killed[winner] - killed[winner.other()]
 

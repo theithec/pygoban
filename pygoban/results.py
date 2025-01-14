@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Set
+from typing import TYPE_CHECKING, Dict, Set, Optional
 
 from .board import Board, Color, Pos
 
@@ -28,6 +28,7 @@ class TurnDone(Event):
     total_dead: Dict[Color, int] = field(default_factory=lambda: {Color.BLACK: 0, Color.WHITE: 0})
     ko: Pos | None = None
     reset: bool = False
+    byoyomi: Optional["Byoyomi"] = None
 
 
 @dataclass
