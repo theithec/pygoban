@@ -1,14 +1,11 @@
 from threading import Thread
 
-from .board import Marker
-from .receivers import BaseReceiver
-
 from . import results
+from .board import Marker
+from .nodescontroller import Color, Node, NodesController, Pos
+from .receivers import BaseReceiver
 from .rulesets import Counter, Ruleset, RuleViolation, ThreePasses
-from .nodescontroller import Color, Pos, Node, NodesController
 from .timesettings import PlayerTime
-
-from typing import cast
 
 
 class Game:
@@ -53,7 +50,6 @@ class Game:
 
     def period_ended(self, color: Color, next_time: int):
         """A time period ended"""
-        print("Game.preiod_ended", color, next_time)
         if not (timers := self.timers):
             return
         result: results.Event = results.TimeDone(
@@ -61,8 +57,6 @@ class Game:
         )
         self.send_game_event(result)
         if not next_time:
-            # for timer in timers.values():
-            #    timer.cancel_timer()
             result_type = results.GameResultType.LOST_BY_TIME
             msg = results.GAME_RESULT_STR_BY_TYPE[result_type].format(color=color.other())
             result = results.GameResultDone(
@@ -74,8 +68,6 @@ class Game:
         """Start a game, sending the emtpy root node"""
         assert not self._started
         self._started = True
-
-        # self.receivers = receivers
         receiver = receivers.pop(0)
         self.receivers.insert(0, receiver)
         for receiver in receivers:
