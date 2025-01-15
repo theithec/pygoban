@@ -85,6 +85,6 @@ class NodesController:
         else:
             stone = Node(color=color, pos=pos)
 
-        next_color = color.other()
+        next_color = color.other() if not color.is_empty() else Color.EMPTY
 
         return TurnDone(board=boardcpy, node=stone, next_color=next_color, killed=killed, libs=libs)

@@ -18,7 +18,7 @@ from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
 )
 from PyQt6.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
-from .. import Color, Intersection, Pos
+from .. import Color, Intersection, Pos, Node
 from . import BASE_DIR, GUIMode, GameUI
 
 if TYPE_CHECKING:
@@ -38,6 +38,8 @@ def get_pixmap(status: Color) -> QPixmap | None:
 
 class IntersectionWidget(QWidget):
     """Visual representation of a intersection in a go board"""
+
+    node: Node
 
     def __init__(self, parent: "BoardWidget", board_pos: Pos, is_hoshi: bool) -> None:
         super().__init__(parent)
@@ -147,7 +149,7 @@ class IntersectionWidget(QWidget):
         painter.setOpacity(1)
 
     def draw_dimmed(self, painter: QPainter, params: "InsParams"):
-        painter.setBrush(Qt.gray)
+        painter.setBrush(QColor("gray"))
         # self.draw_char(info[0], painter, params, fg)
         # self.draw_char(info[0], painter, params, fg)
         painter.setOpacity(0.8)

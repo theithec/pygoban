@@ -1,4 +1,5 @@
 from typing import Type, TypeVar
+import logging
 
 from .board import Color, Marker
 from .game import Game, Node
@@ -95,6 +96,7 @@ class GameController:
         return ctrl, created
 
     def quit(self):
+        logging.debug("QUIT CONTROLLER %s", self)
         for ctrl in self._subs:
             ctrl.quit()
         self.__game.quit()

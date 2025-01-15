@@ -95,12 +95,15 @@ class BarWidget(QFrame):
         self.game_ui.controller.add_receiver(self.tree)
         splitter.addWidget(self.tree)
         splitter.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.setStyleSheet(
-            """BarWidget {
-               padding-right: 20px;
-            }
-            """
-        )
+        # splitter.splitterMoved.connect(self.redraw)
+
+        # self.setStyleSheet(
+        #     """BarWidget {
+        #        padding-right: 20px;
+        #        background: red;
+        #     }
+        #     """
+        # )
         self.btn_settings.setMenu(self.get_menu())
         # self.turn_done_signal.connect(self.handle_turn_done)
         # self.counted_signal.connect(self.handle_counted)
@@ -108,6 +111,16 @@ class BarWidget(QFrame):
         # self.result_done_signal.connect(self.handle_result_done)
         self._layout.addRow(splitter)
         self.setLayout(self._layout)
+
+    def redraw(self, pos: int, index: int):
+
+        size = self.inner.size()
+        print(pos, size)
+        self.inner.resize(pos, size.height())
+        # self.update()
+
+    def resizeEvent(self, event):
+        print("BAR", event)
 
     def update_menu(self):
         found = False

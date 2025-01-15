@@ -32,6 +32,9 @@ def btn_adder(
 ) -> Callable:
     def add_button(label: str, callback: Callable | None = None) -> QPushButton | QRadioButton:
         button = buttoncls(label)
+        # m = QSizePolicy.Policy.Minimum
+        button.setMinimumWidth(5)
+        # button.setSizePolicy(m, m)
         if callback:
             button.clicked.connect(callback)  # type: ignore
         layout.addWidget(button)

@@ -30,7 +30,6 @@ class SettingsDialog(QDialog, CenteredMixin):
     def __init__(self, parent) -> None:
         super().__init__(parent)
         self.settings: Settings = parent.settings
-        print(self.settings)
         self.elems: dict[str, QComboBox | QLineEdit | QCheckBox] = {}
         self.qsettings = QSettings("theithec", "pygoban")
         self.widgets = defaultdict((lambda: QLineEdit), boardsize=QComboBox)  # type: ignore
@@ -171,7 +170,6 @@ class SettingsDialog(QDialog, CenteredMixin):
             else:
                 val = widget.text()
             full_name = full_names.get(name, name)
-            print("SAVE", name, full_name, val)
             self.qsettings.setValue(full_name, val)
             setattr(self.settings, name, val)
 

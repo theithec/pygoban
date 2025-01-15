@@ -157,7 +157,7 @@ class GameWidget(GameUI):
             cursor=cpy,
         )
 
-    def resizeEvent(self, event):
+    def resizeEvent2(self, event):
         size = event.size()
         height = size.height()
         bwidth = size.width()
@@ -165,13 +165,25 @@ class GameWidget(GameUI):
         sizeborder = self.boardwidget.boardsize + 2
         mindim = int(mindim / sizeborder) * sizeborder
         width = bwidth - mindim
-        left = mindim + sizeborder
+        left = mindim + 10  # sizeborder
         MAX_WIDTH = 800
         if width > MAX_WIDTH:
             left += width - MAX_WIDTH  # / 2
             width = MAX_WIDTH  # - mindim
         self.bar.setGeometry(left, 0, width, height)
+        self.bar.styleSheet = """ background: red;"""
         self.boardwidget.resize(mindim, mindim)
+
+    def resizeEvent(self, event):
+        size = event.size()
+        height = size.height()
+        width = size.width()
+        boardlength = min(height, width)
+        self.boardwidget.resize(boardlength, boardlength)
+        self.bar.setGeometry(boardlength, 0, width, height)
+        self.bar.resize(width - boardlength, height)
+
+    # def do_resize(self, QSize)
 
     def closeEvent(self, event: QCloseEvent | None) -> None:  # pylint: disable=invalid-name
         self.controller.quit()

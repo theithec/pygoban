@@ -2,9 +2,11 @@
 from typing import cast
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QButtonGroup,
-    QFormLayout,
+    QSizePolicy,
+    # QFormLayout,
     QGroupBox,
     QHBoxLayout,
+    QVBoxLayout,
     QRadioButton,
 )
 from pygoban import results
@@ -41,10 +43,10 @@ class EditBox(Box):
     name = "EditBox"
 
     def init(self, **_kwargs):
-        box_layout = QFormLayout()
-        btns_layout = QHBoxLayout()
+        box_layout = QVBoxLayout()
+        btns_layout1 = QHBoxLayout()
         controller = self.game_ui.controller
-        add_dirbutton = btn_adder(btns_layout)
+        add_dirbutton = btn_adder(btns_layout1)
         self.btn_first_stone = add_dirbutton("|<", controller.do_first_stone)
         self.btn_prev_var = add_dirbutton("<<", controller.do_prev_variation)
         self.btn_prev_stone = add_dirbutton("<", controller.do_prev_stone)
@@ -52,10 +54,12 @@ class EditBox(Box):
         self.btn_next_var = add_dirbutton(">>", controller.do_next_variation)
         self.btn_last_stone = add_dirbutton(">|", controller.do_last_stone)
         # self.btn_auto = add_dirbutton("auto", controller.toggle_auto)
+        btns_layout2 = QHBoxLayout()
+        add_dirbutton = btn_adder(btns_layout2)
         self.btn_auto = add_dirbutton("Pass", controller.do_pass)
-        self.btn_auto.setCheckable(True)
-        # self.btn_count = add_dirbutton("Count", self.toggle_count)
-        # self.btn_count.setCheckable(True)
+        # self.btn_auto.setCheckable(True)
+        self.btn_count = add_dirbutton("Count", controller.toggle_status)
+        self.btn_count.setCheckable(True)
 
         deco_layout = QHBoxLayout()
 
@@ -67,11 +71,11 @@ class EditBox(Box):
 
         def add_decobutton(text: str):
             btn = QRadioButton(parent=self, text=text)
+            btn.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
             btn.clicked.connect(mk_decobutton_callback(text))  # type: ignore
             deco_layout.addWidget(btn)
             return btn
 
-        # iadd_decobutton = btn_adder(deco_layout, QRadioButton)
         self.decobox = QGroupBox("Deco")
         self.decogroup = QButtonGroup()
         self.decobox.setCheckable(True)
@@ -86,8 +90,10 @@ class EditBox(Box):
         self.decogroup.addButton(add_decobutton("A"))
         self.decobox.setLayout(deco_layout)
 
-        box_layout.addRow(btns_layout)
-        box_layout.addRow(self.decobox)
+        # box_layout.addLayout(btns_layout1)
+        box_layout.addLayout(btns_layout1)
+        box_layout.addLayout(btns_layout2)
+        # box_layout.addWidget(self.decobox)
         self.setLayout(box_layout)
 
     def toggle_deco(self):

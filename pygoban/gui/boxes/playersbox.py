@@ -193,7 +193,6 @@ class PlayersBox(Box):
             return
         boxes = self.boxes_by_mode[GUIMode.PLAY]
         for box in boxes.values():
-            print("SET DISPLAY", box.player)
             cast(PlayerGameBox, box).clock_stop_signal.emit(-1)
 
     def received_turn(self, result: results.TurnDone):

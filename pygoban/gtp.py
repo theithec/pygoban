@@ -12,7 +12,10 @@ from .gamecontroller import GameController
 from .game import Game
 from . import results
 
-# 'move C4 visits 11782 edgeVisits 11783 utility 0.800618 winrate 0.906799 scoreMean 1.4196 scoreStdev 6.7351 scoreLead 1.4196 scoreSelfplay 2.13197 prior 0.117485 lcb 0.903819 utilityLcb 0.792274 weight 12337 order 0 pv C4 D3 C6 D6 C7 C3 G4 D7 F5 H5 G6 E4 B3 B2
+# example analyses output
+# move C4 visits 11782 edgeVisits 11783 utility 0.800618 winrate 0.906799 scoreMean 1.4196
+# scoreStdev 6.7351 scoreLead 1.4196 scoreSelfplay 2.13197 prior 0.117485 lcb 0.903819
+# # utilityLcb 0.792274 weight 12337 order 0 pv C4 D3 C6 D6 C7 C3 G4 D7 F5 H5 G6 E4 B3 B2
 
 KATA_ANALYZE_STR = (
     r"move (\S+) visits (\S+?) edgeVisits \S+? utility (\S+?) winrate (\S+?) scoreMean (\S+?) "
@@ -125,16 +128,6 @@ class GTPController(BaseReceiver, GameController):
         self.annotate_winrates(infos)
         self.is_analyzing = False
 
-    def quit(self):
-        self.do_cmd("quit")
-        self.is_running = False
-        try:
-            outs, errs = self.process.communicate(timeout=15)
-        except subprocess.TimeoutExpired:
-            self.process.kill()
-            outs, errs = self.process.communicate()
-        logging.debug("KILLED %s - out: '%s', errs: '%s'", self, outs, errs)
-
     def set_action(self, action, status):
         if status:
             self.actions.add(action)
@@ -170,7 +163,6 @@ class GTPController(BaseReceiver, GameController):
                     coord = pos_to_gtp_coord(node.pos, boardsize=self.ruleset.boardsize)
                     self.do_cmd(cmd=f"play {node.color.name} {coord}")
         is_undo = result.reset and result.node.pos and self.got_turn
-        print("R", result.next_color, self.actions)
         if result.next_color in self.actions and not is_undo:
             self.do_cmd(f"genmove {result.next_color}")
 
@@ -179,6 +171,18 @@ class GTPController(BaseReceiver, GameController):
             self.do_cmd(f"kata-analyze {result.next_color.name} 100")
 
         self.got_turn = True
+
+    def quit(self):
+        self.do_cmd("quit")
+        self.is_running = False
+        try:
+            logging.debug("TRY KILL %s ", self)
+            outs, errs = self.process.communicate(timeout=15)
+        except subprocess.TimeoutExpired:
+            logging.debug("TIMEOUT ON KILL %s", self)
+            self.process.kill()
+            outs, errs = self.process.communicate()
+        logging.debug("KILLED %s - out: '%s', errs: '%s'", self, outs, errs)
 
     def received_annotated(self, result: results.AnnotationDone) -> None: ...
 
