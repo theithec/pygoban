@@ -3,7 +3,8 @@ import os
 import re
 from typing import Callable, Dict, List
 
-from pygoban import Color, Marker, coords, GameInfo, Ruleset, Node
+from pygoban import Color, GameInfo, Marker, Node, Ruleset, coords
+
 from . import INFO_PROPS, NODE_PROPS, ROOT_PROPS
 
 WHITESPACE_PATTERN = re.compile(" |\t|\n")

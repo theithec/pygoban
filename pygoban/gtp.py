@@ -4,7 +4,6 @@ import os
 import re
 import subprocess
 import threading
-import time
 from collections.abc import Iterable
 
 from .coords import gtp_coord_to_pos, pos_to_gtp_coord
@@ -99,7 +98,6 @@ class GTPController(BaseReceiver, GameController):
     def do_cmd(self, cmd: str):
         try:
             assert self.process.stdin
-            logging.debug("GTP CMD: %s", cmd)
             self.process.stdin.write(f"{cmd}\r\n".encode())
             self.process.stdin.flush()
         except (BrokenPipeError, ValueError):
@@ -172,6 +170,7 @@ class GTPController(BaseReceiver, GameController):
                     coord = pos_to_gtp_coord(node.pos, boardsize=self.ruleset.boardsize)
                     self.do_cmd(cmd=f"play {node.color.name} {coord}")
         is_undo = result.reset and result.node.pos and self.got_turn
+        print("R", result.next_color, self.actions)
         if result.next_color in self.actions and not is_undo:
             self.do_cmd(f"genmove {result.next_color}")
 

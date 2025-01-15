@@ -1,5 +1,4 @@
-from threading import Thread
-
+# from threading import Thread
 from . import results
 from .board import Marker
 from .nodescontroller import Color, Node, NodesController, Pos
@@ -25,7 +24,7 @@ class Game:
         self.receivers: list[BaseReceiver] = []
         self.ruleset.set_node_controller(nodes)
         self.nodes = nodes
-        self._event_threads: list[Thread] = []
+        # self._event_threads: list[Thread] = []
         self._started = False
         self.timers = (
             {
@@ -40,8 +39,10 @@ class Game:
 
     def send_game_event(self, result: results.Event):
         """Send the event to all registered recivers"""
+
+        cls = result.__class__
         for receiver in self.receivers:
-            if not result.__class__ in receiver.events:
+            if not cls in receiver.events:
                 continue
             receiver.receive_game_event(result)
             # thread = Thread(target=receiver.receive_game_event, args=(result,))
@@ -135,10 +136,6 @@ class Game:
         result: results.TurnDone = self.nodes.set_cursor(node)
         self.send_game_event(result)
 
-    # def undo(self):
-    #    if parent := self.nodes.cursor.parent:
-    #        self._reset(parent)
-
     def start(self, receivers: list[BaseReceiver], node: Node | None = None):
         assert not self.started
         self._start(receivers=receivers, cursor=node)
@@ -204,7 +201,6 @@ class Game:
                 killed[Color.WHITE] += self.ruleset.komi
                 winner = max(killed, key=killed.get)
                 points_diff = killed[winner] - killed[winner.other()]
-
                 msg = fmt.format(color=winner, points_diff=points_diff)
 
         result = results.GameResultDone(winner=winner, msg=msg, type=result_type)

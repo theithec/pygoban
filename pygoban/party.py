@@ -3,8 +3,6 @@ from typing import Callable, List, Optional
 
 from .board import Color
 
-# from pygoban.gtp import GTPConn
-
 
 class Member:
     def __init__(self, name="Unknown"):

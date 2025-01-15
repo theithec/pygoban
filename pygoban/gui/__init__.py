@@ -12,7 +12,6 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QPushButton,
     QWidget,
 )
-from PyQt6.QtGui import QScreen  # pylint: disable=no-name-in-module
 from pygoban import GameController, Node, Parties, Ruleset, results, Settings, get_argparser, Game
 
 
@@ -122,6 +121,9 @@ class MainUI(QMainWindow):
         raise NotImplementedError()
 
     def show_edit_board_dialog(self):
+        raise NotImplementedError()
+
+    def load_sgf(self, path: str):
         raise NotImplementedError()
 
 

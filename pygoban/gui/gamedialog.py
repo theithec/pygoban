@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any
+import logging
+from typing import Any
 
 from PyQt6.QtCore import QCoreApplication  # pylint: disable=no-name-in-module
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
@@ -13,7 +14,6 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
 
 from .. import Color, gtp
 from . import GUIMode, MainUI
-
 
 _translate = QCoreApplication.translate
 
@@ -99,8 +99,9 @@ class NewGameBaseDialog(QDialog):
                 if txt != "human":
                     cmd = self.manager.settings.gtp_engines[txt]
                     gtpctrl, created = controller.add_controller(
-                        cls=gtp.GTPController, cmd_line=cmd, actions=[color]
+                        cls=gtp.GTPController, cmd_line=cmd, actions=[color], force_create=True
                     )
+                    logging.debug("create for %s: %s", color, cmd)
                     if created:
                         assert controller.receiver.last_turn
                         gtpctrl.receive_game_event(controller.receiver.last_turn)

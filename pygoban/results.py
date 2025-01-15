@@ -6,7 +6,7 @@ from .board import Board, Color, Pos
 
 if TYPE_CHECKING:
     from .node import Node
-    from timesettings import Byoyomi
+    from .timesettings import Byoyomi
 
 
 class Event:

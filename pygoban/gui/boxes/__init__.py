@@ -1,30 +1,24 @@
 # pylint: disable=invalid-name, arguments-differ, abstract-method
 # because qt and do_-commands and Box overloading
-from typing import Any, Callable, Type, TypeVar, cast, Union
 from copy import copy
+from typing import Any, Callable, Type, TypeVar, Union, cast
+
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal  # pylint: disable=no-name-in-module
+from PyQt6.QtGui import QAction  # pylint: disable=no-name-in-module
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
-    QButtonGroup,
-    QFormLayout,
-    QFrame,
     QGroupBox,
     QHBoxLayout,
-    QLabel,
     QLayout,
-    QLCDNumber,
-    QMenu,
     QPushButton,
     QRadioButton,
     QSizePolicy,
-    QSplitter,
     QTextEdit,
     QWidget,
 )
-from PyQt6.QtGui import QAction  # pylint: disable=no-name-in-module
 
-from pygoban import Color, Party, results, gtp, BaseReceiver
+from pygoban import BaseReceiver, Color, Node, Party, gtp, results
 
-from .. import GUIMode, GameUI, ModeChangeListenerMixin
+from .. import GameUI, GUIMode, ModeChangeListenerMixin
 
 # from .chart import MyChart
 
@@ -74,10 +68,19 @@ BoxesByName = dict[str, Box]
 
 class CommentsBox(Box):
     name = "CommentsBox"
+    curr_node: results.TurnDone | None
 
-    def init(self):  # type: ignore
+    def init(self) -> None:  # type: ignore
         layout = QHBoxLayout()
         self.comments = QTextEdit()
         layout.addWidget(self.comments)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setLayout(layout)
+        self.events = {results.TurnDone}
+        self.curr_node: results.TurnDone | None = None
+
+    def received_turn(self, result):
+        if self.curr_node:
+            self.curr_node.annos.comment = self.comments.toPlainText().strip()
+        self.comments.setText(result.node.annos.comment)
+        self.curr_node = result.node

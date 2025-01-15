@@ -1,23 +1,28 @@
 from PyQt6.QtGui import QCloseEvent, QIcon  # pylint: disable=no-name-in-module
 from PyQt6.QtWidgets import QTabWidget  # pylint: disable=no-name-in-module
 
-
-from pygoban import Color, Ruleset, TimeSettings, Game, GameInfo, Node, GameController, Parties
+from pygoban import (
+    Color,
+    Game,
+    GameController,
+    GameInfo,
+    Node,
+    Parties,
+    Ruleset,
+    TimeSettings,
+)
 from pygoban.sgf import reader
 
-# from ..gtp import GTPConn
-from . import BASE_DIR, MainUI
-
+from . import BASE_DIR, MainUI, Settings
 from .gamedialog import NewGameEditDialog, NewGamePlayDialog
 from .gamewidget import GameWidget, GUIMode
 from .players import GUIPlayer
-
 from .settingsdialog import SettingsDialog
 from .startwidget import StartWidget
 
 
 class MainWindow(MainUI):
-    def __init__(self, config):
+    def __init__(self, config: Settings):
         super().__init__()
         self.setWindowIcon(QIcon(f"{BASE_DIR}/gui/imgs/icon.png"))
         self.title = "Pygoban"
@@ -28,16 +33,18 @@ class MainWindow(MainUI):
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
         self.startwidget = StartWidget(manager=self)
-        self.tabs.addTab(self.startwidget, "Welcome")
-        self.setCentralWidget(self.tabs)
         self.settings = config
+        if not config.sgf_path:
+            self.tabs.addTab(self.startwidget, "Welcome")
+        else:
+            self.load_sgf(config.sgf_path)
+        self.setCentralWidget(self.tabs)
 
     def close_tab(self, index: int):
         widget = self.tabs.widget(index)
         self.tabs.removeTab(index)
         if isinstance(widget, GameWidget):
             widget.close()
-            pass  # del widget
 
     def show_add_game_dialog(self):
         dlg = NewGamePlayDialog(self)

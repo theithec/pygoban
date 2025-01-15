@@ -199,4 +199,4 @@ class Tree(QScrollArea, BaseReceiver):
         self.canvas.update()
 
     def received_turn(self, result: results.TurnDone):
-        self.set_cursor(result.node)
+        self.stones_signal.emit(result.node)

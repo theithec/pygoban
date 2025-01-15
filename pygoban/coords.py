@@ -51,4 +51,4 @@ def sgf_to_pos(coord: str) -> Pos:
 
 
 def pos_to_sgf(pos: Pos) -> str:
-    return letter_from_int(pos[0], False) + letter_from_int(pos[1], False)
+    return (letter_from_int(pos[0], False) + letter_from_int(pos[1], False)).lower()

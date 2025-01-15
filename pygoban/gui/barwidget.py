@@ -17,9 +17,10 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QWidget,
 )
 
-from pygoban import Color, gtp  # , results
+from pygoban import Color, gtp
+from pygoban.sgf import writer
 
-from . import GameUI, GUIMode
+from . import GameUI, GUIMode, filedialog
 from .boxes import (
     Box,
     BoxesByName,
@@ -127,7 +128,7 @@ class BarWidget(QFrame):
             action = QAction(name, self)
             new_.addAction(action)  # type: ignore
             action.triggered.connect(callback)
-        vis = cast(QMenu, menu.addMenu("Show"))
+        vis = cast(QMenu, menu.addMenu("View"))
         for name, box in self.inner.boxes.items():
             action = QAction(name, self)
             action.triggered.connect(self.inner.vis_action_handler(box, action))
@@ -147,6 +148,9 @@ class BarWidget(QFrame):
         save_action = QAction("Save", self)
         save_action.triggered.connect(self.save_as_file)
         menu.addAction(save_action)
+        open_action = QAction("Open", self)
+        open_action.triggered.connect(self.open_file)
+        menu.addAction(open_action)
         self.engines_menu = cast(QMenu, menu.addMenu("Engines"))
 
         def mk_handler(cmd, key):
@@ -178,4 +182,11 @@ class BarWidget(QFrame):
         return menu
 
     def save_as_file(self):
-        pass
+        txt = writer.write(self.game_ui.last_turn.node, self.game_ui.controller.ruleset)
+        path = filedialog.filename_from_savedialog(parent=self)
+        with open(path, "w", encoding="utf-8") as fobj:
+            fobj.write(txt)
+
+    def open_file(self) -> None:
+        path = filedialog.filename_from_opendialog(parent=self)
+        self.game_ui.main_ui.load_sgf(path)
