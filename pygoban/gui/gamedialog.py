@@ -46,7 +46,11 @@ class NewGameBaseDialog(QDialog):
                 playertypes = ["human", *settings.gtp_engines.keys()]
                 for_player["type"].addItems(playertypes)
                 group_layout.addRow("Type", for_player["type"])
-            for_player["name_edit"] = QLineEdit(_translate("NewGameDialog", colname))
+            for_player["name_edit"] = QLineEdit(
+                _translate(
+                    "NewGameDialog", getattr(settings, f"{color.name.lower()}_name", colname)
+                )
+            )
             group_layout.addRow("Name", for_player["name_edit"])
             group_box.setLayout(group_layout)
             layout.addRow(group_box)

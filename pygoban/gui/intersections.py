@@ -64,7 +64,11 @@ class IntersectionWidget(QWidget):
         font.setBold(True)
         painter.setFont(font)
         painter.setPen(color or QColor("red"))
-        painter.drawText(QRect(0, 0, params.size, params.size), Qt.AlignmentFlag.AlignCenter, txt)
+        painter.drawText(
+            QRect(0, -(params.size // 8), params.size, params.size),
+            Qt.AlignmentFlag.AlignCenter,
+            txt,
+        )
 
     def draw_x(self, painter, params, color=None):
         self.draw_char("X", painter, params)
@@ -106,30 +110,32 @@ class IntersectionWidget(QWidget):
         )
 
     def draw_circle(self, painter, params):
-        fwidth = 4
-        pen = QPen(QColor("red"), 4)
+        width = params.size // 8
+        pen = QPen(QColor("red"), width)
         painter.setPen(pen)
-        painter.drawEllipse(fwidth, fwidth, params.size - (fwidth * 2), params.size - (fwidth * 2))
+        painter.drawEllipse(width, width, params.size - (width * 2), params.size - (width * 2))
+        # painter.drawEllipse(0, 0, params.size, params.size)
 
     def draw_triangle(self, painter, params):
         path = QPainterPath()
-        fwidth = 4
+        fwidth = params.size // 8
         size = params.size - (fwidth // 2)
-        path.moveTo(fwidth, size)
+        path.moveTo(fwidth, size - fwidth)
         path.lineTo(size // 2, fwidth)
-        path.lineTo(size, size)
-        path.lineTo(fwidth, size)
+        path.lineTo(size, size - fwidth)
+        path.lineTo(fwidth, size - fwidth)
         pen = QPen(QColor("red"), fwidth)
         painter.strokePath(path, pen)
 
     def draw_square(self, painter, params):
         path = QPainterPath()
-        fwidth = 4
-        size = params.size - (fwidth // 2)
+        # fwidth = 4
+        fwidth = params.size // 8
+        size = params.size  # - (fwidth // 2)
         path.moveTo(fwidth, fwidth)
-        path.lineTo(fwidth, size)
-        path.lineTo(size, size)
-        path.lineTo(size, fwidth)
+        path.lineTo(fwidth, size - fwidth)
+        path.lineTo(size - fwidth, size - fwidth)
+        path.lineTo(size - fwidth, fwidth)
         path.lineTo(fwidth, fwidth)
         pen = QPen(QColor("red"), fwidth)
         painter.strokePath(path, pen)
