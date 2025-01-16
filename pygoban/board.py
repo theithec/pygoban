@@ -42,17 +42,6 @@ class Marker(Enum):
     DIMMED = "dimmed"
 
 
-class Pos2(tuple):
-    """A handcrafted named tuple"""
-
-    def __new__(cls, x, y):
-        return super().__new__(cls, (x, y))
-
-    def __init__(self, *_args, **_kwargs):
-        self.x = self[0]
-        self.y = self[1]
-
-
 @dataclass
 class Intersection:
     """A 'value' on a go board"""

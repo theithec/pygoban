@@ -63,7 +63,7 @@ class IntersectionWidget(QWidget):
         font.setPixelSize(int(params.font_height))
         font.setBold(True)
         painter.setFont(font)
-        painter.setPen(color or QColor("green"))
+        painter.setPen(color or QColor("red"))
         painter.drawText(QRect(0, 0, params.size, params.size), Qt.AlignmentFlag.AlignCenter, txt)
 
     def draw_x(self, painter, params, color=None):
@@ -107,7 +107,7 @@ class IntersectionWidget(QWidget):
 
     def draw_circle(self, painter, params):
         fwidth = 4
-        pen = QPen(QColor("green"), 4)
+        pen = QPen(QColor("red"), 4)
         painter.setPen(pen)
         painter.drawEllipse(fwidth, fwidth, params.size - (fwidth * 2), params.size - (fwidth * 2))
 
@@ -119,7 +119,7 @@ class IntersectionWidget(QWidget):
         path.lineTo(size // 2, fwidth)
         path.lineTo(size, size)
         path.lineTo(fwidth, size)
-        pen = QPen(QColor("green"), fwidth)
+        pen = QPen(QColor("red"), fwidth)
         painter.strokePath(path, pen)
 
     def draw_square(self, painter, params):
@@ -131,7 +131,7 @@ class IntersectionWidget(QWidget):
         path.lineTo(size, size)
         path.lineTo(size, fwidth)
         path.lineTo(fwidth, fwidth)
-        pen = QPen(QColor("green"), fwidth)
+        pen = QPen(QColor("red"), fwidth)
         painter.strokePath(path, pen)
 
     def draw_owned(self, color, painter, params):

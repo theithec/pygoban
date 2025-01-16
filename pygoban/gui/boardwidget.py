@@ -1,19 +1,24 @@
-# pylint: disable=invalid-name2  # because qt
+# pylint: disable=invalid-name  # because qt
 import os
+import math
 from itertools import permutations
-
-from PyQt6.QtCore import QRect, Qt, pyqtSignal  # pylint: disable=no-name-in-module
+from typing import TYPE_CHECKING, cast
+from PyQt6.QtCore import QRect, Qt, QLineF, QPointF  # pylint: disable=no-name-in-module
 from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
     # QBrush,
     QColor,
     QImage,
     QPainter,
+    QPolygonF,
 )
 from PyQt6.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
-from .. import Pos
+from pygoban import Pos, BaseReceiver, results
 from . import BASE_DIR, GameUI, InsParams
 from .intersections import IntersectionWidget
+
+if TYPE_CHECKING:
+    from .gamewidget import GameWidget
 
 i = 9
 COORDS = [chr(i) for i in list(range(97, 117))]
@@ -31,7 +36,6 @@ HOSHIS = {
 
 
 class BoardWidget(QWidget):
-    # boardupdate_signal = pyqtSignal(object)
 
     def __init__(self, parent: GameUI, boardsize: int):
         super().__init__(parent=parent)
@@ -171,3 +175,71 @@ class BoardWidget(QWidget):
             )
 
         painter.end()
+
+
+class BoardOverlay(QWidget, BaseReceiver):
+
+    def __init__(self, parent: "GameWidget") -> None:
+        super().__init__(parent=parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.board = parent.boardwidget
+        self.game_ui: GameUI = cast(GameUI, parent)
+        self.game_ui.controller.add_receiver(self)
+        self.events = {results.TurnDone}
+        self.result: results.TurnDone | None = None
+
+    def paintEvent(self, _event):
+        """Paint a board"""
+        super().paintEvent(_event)
+
+        if not self.result:
+            return
+        painter = QPainter()
+        painter.begin(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        pen = painter.pen()
+        pen.setColor(QColor("red"))
+        pen.setWidth(4)  # if pos in (0, self.boardsize - 1) else 2)
+        painter.setPen(pen)
+        painter.setBrush(QColor("red"))
+
+        def draw_line(pospair: tuple[Pos, Pos]) -> QLineF:
+            i2 = self.board.intersections[pospair[0]]
+            i1 = self.board.intersections[pospair[1]]
+            pi1 = i1.pos()
+            pi2 = i2.pos()
+            p1 = QPointF(pi1.x(), pi1.y())
+            p2 = QPointF(pi2.x(), pi2.y())
+            p1.setX(p1.x() + self.board.ins_params.size / 2)
+            p1.setY(p1.y() + self.board.ins_params.size / 2)
+            p2.setX(p2.x() + self.board.ins_params.size / 2)
+            p2.setY(p2.y() + self.board.ins_params.size / 2)
+            line = QLineF(p1, p2)
+            painter.drawLine(line)
+            return line
+
+        def draw_arrow(pospair: tuple[Pos, Pos]):
+            arrow_size = self.board.ins_params.size // 2
+            line = draw_line(pospair=pospair)
+            angle = math.atan2(-line.dy(), line.dx())
+            arrowP1 = line.p1() + QPointF(
+                math.sin(angle + math.pi / 3) * arrow_size,
+                math.cos(angle + math.pi / 3) * arrow_size,
+            )
+            arrowP2 = line.p1() + QPointF(
+                math.sin(angle + math.pi - math.pi / 3) * arrow_size,
+                math.cos(angle + math.pi - math.pi / 3) * arrow_size,
+            )
+            arrow_head = QPolygonF()
+            arrow_head.clear()
+            arrow_head << line.p1() << arrowP1 << arrowP2
+            painter.drawPolygon(arrow_head)
+
+        for pospair in self.result.node.annos.lines:
+            draw_line(pospair)
+        for pospair in self.result.node.annos.arrows:
+            draw_arrow(pospair)
+        painter.end()
+
+    def received_turn(self, result):
+        self.result = result

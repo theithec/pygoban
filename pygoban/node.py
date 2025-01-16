@@ -18,6 +18,8 @@ class Annotations:
     byoyomi_left: dict[Color, int] = field(default_factory=dict)
     progress: dict[Pos, Any] = field(default_factory=dict)
     infos: dict[str, str] = field(default_factory=dict)
+    arrows: list[tuple[Pos, Pos]] = field(default_factory=list)
+    lines: list[tuple[Pos, Pos]] = field(default_factory=list)
 
 
 class Node:

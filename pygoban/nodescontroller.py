@@ -27,6 +27,7 @@ class NodesController:
         self.boardsize = boardsize
         self.board = Board(self.boardsize)
         self.root: Node = Node(color=Color.EMPTY)
+        self.default_next_color = Color.BLACK if not self.handicap else Color.WHITE
 
     def set_cursor(self, stone: Node) -> TurnDone:
         if not stone.parent:
@@ -44,8 +45,7 @@ class NodesController:
             self.apply_result(result)
 
         if not result:  # path is empty -> only root
-            next_color = Color.BLACK if not self.handicap else Color.WHITE
-            result = TurnDone(board=self.board, node=self.root, next_color=next_color)
+            result = TurnDone(board=self.board, node=self.root, next_color=self.default_next_color)
         result.reset = True
         return result
 
@@ -85,6 +85,6 @@ class NodesController:
         else:
             stone = Node(color=color, pos=pos)
 
-        next_color = color.other() if not color.is_empty() else Color.EMPTY
+        next_color = color.other() if not color.is_empty() else self.default_next_color
 
         return TurnDone(board=boardcpy, node=stone, next_color=next_color, killed=killed, libs=libs)

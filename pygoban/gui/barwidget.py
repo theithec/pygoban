@@ -119,9 +119,6 @@ class BarWidget(QFrame):
         self.inner.resize(pos, size.height())
         # self.update()
 
-    def resizeEvent(self, event):
-        print("BAR", event)
-
     def update_menu(self):
         found = False
         for action in self.engines_menu.actions():

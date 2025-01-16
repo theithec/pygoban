@@ -18,7 +18,7 @@ from .. import (
 )
 from . import BASE_DIR, GameUI, GUIMode, MainUI
 from .barwidget import BarWidget
-from .boardwidget import BoardWidget
+from .boardwidget import BoardWidget, BoardOverlay
 from .intersections import IntersectionWidget
 from .players import GUIPlayer
 
@@ -82,6 +82,7 @@ class GameWidget(GameUI):
         self._gui_mode = gui_mode
         self.initial_gui_mode = gui_mode
         self.boardwidget = BoardWidget(self, controller.ruleset.boardsize)
+        self.boardoverlay = BoardOverlay(self)
         self.mode_change_listeners = []
         self.bar = BarWidget(self)
         self.ruleset = controller.ruleset
@@ -180,6 +181,7 @@ class GameWidget(GameUI):
         width = size.width()
         boardlength = min(height, width)
         self.boardwidget.resize(boardlength, boardlength)
+        self.boardoverlay.resize(boardlength, boardlength)
         self.bar.setGeometry(boardlength, 0, width, height)
         self.bar.resize(width - boardlength, height)
 

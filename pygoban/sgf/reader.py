@@ -227,6 +227,11 @@ class Parser:
     def do_aw(self, val):
         self._do_a(val, Color.WHITE)
 
+    def do_ar(self, val):
+        for pair in val:
+            poslist = [coords.sgf_to_pos(sgfpos) for sgfpos in pair.split(":")]
+            self.cursor.annos.arrows.append(tuple(poslist))
+
     def do_bl(self, val):
         self._do_l(val, Color.BLACK)
 
@@ -247,6 +252,11 @@ class Parser:
             coord, txt = val.split(":")
             pos = coords.sgf_to_pos(coord)
             self.cursor.annos.chars[pos] = txt
+
+    def do_ln(self, val):
+        for pair in val:
+            poslist = [coords.sgf_to_pos(sgfpos) for sgfpos in pair.split(":")]
+            self.cursor.annos.lines.append(tuple(poslist))
 
     def do_ob(self, val):
         self._do_o(val, Color.BLACK)
@@ -281,7 +291,7 @@ def parse(sgftxt: str, defaults: Dict) -> tuple[Ruleset, Node]:
 
 
 def load(path: str) -> tuple[Ruleset, Node]:
-    with open(path) as fobj:
+    with open(path, encoding="utf-8") as fobj:
         sgftxt = fobj.read()
     ruleset, cursor = parse(sgftxt, {})
     return ruleset, cursor
