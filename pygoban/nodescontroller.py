@@ -35,6 +35,7 @@ class NodesController:
         self.cursor = self.root
         self.total_dead = {Color.BLACK: 0, Color.WHITE: 0}
         self.board = Board(self.boardsize)
+        self.cursor.apply_permanent_annos(self.board)
         for x, y in HANDICAPS[self.handicap]:
             self.board.intersection(Pos(x, y), Color.BLACK)
         result = None

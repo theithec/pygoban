@@ -180,13 +180,14 @@ class BoardWidget(QWidget):
 class BoardOverlay(QWidget, BaseReceiver):
 
     def __init__(self, parent: "GameWidget") -> None:
-        super().__init__(parent=parent)
+        super().__init__(parent=parent)  # pylint: disable=unexpected-keyword-arg
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.board = parent.boardwidget
         self.game_ui: GameUI = cast(GameUI, parent)
         self.game_ui.controller.add_receiver(self)
         self.events = {results.TurnDone}
         self.result: results.TurnDone | None = None
+        self.startpos: Pos | None = None
 
     def paintEvent(self, _event):
         """Paint a board"""

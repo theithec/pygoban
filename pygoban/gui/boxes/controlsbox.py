@@ -4,13 +4,15 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QButtonGroup,
     QSizePolicy,
     # QFormLayout,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QVBoxLayout,
     QRadioButton,
 )
+from PyQt6.QtGui import QIcon
 from pygoban import results
-from pygoban.gui import GUIMode
+from pygoban.gui import GUIMode, BASE_DIR
 from . import Box, btn_adder
 
 
@@ -61,7 +63,7 @@ class EditBox(Box):
         self.btn_count = add_dirbutton("Count", controller.toggle_status)
         self.btn_count.setCheckable(True)
 
-        deco_layout = QHBoxLayout()
+        deco_layout = QGridLayout()
 
         def mk_decobutton_callback(text: str):
             def callback(*args, **kwargs):
@@ -69,11 +71,14 @@ class EditBox(Box):
 
             return callback
 
-        def add_decobutton(text: str):
-            btn = QRadioButton(parent=self, text=text)
+        def add_decobutton(x, y, key: str, label: str | None = None, icon: str | None = None):
+            label = label or key
+            btn = QRadioButton(parent=self, text=label)
             btn.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
-            btn.clicked.connect(mk_decobutton_callback(text))  # type: ignore
-            deco_layout.addWidget(btn)
+            btn.clicked.connect(mk_decobutton_callback(key))  # type: ignore
+            if icon:
+                btn.setIcon(QIcon(icon))
+            deco_layout.addWidget(btn, x, y)
             return btn
 
         self.decobox = QGroupBox("Deco")
@@ -81,19 +86,21 @@ class EditBox(Box):
         self.decobox.setCheckable(True)
         self.decobox.setChecked(False)
         self.decobox.toggled.connect(self.toggle_deco)
-        self.decogroup.addButton(add_decobutton("B"))
-        self.decogroup.addButton(add_decobutton("W"))
-        self.decogroup.addButton(add_decobutton("TR"))
-        self.decogroup.addButton(add_decobutton("SQ"))
-        self.decogroup.addButton(add_decobutton("CR"))
-        self.decogroup.addButton(add_decobutton("1"))
-        self.decogroup.addButton(add_decobutton("A"))
+        self.decogroup.addButton(add_decobutton(0, 0, "B", icon=f"{BASE_DIR}/gui/imgs/black.png"))
+        self.decogroup.addButton(add_decobutton(0, 1, "W", icon=f"{BASE_DIR}/gui/imgs/white.png"))
+        self.decogroup.addButton(add_decobutton(1, 0, "TR", "△"))
+        self.decogroup.addButton(add_decobutton(1, 1, "SQ", "◻"))
+        self.decogroup.addButton(add_decobutton(1, 2, "CR", "○"))
+        self.decogroup.addButton(add_decobutton(2, 0, "1", "1 ..."))
+        self.decogroup.addButton(add_decobutton(2, 1, "A", "A ..."))
+        self.decogroup.addButton(add_decobutton(3, 0, "LN", "－"))
+        self.decogroup.addButton(add_decobutton(3, 1, "AR", "→"))
         self.decobox.setLayout(deco_layout)
 
         # box_layout.addLayout(btns_layout1)
         box_layout.addLayout(btns_layout1)
         box_layout.addLayout(btns_layout2)
-        # box_layout.addWidget(self.decobox)
+        box_layout.addWidget(self.decobox)
         self.setLayout(box_layout)
 
     def toggle_deco(self):

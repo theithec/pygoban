@@ -72,8 +72,11 @@ class GameController:
                 break
         self.set_cursor(curr)
 
-    def annotate(self, pos: Pos, name: str | Color | Marker):
-        self.__game.annotate(pos=pos, name=name)
+    def annotate(self, pos: Pos, name: str | Color | Marker, end: Pos | None = None):
+        self.__game.annotate(pos=pos, name=name, end=end)
+
+    def rm_anno(self):
+        self.__game.rm_anno()
 
     def annotate_winrates(self, infos: dict) -> None:
         self.__game.annotate_winrates(infos=infos)

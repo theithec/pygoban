@@ -105,20 +105,53 @@ class GameWidget(GameUI):
         for widget in self.mode_change_listeners:
             widget.mode_changed(mode)
 
+    def _handle_rightclick(self, iwidget: IntersectionWidget):
+        atype = self.annotation_type
+        pos = iwidget.board_pos
+        if self.gui_mode == GUIMode.EDIT and atype:
+            assert self.last_turn
+            annos = self.last_turn.node.annos
+            found = False
+            match atype:
+                case "B" | "W":
+                    # self.last_turn.node.annos.stones.pop(pos, None)
+                    if found := self.last_turn.board.intersection(pos).color.name.startswith(atype):
+                        self.controller.annotate(iwidget.board_pos, Color.EMPTY)
+                case "TR" | "SQ" | "CR":
+                    if annos.markers[pos].name == atype:
+                        found = annos.markers.pop(pos, None)
+                case "1":
+                    found = annos.numbers.pop(pos, None)
+                case "A":
+                    found = annos.chars.pop(pos, None)
+                case "AR":
+                    for pospair in annos.arrows:
+                        if pos in pospair:
+                            found = True
+                            break
+                    if found:
+                        annos.arrows.remove(pospair)
+
+            if found:
+                self.controller.rm_anno()
+        # if atype in ("B", "W"):
+        #    self.controller.annotate(iwidget.board_pos, Color.EMPTY)
+
     def inter_clicked(self, iwidget: IntersectionWidget, is_rightclick: bool):
-        assert self.last_turn
-        board = self.last_turn.board
-        inter = board.intersection(iwidget.board_pos)
         iwidget._hover = False
         if is_rightclick:
-            if self.gui_mode == GUIMode.EDIT and self.annotation_type:
-                self.controller.annotate(iwidget.board_pos, Color.EMPTY)
+            self._handle_rightclick(iwidget)
         else:
+            assert self.last_turn
+            board = self.last_turn.board
+            inter = board.intersection(iwidget.board_pos)
+            pos = iwidget.board_pos
             if self.gui_mode == GUIMode.COUNT:
                 if inter.color:
                     self.controller.toggle_status(iwidget.board_pos)
             elif self.annotation_type:
                 val: str | Marker | Color | None = None
+                end = None
                 match self.annotation_type:
                     case "B":
                         val = Color.BLACK
@@ -134,8 +167,16 @@ class GameWidget(GameUI):
                         val = "1"
                     case "A":
                         val = "A"
+                    case "AR" | "LN":
+                        if self.boardoverlay.startpos:
+                            end = pos
+                            pos = self.boardoverlay.startpos
+                            val = self.annotation_type
+                        else:
+                            self.boardoverlay.startpos = pos
                 if val:
-                    self.controller.annotate(pos=iwidget.board_pos, name=val)
+                    self.controller.annotate(pos=pos, name=val, end=end)
+                    self.boardoverlay.startpos = None
             else:
                 # self.boardwidget.show_analyzed_variation = False
                 if isinstance(self.parties[color := self.last_turn.next_color], GUIPlayer):
@@ -158,23 +199,6 @@ class GameWidget(GameUI):
             cursor=cpy,
         )
 
-    def resizeEvent2(self, event):
-        size = event.size()
-        height = size.height()
-        bwidth = size.width()
-        mindim = min(height, bwidth)
-        sizeborder = self.boardwidget.boardsize + 2
-        mindim = int(mindim / sizeborder) * sizeborder
-        width = bwidth - mindim
-        left = mindim + 10  # sizeborder
-        MAX_WIDTH = 800
-        if width > MAX_WIDTH:
-            left += width - MAX_WIDTH  # / 2
-            width = MAX_WIDTH  # - mindim
-        self.bar.setGeometry(left, 0, width, height)
-        self.bar.styleSheet = """ background: red;"""
-        self.boardwidget.resize(mindim, mindim)
-
     def resizeEvent(self, event):
         size = event.size()
         height = size.height()
@@ -185,8 +209,6 @@ class GameWidget(GameUI):
         self.bar.setGeometry(boardlength, 0, width, height)
         self.bar.resize(width - boardlength, height)
 
-    # def do_resize(self, QSize)
-
-    def closeEvent(self, event: QCloseEvent | None) -> None:  # pylint: disable=invalid-name
+    def closeEvent(self, event: QCloseEvent | None) -> None:
         self.controller.quit()
         return super().closeEvent(event)

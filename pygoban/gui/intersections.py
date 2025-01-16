@@ -212,8 +212,23 @@ class IntersectionWidget(QWidget):
                     params.small_size,
                     params.small_size,
                 )
-        elif self.game_ui.gui_mode in (GUIMode.EDIT, GUIMode.PLAY):
+        marked = False
+        if self.game_ui.gui_mode == GUIMode.EDIT:
+            if marker := last_turn.node.annos.markers.get(self.board_pos):
+                getattr(self, f"draw_{marker.value}")(painter, params)
+                marked = True
+            if color := last_turn.node.annos.owned.get(self.board_pos):
+                self.draw_owned(color, painter, params)
+                marked = True
+            elif txt := last_turn.node.annos.chars.get(self.board_pos):
+                self.draw_char(txt, painter, params)
+                marked = True
+            elif txt := last_turn.node.annos.numbers.get(self.board_pos):
+                self.draw_char(txt, painter, params)
+                marked = True
+        if not marked and self.game_ui.gui_mode in (GUIMode.EDIT, GUIMode.PLAY):
             for child in last_turn.node.children:
+
                 if self.board_pos == child.pos:
                     break
             else:
@@ -232,28 +247,20 @@ class IntersectionWidget(QWidget):
                 )
             painter.setOpacity(1)
 
-        if self.game_ui.gui_mode == GUIMode.EDIT:
-            if marker := last_turn.node.annos.markers.get(self.board_pos):
-                getattr(self, f"draw_{marker.value}")(painter, params)
-            if color := last_turn.node.annos.owned.get(self.board_pos):
-                self.draw_owned(color, painter, params)
-            elif txt := last_turn.node.annos.chars.get(self.board_pos):
-                self.draw_char(txt, painter, params)
-            elif txt := last_turn.node.annos.numbers.get(self.board_pos):
-                self.draw_char(txt, painter, params)
         if (not stone_pixmap) and self._hover:
-            next_color = last_turn.next_color
-            assert (hover_pixmap := get_pixmap(next_color))
-            painter.setOpacity(0.8)
-            painter.drawPixmap(
-                QRect(
-                    params.stone_pos,
-                    params.stone_pos,
-                    params.stone_size,
-                    params.stone_size,
-                ),
-                hover_pixmap,
-            )
+            if not self.game_ui.annotation_type:
+                next_color = last_turn.next_color
+                assert (hover_pixmap := get_pixmap(next_color))
+                painter.setOpacity(0.8)
+                painter.drawPixmap(
+                    QRect(
+                        params.stone_pos,
+                        params.stone_pos,
+                        params.stone_size,
+                        params.stone_size,
+                    ),
+                    hover_pixmap,
+                )
         if analyzed_variation:
             index, color = analyzed_variation
             assert (vari_pixmap := get_pixmap(color))

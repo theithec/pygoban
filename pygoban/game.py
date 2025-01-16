@@ -152,7 +152,7 @@ class Game:
             inter.owner = owner
         self._count()
 
-    def annotate(self, pos: Pos, name: str | Color | Marker) -> None:
+    def annotate(self, pos: Pos, name: str | Color | Marker, end: Pos | None = None) -> None:
         cursor = self.nodes.cursor
         if isinstance(name, Color):
             cursor.annos.stones[pos] = name
@@ -164,8 +164,20 @@ class Game:
             if name == "A":
                 cursor.annos.chars[pos] = chr(65 + len(cursor.annos.chars))
             elif name == "1":
-                cursor.annos.numbers[pos] = str(1 + len(cursor.annos.numbers))
 
+                numbers = [int(num) for num in cursor.annos.numbers.values()] or [0]
+                cursor.annos.numbers[pos] = str(1 + max(numbers))
+            elif name == "AR":
+                assert end
+                cursor.annos.arrows.append((pos, end))
+            elif name == "LN":
+                assert end
+                cursor.annos.lines.append((pos, end))
+
+        action_result = results.AnnotationDone()
+        self.send_game_event(action_result)
+
+    def rm_anno(self):
         action_result = results.AnnotationDone()
         self.send_game_event(action_result)
 
