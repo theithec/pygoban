@@ -86,14 +86,19 @@ def merged_config() -> Settings:
     else:
         for key in ("main_time", "byoyomi_time", "byoyomi_num", "byoyomi_stones"):
             argsdict[key] = qsettings.value(f"clock/{key}")
+    for vals in (
+        ("black_name", "players/black_name"),
+        ("white_name", "players/white_name"),
+        ("boardsize", "board/size", int),
+        ("komi", "board/komi", float),
+        ("handicap", "board/handicap", int),
+    ):
+        akey, qkey = vals[0:2]
+        func = vals[2] if len(vals) == 3 else str
+        argsdict[akey] = func(argsdict[akey] or qsettings.value(qkey))
 
-    argsdict["boardsize"] = int(argsdict["boardsize"] or qsettings.value("board/size"))
-    argsdict["komi"] = float(argsdict["komi"] or qsettings.value("board/komi"))
-    argsdict["handicap"] = int(argsdict["handicap"] or qsettings.value("board/handicap"))
     argsdict["gtp_engines"] = qsettings.value("gtp/engines")
-
     argsdict.pop("time")
-    logging.debug("Use settings %s", argsdict)
     return Settings(**argsdict)
 
 

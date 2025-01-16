@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from PyQt6.QtCore import QCoreApplication  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import QCoreApplication, QTime  # pylint: disable=no-name-in-module
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QCheckBox,
     QComboBox,
@@ -10,7 +10,10 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QGroupBox,
     QLineEdit,
     QPushButton,
+    QMessageBox,
+    QTimeEdit,
 )
+from PyQt6.QtGui import QIntValidator
 
 from .. import Color, gtp
 from . import GUIMode, MainUI
@@ -62,7 +65,7 @@ class NewGameBaseDialog(QDialog):
         self.ruleset_box = QComboBox()
         self.ruleset_box.addItems(["Edit", "Japanese"])
         self.ruleset_box.setCurrentIndex(1)
-        self.komi_edit = QLineEdit("6.5")
+        self.komi_edit = QLineEdit(str(settings.komi))
         self.handicap_box = QComboBox()
         self.handicap_box.addItems([str(i) for i in range(10)])
 
@@ -75,10 +78,11 @@ class NewGameBaseDialog(QDialog):
         layout.addRow(_translate("NewGameDialog", "Rules:"), self.ruleset_box)
         layout.addRow("Komi:", self.komi_edit)
         layout.addRow("Handicap:", self.handicap_box)
-
         self.add_rows(layout)
-
         layout.addRow(ok_button)
+        self.tp = QTimeEdit()
+        self.tp.setDisplayFormat("hh:mm:ss")
+        layout.addRow(self.tp)
         self.setLayout(layout)
         self.setWindowTitle("New Game - Pygoban")
         # self.show()
@@ -87,15 +91,21 @@ class NewGameBaseDialog(QDialog):
         pass
 
     def startgame(self, timestr: str | None = None):
-        data: dict[str, Any] = dict(
-            boardsize=int(self.size_box.currentText()),
-            komi=float(self.komi_edit.text()),
-            handicap=int(self.handicap_box.currentText()),
-            black_name=str(self.for_player[Color.BLACK]["name_edit"].text()),
-            white_name=self.for_player[Color.WHITE]["name_edit"].text(),
-            modestr=self.GUI_MODE.value,
-            timestr=timestr,
-        )
+        print("TP", self.tp.time())
+        try:
+            data: dict[str, Any] = dict(
+                boardsize=int(self.size_box.currentText()),
+                komi=float(self.komi_edit.text()),
+                handicap=int(self.handicap_box.currentText()),
+                black_name=str(self.for_player[Color.BLACK]["name_edit"].text()),
+                white_name=self.for_player[Color.WHITE]["name_edit"].text(),
+                modestr=self.GUI_MODE.value,
+                timestr=timestr,
+            )
+        except ValueError as err:
+            msgbox = QMessageBox.critical(self, "Error", str(err))
+            return
+
         controller = self.manager.add_game_from_atomic_values(**data)
         if self.SHOW_PLAYER_TYPE:
             for color in (Color.BLACK, Color.WHITE):
@@ -121,6 +131,21 @@ class NewGameEditDialog(NewGameBaseDialog):
     GUI_MODE = GUIMode.EDIT
 
 
+class TimeEdit(QTimeEdit):
+    def __init__(self, parent, seconds):
+        seconds = int(seconds)
+        hours = seconds // 3600
+        rest = seconds % 3600
+        minutes = rest // 60
+        seconds = rest % 60
+        super().__init__(QTime(hours, minutes, seconds, 0))
+        self.setDisplayFormat("hh:mm:ss")
+
+    def text(self):
+        time = self.time()
+        return str(time.hour() * 3600 + time.minute() * 60 + time.second())
+
+
 class NewGamePlayDialog(NewGameBaseDialog):
     GUI_MODE = GUIMode.PLAY
     SHOW_PLAYER_TYPE = True
@@ -142,17 +167,23 @@ class NewGamePlayDialog(NewGameBaseDialog):
             if self.time_check.isChecked()
             else None
         )
+        print("TS", timestr)
         super().startgame(timestr=timestr)
 
     def add_rows(self, layout):
+        def mk_intedit(num):
+            edit = QLineEdit(num)
+            edit.setValidator(QIntValidator(self))
+            return edit
+
         time_box = QGroupBox("Clock")
         time_layout = QFormLayout()
         settings = self.manager.settings
         self.time_edits = {
-            "Main time": QLineEdit(settings.main_time),
-            "Byoyomi Time": QLineEdit(settings.byoyomi_time),
-            "Num Byoyomi": QLineEdit(settings.byoyomi_num),
-            "Byoyomi Stones": QLineEdit(settings.byoyomi_stones),
+            "Main time": TimeEdit(self, settings.main_time),
+            "Byoyomi Time": TimeEdit(self, settings.byoyomi_time),
+            "Num Byoyomi": mk_intedit(settings.byoyomi_num),
+            "Byoyomi Stones": mk_intedit(settings.byoyomi_stones),
         }
         time_layout.addRow("Use Clock", self.time_check)
         for label, widget in self.time_edits.items():

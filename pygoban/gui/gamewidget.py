@@ -54,6 +54,9 @@ class GuiReceiver(BaseReceiver):
 
     def received_result_done(self, result: results.GameResultDone) -> None:
         self.game_ui.gui_mode = GUIMode.EDIT
+        for subctrl in self.game_ui.controller._subs:
+            subctrl.quit()
+
         self.game_ui.boardwidget.update()
 
 
