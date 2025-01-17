@@ -89,7 +89,7 @@ class EditBox(Box):
         self.decogroup.addButton(add_decobutton(0, 0, "B", icon=f"{BASE_DIR}/gui/imgs/black.png"))
         self.decogroup.addButton(add_decobutton(0, 1, "W", icon=f"{BASE_DIR}/gui/imgs/white.png"))
         self.decogroup.addButton(add_decobutton(1, 0, "TR", "△"))
-        self.decogroup.addButton(add_decobutton(1, 1, "SQ", "◻"))
+        self.decogroup.addButton(add_decobutton(1, 1, "SQ", "□"))
         self.decogroup.addButton(add_decobutton(1, 2, "CR", "○"))
         self.decogroup.addButton(add_decobutton(2, 0, "1", "1 ..."))
         self.decogroup.addButton(add_decobutton(2, 1, "A", "A ..."))

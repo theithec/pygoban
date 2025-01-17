@@ -1,11 +1,14 @@
-from pygoban import Color, Marker, Node, Ruleset, coords
+from pygoban import Color, Marker, Node, Ruleset, coords, Pos
+
+p2s = coords.pos_to_sgf
 
 
 def to_sgf(node: Node) -> str:
+    print("N", node, node.annos)
     col = node.color.short() if node.color else None
     txt = ""
     if col:
-        sgfpos = coords.pos_to_sgf(node.pos) if node.pos else ""
+        sgfpos = p2s(node.pos) if node.pos else ""
         txt += f"\n;{col}[{sgfpos}]"
     if comment := node.annos.comment:
         txt += f"C[{comment}]"
@@ -13,11 +16,11 @@ def to_sgf(node: Node) -> str:
         if chars := node.annos.chars:
             txt += "LB"
             for pos, ctxt in chars.items():
-                sgfpos = coords.pos_to_sgf(pos)
+                sgfpos = p2s(pos)
                 txt += f"[{sgfpos}:{ctxt}]"
     markers: dict[Marker, set[str]] = {marker: set() for marker in Marker}
     for pos, marker in node.annos.markers.items():
-        sgfpos = coords.pos_to_sgf(pos)
+        sgfpos = p2s(pos)
         markers[marker].add(sgfpos)
     for marker, pos_set in markers.items():
         if not pos_set:
@@ -25,6 +28,22 @@ def to_sgf(node: Node) -> str:
         txt += marker.name
         for sgfpos in pos_set:
             txt += f"[{sgfpos}]"
+    for shapes, key in ((node.annos.arrows, "AR"), (node.annos.lines, "LN")):
+        if not shapes:
+            continue
+        txt += key
+        for posstart, posend in shapes:
+            txt += f"[{p2s(posstart)}:{p2s(posend)}]"
+    if node.annos.stones:
+        stones: dict[Color, list[Pos]] = {Color.BLACK: [], Color.WHITE: [], Color.EMPTY: []}
+        for pos, color in node.annos.stones.items():
+            stones[color].append(pos)
+        for color, pos_list in stones.items():
+            if not pos_list:
+                continue
+            txt += "A" + color.short()
+            txt += "".join([f"[{p2s(pos)}]" for pos in pos_list])
+
     for child in node.children:
         if len(node.children) > 1:
             txt += "("
