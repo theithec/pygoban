@@ -2,23 +2,22 @@
 # because qt
 import os
 from copy import copy
+from typing import cast
 
-from PyQt6.QtCore import pyqtSignal, QUrl  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import QUrl, pyqtSignal  # pylint: disable=no-name-in-module
+from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
+    QCloseEvent,
+    QKeySequence,
+    QShortcut,
+)
 
 # from PyQt6.QtMultimedia import QSound  # pylint: disable=no-name-in-module
 from PyQt6.QtMultimedia import QSoundEffect
-from PyQt6.QtGui import QCloseEvent, QShortcut, QKeySequence  # pylint: disable=no-name-in-module
-from .. import (
-    BaseReceiver,
-    Color,
-    GameController,
-    Marker,
-    Parties,
-    results,
-)
+
+from .. import BaseReceiver, Color, GameController, Marker, Parties, results, Pos
 from . import BASE_DIR, GameUI, GUIMode, MainUI
 from .barwidget import BarWidget
-from .boardwidget import BoardWidget, BoardOverlay
+from .boardwidget import BoardOverlay, BoardWidget
 from .intersections import IntersectionWidget
 from .players import GUIPlayer
 
@@ -127,7 +126,7 @@ class GameWidget(GameUI):
         if self.gui_mode == GUIMode.EDIT and atype:
             assert self.last_turn
             annos = self.last_turn.node.annos
-            found = False
+            found: Pos | Marker | str | bool | None = False
             match atype:
                 case "B" | "W":
                     # self.last_turn.node.annos.stones.pop(pos, None)
@@ -140,18 +139,18 @@ class GameWidget(GameUI):
                     found = annos.numbers.pop(pos, None)
                 case "A":
                     found = annos.chars.pop(pos, None)
-                case "AR":
-                    for pospair in annos.arrows:
+                case "AR" | "LN":
+                    shapes = annos.arrows if atype == "AR" else annos.lines
+                    pospair = None
+                    for pospair in shapes:
                         if pos in pospair:
-                            found = True
                             break
-                    if found:
-                        annos.arrows.remove(pospair)
+                    if pospair:
+                        found = True
+                        shapes.remove(pospair)
 
             if found:
                 self.controller.rm_anno()
-        # if atype in ("B", "W"):
-        #    self.controller.annotate(iwidget.board_pos, Color.EMPTY)
 
     def inter_clicked(self, iwidget: IntersectionWidget, is_rightclick: bool):
         iwidget._hover = False
@@ -214,9 +213,6 @@ class GameWidget(GameUI):
             ruleset=ruleset,
             cursor=cpy,
         )
-
-    def keyPressEvent(self, eventQKeyEvent):
-        print("KEY1", eventQKeyEvent)
 
     def resizeEvent(self, event):
         size = event.size()

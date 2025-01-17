@@ -192,8 +192,10 @@ class BarWidget(QFrame):
         return menu
 
     def save_as_file(self):
-        txt = writer.write(self.game_ui.last_turn.node, self.game_ui.controller.ruleset)
         path = filedialog.filename_from_savedialog(parent=self)
+        if not path:
+            return
+        txt = writer.write(self.game_ui.last_turn.node, self.game_ui.controller.ruleset)
         with open(path, "w", encoding="utf-8") as fobj:
             fobj.write(txt)
 
