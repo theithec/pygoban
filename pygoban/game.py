@@ -44,6 +44,7 @@ class Game:
         for receiver in self.receivers:
             if not cls in receiver.events:
                 continue
+            # print(cls, receiver.__class__)
             receiver.receive_game_event(result)
             # thread = Thread(target=receiver.receive_game_event, args=(result,))
             # self._event_threads.append(thread)

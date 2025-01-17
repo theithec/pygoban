@@ -85,7 +85,6 @@ class BarWidget(QFrame):
         self._layout = QFormLayout()
         self.btn_settings = QPushButton("\u2630")
         settings_layout = QHBoxLayout()
-        # label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         settings_layout.addWidget(self.btn_settings, 0, Qt.AlignmentFlag.AlignRight)
         self._layout.addRow(settings_layout)
         splitter = QSplitter(self)
@@ -95,29 +94,9 @@ class BarWidget(QFrame):
         self.game_ui.controller.add_receiver(self.tree)
         splitter.addWidget(self.tree)
         splitter.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        # splitter.splitterMoved.connect(self.redraw)
-
-        # self.setStyleSheet(
-        #     """BarWidget {
-        #        padding-right: 20px;
-        #        background: red;
-        #     }
-        #     """
-        # )
         self.btn_settings.setMenu(self.get_menu())
-        # self.turn_done_signal.connect(self.handle_turn_done)
-        # self.counted_signal.connect(self.handle_counted)
-        # self.clock_update_signal.connect(self.handle_period_done)
-        # self.result_done_signal.connect(self.handle_result_done)
         self._layout.addRow(splitter)
         self.setLayout(self._layout)
-
-    def redraw(self, pos: int, index: int):
-
-        size = self.inner.size()
-        print(pos, size)
-        self.inner.resize(pos, size.height())
-        # self.update()
 
     def update_menu(self):
         found = False
@@ -158,13 +137,14 @@ class BarWidget(QFrame):
         save_action = QAction("Save", self)
         save_action.triggered.connect(self.save_as_file)
         menu.addAction(save_action)
-        open_action = QAction("Open", self)
+        open_action = QAction("Open file", self)
         open_action.triggered.connect(self.open_file)
         menu.addAction(open_action)
         self.engines_menu = cast(QMenu, menu.addMenu("Engines"))
 
         def mk_handler(cmd, key):
             def handler():
+
                 gtpctrl, created = self.game_ui.controller.add_controller(
                     gtp.GTPController, cmd_line=cmd, actions=[key]
                 )
@@ -172,7 +152,11 @@ class BarWidget(QFrame):
                     gtpctrl.set_action(key, True)
                 self.game_ui.controller.add_receiver(gtpctrl)
                 if self.game_ui.last_turn:
+
+                    if key == "analyze_full":
+                        pass  # self.game_ui.controller.set_cursor(self.game_ui.last_turn.node.root())
                     cpy = copy(self.game_ui.last_turn)
+                    print("CPY", cpy)
                     cpy.reset = True
                     gtpctrl.receive_game_event(cpy)
 
@@ -183,7 +167,7 @@ class BarWidget(QFrame):
             engine_menu = cast(QMenu, self.engines_menu.addMenu(name))
 
             cmd = engines[name]
-            for key in ("analyze", Color.BLACK, Color.WHITE):
+            for key in ("analyze", "analyze_full", Color.BLACK, Color.WHITE):
                 action = QAction(str(key), self)
                 action.triggered.connect(mk_handler(cmd, key))
                 engine_menu.addAction(action)

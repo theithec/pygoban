@@ -182,7 +182,7 @@ class Tree(QScrollArea, BaseReceiver):
         self.setMinimumWidth(int(StoneNode.WIDTH * 1.5))
         self.horizontalScrollBar().valueChanged.connect(self.moved)
         self.verticalScrollBar().valueChanged.connect(self.moved)
-        self.events = {results.TurnDone}
+        self.events = {results.TurnDone, results.AnnotationDone}
         parent.game_ui.controller.add_receiver(self)
 
     def moved(self, *args, **kwargs):
@@ -200,3 +200,6 @@ class Tree(QScrollArea, BaseReceiver):
 
     def received_turn(self, result: results.TurnDone):
         self.stones_signal.emit(result.node)
+
+    def received_annotated(self, result):
+        self.canvas.update()

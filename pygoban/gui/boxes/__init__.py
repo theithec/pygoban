@@ -72,11 +72,13 @@ BoxesByName = dict[str, Box]
 class CommentsBox(Box):
     name = "CommentsBox"
     curr_node: results.TurnDone | None
+    set_comment_signal = pyqtSignal(str)
 
     def init(self) -> None:  # type: ignore
         layout = QHBoxLayout()
         self.comments = QTextEdit()
         layout.addWidget(self.comments)
+        self.set_comment_signal.connect(self.comments.setText)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setLayout(layout)
         self.events = {results.TurnDone}
@@ -85,5 +87,6 @@ class CommentsBox(Box):
     def received_turn(self, result):
         if self.curr_node:
             self.curr_node.annos.comment = self.comments.toPlainText().strip()
-        self.comments.setText(result.node.annos.comment)
+        # self.comments.setText(result.node.annos.comment)
+        self.set_comment_signal.emit(result.node.annos.comment)
         self.curr_node = result.node

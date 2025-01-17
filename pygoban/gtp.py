@@ -35,10 +35,9 @@ class GTPController(BaseReceiver, GameController):
     def __init__(self, cmd_line: str, game: Game, actions: Iterable[str] | None = None):
         BaseReceiver.__init__(self)
         GameController.__init__(self, game=game)
-        self.events = {
-            results.TurnDone,
-            results.GameResultDone,
-        }
+        self.autoplay = False
+        self.receiver = self
+        self.events = {results.TurnDone, results.GameResultDone, results.Counted}
         self.process = self.get_process(cmd_line)
         self.is_resetting = False
         self.is_running = True
@@ -99,6 +98,7 @@ class GTPController(BaseReceiver, GameController):
         )
 
     def do_cmd(self, cmd: str):
+        print("do cmd", cmd)
         try:
             assert self.process.stdin
             self.process.stdin.write(f"{cmd}\r\n".encode())
@@ -117,6 +117,7 @@ class GTPController(BaseReceiver, GameController):
             match = pattern.search(part)
             if match:
                 groups = match.groups()
+                # print("G", groups)
                 pos = gtp_coord_to_pos(groups[0], self.ruleset.boardsize)
                 winrate = float(groups[3]) * 100
                 score = float(groups[4])
@@ -126,9 +127,20 @@ class GTPController(BaseReceiver, GameController):
                 ]
                 infos[pos] = (str(winrate)[0:4], str(score), moves)
         self.annotate_winrates(infos)
+        if self.autoplay and self.last_stone:
+            if self.last_stone.children:
+                node = self.last_stone.children[0]
+                self.play(node.color, node.pos)
+            else:
+                self.set_action("analyze_full", False)
+                self.do_cmd("stop")
+
         self.is_analyzing = False
 
-    def set_action(self, action, status):
+    def set_action(self, action: str, status: bool):
+        if action == "analyze_full":
+            self.autoplay = status
+            action = "analyze"
         if status:
             self.actions.add(action)
         else:
@@ -186,8 +198,12 @@ class GTPController(BaseReceiver, GameController):
 
     def received_annotated(self, result: results.AnnotationDone) -> None: ...
 
-    def received_count(self, result: results.Counted) -> None: ...
+    def received_count(self, result: results.Counted) -> None:
+        self.set_action("analyze_full", False)
+        print("-----------------------------STOP")
+        self.do_cmd("quit")
 
     def received_period_ended(self, result: results.TimeDone) -> None: ...
 
-    def received_result_done(self, result: results.GameResultDone) -> None: ...
+    def received_result_done(self, result: results.GameResultDone) -> None:
+        self.do_cmd("stop")

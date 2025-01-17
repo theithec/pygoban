@@ -108,7 +108,13 @@ class GameController:
 
     def add_controller(self, cls: Type[G], force_create=False, **kwargs) -> tuple[G, bool]:
         created = False
-        if cls not in self._subs or force_create:
+        ctrl = None
+        if not force_create:
+            for sub in self._subs:
+                if cls == sub.__class__:
+                    ctrl = sub
+                    break
+        if not ctrl:
             ctrl = cls(game=self.__game, **kwargs)
             self._subs.add(ctrl)
             created = True
