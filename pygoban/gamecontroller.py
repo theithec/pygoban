@@ -49,11 +49,27 @@ class GameController:
             curr = curr.children[0]
         self.set_cursor(curr)
 
+    def _do_sibling(self, direction: int):
+        if not self.last_stone.parent or len(children := self.last_stone.parent.children) == 1:
+            return
+        index = children.index(self.last_stone) + direction
+        if 0 <= index < len(children):
+            self.set_cursor(children[index])
+
+    def do_left_sibling(self):
+        self._do_sibling(-1)
+
+    def do_right_sibling(self):
+        self._do_sibling(1)
+
     def do_prev_stone(self) -> None:
-        assert self.last_stone and self.last_stone.parent
+        if not self.last_stone.parent:
+            return
         self.set_cursor(self.last_stone.parent)
 
     def do_next_stone(self) -> None:
+        if not self.last_stone.children:
+            return
         self.set_cursor(self.last_stone.children[0])
 
     def do_first_stone(self) -> None:

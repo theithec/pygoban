@@ -7,7 +7,7 @@ from PyQt6.QtCore import pyqtSignal, QUrl  # pylint: disable=no-name-in-module
 
 # from PyQt6.QtMultimedia import QSound  # pylint: disable=no-name-in-module
 from PyQt6.QtMultimedia import QSoundEffect
-from PyQt6.QtGui import QCloseEvent  # pylint: disable=no-name-in-module
+from PyQt6.QtGui import QCloseEvent, QShortcut, QKeySequence  # pylint: disable=no-name-in-module
 from .. import (
     BaseReceiver,
     Color,
@@ -75,7 +75,20 @@ class GameWidget(GameUI):
         self.parties = parties
         self.main_ui = parent
         self.controller = controller
-        self._deco = None
+
+        def mk_shortcut(key, func):
+            shortcut = QShortcut(QKeySequence(key), self)
+            shortcut.activated.connect(func)
+
+        self.nav_shortcuts = [
+            mk_shortcut(key, func)
+            for key, func in (
+                ("up", self.controller.do_prev_stone),
+                ("down", self.controller.do_next_stone),
+                ("left", self.controller.do_left_sibling),
+                ("right", self.controller.do_right_sibling),
+            )
+        ]
 
         self.show_analyzed_variation = False
         self.stonesound = QSoundEffect()
@@ -201,6 +214,9 @@ class GameWidget(GameUI):
             ruleset=ruleset,
             cursor=cpy,
         )
+
+    def keyPressEvent(self, eventQKeyEvent):
+        print("KEY1", eventQKeyEvent)
 
     def resizeEvent(self, event):
         size = event.size()

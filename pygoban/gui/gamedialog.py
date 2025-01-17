@@ -59,7 +59,7 @@ class NewGameBaseDialog(QDialog):
             layout.addRow(group_box)
 
         self.size_box = QComboBox()
-        self.size_box.addItems(["9", "13", "19"])
+        self.size_box.addItems(["5", "9", "13", "19"])
         index = self.size_box.findText(str(settings.boardsize))
         self.size_box.setCurrentIndex(index)
         self.ruleset_box = QComboBox()
@@ -80,9 +80,6 @@ class NewGameBaseDialog(QDialog):
         layout.addRow("Handicap:", self.handicap_box)
         self.add_rows(layout)
         layout.addRow(ok_button)
-        self.tp = QTimeEdit()
-        self.tp.setDisplayFormat("hh:mm:ss")
-        layout.addRow(self.tp)
         self.setLayout(layout)
         self.setWindowTitle("New Game - Pygoban")
         # self.show()
@@ -91,7 +88,6 @@ class NewGameBaseDialog(QDialog):
         pass
 
     def startgame(self, timestr: str | None = None):
-        print("TP", self.tp.time())
         try:
             data: dict[str, Any] = dict(
                 boardsize=int(self.size_box.currentText()),
