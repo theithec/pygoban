@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from .pos import Pos
 from .board import Color, Intersection, Marker
 from .game import Game
-from .gamecontroller import GameController
+from .gamecontroller import MainGameController, SubGameController
 from .info import GameInfo
 from .node import Node
 from .nodescontroller import NodesController
@@ -58,9 +58,9 @@ __all__ = [
     "BaseReceiver",
     "Color",
     "Game",
-    "GameController",
     "GameInfo",
     "Intersection",
+    "MainGameController",
     "Marker",
     "Member",
     "Node",
@@ -69,5 +69,6 @@ __all__ = [
     "Party",
     "Pos",
     "Ruleset",
+    "SubGameController",
     "TimeSettings",
 ]

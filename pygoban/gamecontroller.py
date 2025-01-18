@@ -6,26 +6,19 @@ from .game import Game, Node
 from .pos import Pos
 from .receivers import BaseReceiver
 
-G = TypeVar("G", bound="GameController")
 
-
-class GameController:
+class BaseGameController:
     receiver: BaseReceiver
 
     def __init__(self, game: Game) -> None:
         self.ruleset = game.ruleset
         self.__game = game
-        self._subs: set[GameController] = set()
         self.delete_requested = False
 
     @property
     def last_stone(self) -> Node:
         assert self.receiver.last_turn
         return self.receiver.last_turn.node
-
-    def start(self, receiver: BaseReceiver, node: Node | None = None) -> None:
-        self.receiver = receiver
-        self.__game.start([self.receiver], node=node)
 
     def play(self, color: Color, pos: Pos | None = None):
         self.__game._place(color=color, pos=pos)  # pylint: disable=protected-access
@@ -106,6 +99,24 @@ class GameController:
     def add_receiver(self, receiver: BaseReceiver):
         self.__game.add_receiver(receiver=receiver)
 
+
+class SubGameController(BaseGameController):
+
+    def __init__(self, game: Game) -> None:
+        super().__init__(game=game)
+        self.__game = self._BaseGameController__game
+
+
+G = TypeVar("G", bound=SubGameController)
+
+
+class MainGameController(BaseGameController):
+
+    def __init__(self, game: Game) -> None:
+        super().__init__(game=game)
+        self.__game = self._BaseGameController__game
+        self._subs: set[SubGameController] = set()
+
     def add_controller(self, cls: Type[G], force_create=False, **kwargs) -> tuple[G, bool]:
         created = False
         ctrl = None
@@ -119,6 +130,10 @@ class GameController:
             self._subs.add(ctrl)
             created = True
         return ctrl, created
+
+    def start(self, receiver: BaseReceiver, node: Node | None = None) -> None:
+        self.receiver = receiver
+        self.__game.start([self.receiver], node=node)
 
     def quit(self):
         logging.debug("QUIT CONTROLLER %s", self)

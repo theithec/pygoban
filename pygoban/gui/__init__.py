@@ -12,7 +12,16 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QPushButton,
     QWidget,
 )
-from pygoban import GameController, Node, Parties, Ruleset, results, Settings, get_argparser, Game
+from pygoban import (
+    MainGameController,
+    Node,
+    Parties,
+    Ruleset,
+    results,
+    Settings,
+    get_argparser,
+    Game,
+)
 
 
 # kill with strg c
@@ -107,7 +116,7 @@ class MainUI(QMainWindow):
 
     def add_game(
         self, mode: GUIMode, ruleset: Ruleset, cursor: Node | None = None
-    ) -> GameController:
+    ) -> MainGameController:
         raise NotImplementedError()
 
     def add_game_from_atomic_values(
@@ -119,7 +128,7 @@ class MainUI(QMainWindow):
         white_name: str,
         modestr: str,
         timestr: str,
-    ) -> GameController:
+    ) -> MainGameController:
         raise NotImplementedError()
 
     def show_add_game_dialog(self):
@@ -142,7 +151,7 @@ class GameUI(QWidget):
     gui_mode: GUIMode
     initial_gui_mode: GUIMode
     show_analyzed_variation: bool
-    controller: GameController
+    controller: MainGameController
     parties: Parties
     last_turn: results.TurnDone | None = None
     annotation_type: str = ""

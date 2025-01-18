@@ -8,7 +8,7 @@ from collections.abc import Iterable
 
 from .coords import gtp_coord_to_pos, pos_to_gtp_coord
 from .receivers import BaseReceiver
-from .gamecontroller import GameController
+from .gamecontroller import SubGameController
 from .game import Game
 from . import results
 
@@ -31,10 +31,10 @@ class GTPException(Exception):
     pass
 
 
-class GTPController(BaseReceiver, GameController):
+class GTPController(BaseReceiver, SubGameController):
     def __init__(self, cmd_line: str, game: Game, actions: Iterable[str] | None = None):
         BaseReceiver.__init__(self)
-        GameController.__init__(self, game=game)
+        SubGameController.__init__(self, game=game)
         self.autoplay = False
         self.receiver = self
         self.events = {results.TurnDone, results.GameResultDone, results.Counted}
@@ -66,7 +66,7 @@ class GTPController(BaseReceiver, GameController):
                 )
             if match := re.match(COORD_OR_PASS, nextline):
                 val = match.group(1).strip()
-                if val == "PASS":
+                if val.upper() == "PASS":
                     pos = None
                 else:
                     pos = gtp_coord_to_pos(val, self.ruleset.boardsize)
@@ -117,12 +117,12 @@ class GTPController(BaseReceiver, GameController):
             match = pattern.search(part)
             if match:
                 groups = match.groups()
-                # print("G", groups)
                 pos = gtp_coord_to_pos(groups[0], self.ruleset.boardsize)
                 winrate = float(groups[3]) * 100
                 score = float(groups[4])
                 moves = [
-                    gtp_coord_to_pos(coord, self.ruleset.boardsize)
+                    None if coord == "pass" else gtp_coord_to_pos(coord, self.ruleset.boardsize)
+                    # gtp_coord_to_pos(coord, self.ruleset.boardsize)
                     for coord in groups[13].strip().split()
                 ]
                 infos[pos] = (str(winrate)[0:4], str(score), moves)

@@ -14,7 +14,7 @@ from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
 # from PyQt6.QtMultimedia import QSound  # pylint: disable=no-name-in-module
 from PyQt6.QtMultimedia import QSoundEffect
 
-from .. import BaseReceiver, Color, GameController, Marker, Parties, results, Pos
+from .. import BaseReceiver, Color, MainGameController, Marker, Parties, results, Pos
 from . import BASE_DIR, GameUI, GUIMode, MainUI
 from .barwidget import BarWidget
 from .boardwidget import BoardOverlay, BoardWidget
@@ -67,7 +67,7 @@ class GameWidget(GameUI):
         parties: Parties,
         gui_mode: GUIMode,
         parent: MainUI,
-        controller: GameController,
+        controller: MainGameController,
         # gtp_conns: dict,
     ) -> None:
         super().__init__(parent=parent)
