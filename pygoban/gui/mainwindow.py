@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QTabWidget  # pylint: disable=no-name-in-module
 from pygoban import (
     Color,
     Game,
-    GameController,
+    MainGameController,
     GameInfo,
     Node,
     Parties,
@@ -60,9 +60,9 @@ class MainWindow(MainUI):
 
     def add_game(
         self, mode: GUIMode, ruleset: Ruleset, cursor: Node | None = None
-    ) -> GameController:
+    ) -> MainGameController:
         game = Game(ruleset=ruleset)
-        gamecontroller = GameController(game=game)
+        gamecontroller = MainGameController(game=game)
         parties = {
             color.name.lower(): GUIPlayer(color=color, name=ruleset.info.names[color], members=[])
             for color in (Color.BLACK, Color.WHITE)
@@ -90,7 +90,7 @@ class MainWindow(MainUI):
         white_name: str,
         modestr: str,
         timestr: str,
-    ) -> GameController:
+    ) -> MainGameController:
         mode: GUIMode = GUIMode[modestr]
         info = GameInfo(names={Color.BLACK: black_name, Color.WHITE: white_name})
         if timestr:
