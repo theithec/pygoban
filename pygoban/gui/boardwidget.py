@@ -1,11 +1,16 @@
 # pylint: disable=invalid-name  # because qt
-import os
 import math
+import os
 from itertools import permutations
 from typing import TYPE_CHECKING, cast
-from PyQt6.QtCore import QRect, Qt, QLineF, QPointF  # pylint: disable=no-name-in-module
-from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
-    # QBrush,
+
+from PyQt6.QtCore import (  # py2lint: disable=no-name-in-module
+    QLineF,
+    QPointF,
+    QRect,
+    Qt,
+)
+from PyQt6.QtGui import (  # pylint: disable=no-name-in-module; QBrush,
     QColor,
     QImage,
     QPainter,
@@ -13,14 +18,15 @@ from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
 )
 from PyQt6.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
-from pygoban import Pos, BaseReceiver, results
+from pygoban import BaseReceiver, Pos, results
+
 from . import BASE_DIR, GameUI, InsParams
 from .intersections import IntersectionWidget
 
+# check
 if TYPE_CHECKING:
     from .gamewidget import GameWidget
 
-i = 9
 COORDS = [chr(i) for i in list(range(97, 117))]
 
 

@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QVBoxLayout,
     QRadioButton,
 )
-from PyQt6.QtGui import QIcon
+from PyQt6.QtGui import QIcon  # pylint: disable=no-name-in-module
 from pygoban import results
 from pygoban.gui import GUIMode, BASE_DIR
 from . import Box, btn_adder
@@ -60,7 +60,7 @@ class EditBox(Box):
         add_dirbutton = btn_adder(btns_layout2)
         self.btn_auto = add_dirbutton("Pass", controller.do_pass)
         # self.btn_auto.setCheckable(True)
-        self.btn_count = add_dirbutton("Count", controller.toggle_status)
+        self.btn_count = add_dirbutton("Count", self.toggle_count)
         self.btn_count.setCheckable(True)
 
         deco_layout = QGridLayout()
@@ -71,7 +71,9 @@ class EditBox(Box):
 
             return callback
 
-        def add_decobutton(x, y, key: str, label: str | None = None, icon: str | None = None):
+        def add_decobutton(
+            x, y, key: str, label: str | None = None, icon: str | None = None
+        ) -> QRadioButton:
             label = label or key
             btn = QRadioButton(parent=self, text=label)
             btn.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
@@ -86,8 +88,8 @@ class EditBox(Box):
         self.decobox.setCheckable(True)
         self.decobox.setChecked(False)
         self.decobox.toggled.connect(self.toggle_deco)
-        self.decogroup.addButton(add_decobutton(0, 0, "B", icon=f"{BASE_DIR}/gui/imgs/black.png"))
-        self.decogroup.addButton(add_decobutton(0, 1, "W", icon=f"{BASE_DIR}/gui/imgs/white.png"))
+        self.decogroup.addButton(add_decobutton(0, 0, "", icon=f"{BASE_DIR}/gui/imgs/black.png"))
+        self.decogroup.addButton(add_decobutton(0, 1, "", icon=f"{BASE_DIR}/gui/imgs/white.png"))
         self.decogroup.addButton(add_decobutton(1, 0, "TR", "△"))
         self.decogroup.addButton(add_decobutton(1, 1, "SQ", "□"))
         self.decogroup.addButton(add_decobutton(1, 2, "CR", "○"))
@@ -102,6 +104,14 @@ class EditBox(Box):
         box_layout.addLayout(btns_layout2)
         box_layout.addWidget(self.decobox)
         self.setLayout(box_layout)
+
+    def toggle_count(self):
+        if self.game_ui.gui_mode == GUIMode.EDIT:
+            self.game_ui.gui_mode = GUIMode.COUNT
+            self.game_ui.controller.count()
+        elif self.game_ui.gui_mode == GUIMode.COUNT:
+            self.game_ui.gui_mode = GUIMode.EDIT
+        self.game_ui.boardwidget.update()
 
     def toggle_deco(self):
         if not self.decobox.isChecked():
@@ -122,6 +132,9 @@ class EditBox(Box):
         self.btn_next_stone.setEnabled(has_children)
         self.btn_next_var.setEnabled(has_children)
         self.btn_last_stone.setEnabled(has_children)
+
+    def mode_changed(self, gui_mode):
+        self.btn_count.setChecked(gui_mode == GUIMode.COUNT)
 
 
 class ControllsBox(Box):

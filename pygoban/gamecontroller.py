@@ -96,6 +96,9 @@ class BaseGameController:
     def toggle_status(self, pos):
         self.__game.toggle_status(pos)
 
+    def count(self):
+        self.__game._count()
+
     def add_receiver(self, receiver: BaseReceiver):
         self.__game.add_receiver(receiver=receiver)
 

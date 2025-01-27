@@ -164,7 +164,6 @@ class IntersectionWidget(QWidget):
 
     def paintEvent(self, _) -> None:
         """Draw"""
-
         if not (last_turn := self.game_ui.last_turn):
             return
         self.inter = last_turn.board.intersection(self.board_pos)

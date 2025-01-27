@@ -1,21 +1,21 @@
 import logging
-from typing import cast
 import os
 import re
 import subprocess
 import threading
 from collections.abc import Iterable
+from typing import cast
 
-from .coords import gtp_coord_to_pos, pos_to_gtp_coord
-from .receivers import BaseReceiver
-from .gamecontroller import SubGameController
-from .game import Game
 from . import results
+from .coords import gtp_coord_to_pos, pos_to_gtp_coord
+from .game import Game
+from .gamecontroller import SubGameController
+from .receivers import BaseReceiver
 
 # example analyses output
 # move C4 visits 11782 edgeVisits 11783 utility 0.800618 winrate 0.906799 scoreMean 1.4196
 # scoreStdev 6.7351 scoreLead 1.4196 scoreSelfplay 2.13197 prior 0.117485 lcb 0.903819
-# # utilityLcb 0.792274 weight 12337 order 0 pv C4 D3 C6 D6 C7 C3 G4 D7 F5 H5 G6 E4 B3 B2
+# utilityLcb 0.792274 weight 12337 order 0 pv C4 D3 C6 D6 C7 C3 G4 D7 F5 H5 G6 E4 B3 B2
 
 KATA_ANALYZE_STR = (
     r"move (\S+) visits (\S+?) edgeVisits \S+? utility (\S+?) winrate (\S+?) scoreMean (\S+?) "
@@ -39,10 +39,8 @@ class GTPController(BaseReceiver, SubGameController):
         self.receiver = self
         self.events = {results.TurnDone, results.GameResultDone, results.Counted}
         self.process = self.get_process(cmd_line)
-        self.is_resetting = False
         self.is_running = True
         self.actions: set[str] = set()
-        self.is_analyzing = False
         if actions:
             for action in actions:
                 self.set_action(action, True)
@@ -66,14 +64,14 @@ class GTPController(BaseReceiver, SubGameController):
                 )
             if match := re.match(COORD_OR_PASS, nextline):
                 val = match.group(1).strip()
-                if val.upper() == "PASS":
+                if val == "PASS":
                     pos = None
                 else:
                     pos = gtp_coord_to_pos(val, self.ruleset.boardsize)
                 assert self.last_turn
                 self.play(self.last_turn.next_color, pos)
-            else:
-                print(nextline[0:50])
+            elif part := nextline[0:50].strip():
+                logging.debug("GTP OUT: %s", part)
             return res
 
         while self.is_running and self.process.pid:
@@ -98,6 +96,8 @@ class GTPController(BaseReceiver, SubGameController):
         )
 
     def do_cmd(self, cmd: str):
+        if not self.is_running:
+            return
         print("do cmd", cmd)
         try:
             assert self.process.stdin
@@ -109,7 +109,7 @@ class GTPController(BaseReceiver, SubGameController):
 
     def annotate_res(self, res):
         parts = res.split("info ")
-        parts = parts[0 : min(11, len(parts))]
+        parts = parts[0: min(11, len(parts))]
         infos = {}
         for part in parts:
             if not part:
@@ -135,20 +135,17 @@ class GTPController(BaseReceiver, SubGameController):
                 self.set_action("analyze_full", False)
                 self.do_cmd("stop")
 
-        self.is_analyzing = False
-
     def set_action(self, action: str, status: bool):
         if action == "analyze_full":
             self.autoplay = status
             action = "analyze"
         if status:
             self.actions.add(action)
-        else:
+        elif action in self.actions:
             self.actions.remove(action)
 
     def received_turn(self, result: results.TurnDone) -> None:
         if result.reset:
-            self.is_resetting = True
             self.got_turn = False
             self.do_cmd(cmd="clear_board")
             self.do_cmd(f"boardsize {self.ruleset.boardsize}")
@@ -167,7 +164,6 @@ class GTPController(BaseReceiver, SubGameController):
                 if node.pos:
                     coord = pos_to_gtp_coord(node.pos, boardsize=self.ruleset.boardsize)
                     self.do_cmd(cmd=f"play {node.color.name} {coord}")
-            self.is_resetting = False
         else:
             node = result.node
             if node.color not in self.actions:
@@ -178,8 +174,7 @@ class GTPController(BaseReceiver, SubGameController):
         if result.next_color in self.actions and not is_undo:
             self.do_cmd(f"genmove {result.next_color}")
 
-        if "analyze" in self.actions:  # and not self.is_analyzing:
-            self.is_analyzing = True
+        if "analyze" in self.actions:
             self.do_cmd(f"kata-analyze {result.next_color.name} 100")
 
         self.got_turn = True
@@ -200,7 +195,6 @@ class GTPController(BaseReceiver, SubGameController):
 
     def received_count(self, result: results.Counted) -> None:
         self.set_action("analyze_full", False)
-        print("-----------------------------STOP")
         self.do_cmd("quit")
 
     def received_period_ended(self, result: results.TimeDone) -> None: ...

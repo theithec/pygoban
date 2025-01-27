@@ -2,7 +2,6 @@
 # because qt
 import os
 from copy import copy
-from typing import cast
 
 from PyQt6.QtCore import QUrl, pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
@@ -42,6 +41,7 @@ class GuiReceiver(BaseReceiver):
         pass
 
     def received_annotated(self, result) -> None:
+        print("received annotated", self.game_ui.gui_mode)
         self.game_ui.boardwidget.update()
 
     def received_count(self, result) -> None:
@@ -163,7 +163,7 @@ class GameWidget(GameUI):
             pos = iwidget.board_pos
             if self.gui_mode == GUIMode.COUNT:
                 if inter.color:
-                    self.controller.toggle_status(iwidget.board_pos)
+                    self.controller.toggle_status(pos)
             elif self.annotation_type:
                 val: str | Marker | Color | None = None
                 end = None
@@ -186,12 +186,12 @@ class GameWidget(GameUI):
                         if self.boardoverlay.startpos:
                             end = pos
                             pos = self.boardoverlay.startpos
+                            self.boardoverlay.startpos = None
                             val = self.annotation_type
                         else:
                             self.boardoverlay.startpos = pos
                 if val:
                     self.controller.annotate(pos=pos, name=val, end=end)
-                    self.boardoverlay.startpos = None
             else:
                 # self.boardwidget.show_analyzed_variation = False
                 if isinstance(self.parties[color := self.last_turn.next_color], GUIPlayer):

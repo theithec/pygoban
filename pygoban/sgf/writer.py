@@ -4,7 +4,6 @@ p2s = coords.pos_to_sgf
 
 
 def to_sgf(node: Node) -> str:
-    print("N", node, node.annos)
     col = node.color.short() if node.color else None
     txt = ""
     if col:

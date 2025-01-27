@@ -163,7 +163,6 @@ class NewGamePlayDialog(NewGameBaseDialog):
             if self.time_check.isChecked()
             else None
         )
-        print("TS", timestr)
         super().startgame(timestr=timestr)
 
     def add_rows(self, layout):

@@ -45,7 +45,7 @@ FloatByColor = dict[Color, float]
 
 
 class Counter:
-    def __init__(self, board: Board):
+    def __init__(self, board: Board) -> None:
         self.board = board
         self.checked: set[Pos] = set()
 
@@ -78,14 +78,18 @@ class Counter:
             for y in boardrange:
                 pos = Pos(x, y)
                 inter = self.board.intersection(pos)
-                if pos not in self.checked and inter.is_empty():
+                if pos in self.checked:
+                    continue
+                if inter.is_empty():
                     group = self.check(pos)
                     if group.owner and group.coords:
                         empties[group.owner].update(group.coords)
+                else:
+                    group = Group()
                 if inter.owner and inter.owner != inter.color:
                     if inter.color:
                         deadonboard[inter.color] += 1
-                        if group.owner is not False:
+                        if group.owner:
                             empties[group.owner].add(pos)
 
         return empties, deadonboard

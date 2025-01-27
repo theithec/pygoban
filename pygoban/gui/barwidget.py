@@ -156,7 +156,6 @@ class BarWidget(QFrame):
                     if key == "analyze_full":
                         pass  # self.game_ui.controller.set_cursor(self.game_ui.last_turn.node.root())
                     cpy = copy(self.game_ui.last_turn)
-                    print("CPY", cpy)
                     cpy.reset = True
                     gtpctrl.receive_game_event(cpy)
 
