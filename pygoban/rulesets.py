@@ -143,7 +143,11 @@ class Ruleset:
             raise NoLibsViolation(f"No liberties: {result}")
         if stone.pos == self.ko:
             raise KoViolation(f"Invalid Ko: {result}")
-        if len(result.libs) == 1 and result.libs == result.killed:
+        if (
+            len(result.libs) == 1
+            and result.libs == result.killed
+            and len(result.board.get_chain(stone.pos)) == 1
+        ):
             self.ko = list(result.killed)[0]
         else:
             self.ko = None

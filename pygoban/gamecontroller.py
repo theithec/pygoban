@@ -109,6 +109,9 @@ class SubGameController(BaseGameController):
         super().__init__(game=game)
         self.__game = self._BaseGameController__game
 
+    def quit(self):
+        raise NotImplementedError()
+
 
 G = TypeVar("G", bound=SubGameController)
 
