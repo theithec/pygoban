@@ -1,5 +1,5 @@
-from typing import Type, TypeVar
 import logging
+from typing import Type, TypeVar
 
 from .board import Color, Marker
 from .game import Game, Node
@@ -39,7 +39,7 @@ class BaseGameController:
         while curr:
             if not curr.children or len(curr.children) > 1:
                 break
-            curr = curr.children[0]
+            curr = curr.children[-1]
         self.set_cursor(curr)
 
     def _do_sibling(self, direction: int):

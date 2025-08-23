@@ -1,18 +1,20 @@
 # pylint: disable=abstract-method
 from typing import cast
-from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
+
+from PyQt6.QtGui import QIcon  # pylint: disable=no-name-in-module
+from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module; QFormLayout,
     QButtonGroup,
-    QSizePolicy,
-    # QFormLayout,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
-    QVBoxLayout,
     QRadioButton,
+    QSizePolicy,
+    QVBoxLayout,
 )
-from PyQt6.QtGui import QIcon  # pylint: disable=no-name-in-module
+
 from pygoban import results
-from pygoban.gui import GUIMode, BASE_DIR
+from pygoban.gui import BASE_DIR, GUIMode
+
 from . import Box, btn_adder
 
 
@@ -88,8 +90,8 @@ class EditBox(Box):
         self.decobox.setCheckable(True)
         self.decobox.setChecked(False)
         self.decobox.toggled.connect(self.toggle_deco)
-        self.decogroup.addButton(add_decobutton(0, 0, "", icon=f"{BASE_DIR}/gui/imgs/black.png"))
-        self.decogroup.addButton(add_decobutton(0, 1, "", icon=f"{BASE_DIR}/gui/imgs/white.png"))
+        self.decogroup.addButton(add_decobutton(0, 0, "B", icon=f"{BASE_DIR}/gui/imgs/black.png"))
+        self.decogroup.addButton(add_decobutton(0, 1, "W", icon=f"{BASE_DIR}/gui/imgs/white.png"))
         self.decogroup.addButton(add_decobutton(1, 0, "TR", "△"))
         self.decogroup.addButton(add_decobutton(1, 1, "SQ", "□"))
         self.decogroup.addButton(add_decobutton(1, 2, "CR", "○"))

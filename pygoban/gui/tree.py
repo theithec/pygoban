@@ -1,7 +1,12 @@
 # pylint: disable=invalid-name
 # because qt
 from PyQt6.QtCore import QPoint, Qt, pyqtSignal  # pylint: disable=no-name-in-module
-from PyQt6.QtGui import QColor, QPainter, QPen, QColorConstants  # pylint: disable=no-name-in-module
+from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
+    QColor,
+    QColorConstants,
+    QPainter,
+    QPen,
+)
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QLabel,
     QScrollArea,
@@ -9,26 +14,26 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QWidget,
 )
 
-from .. import Color, Node, results, BaseReceiver
+from .. import BaseReceiver, Color, Node, results
 
 
-class StoneNode(QLabel):
+class TreeNode(QLabel):
     WIDTH = 38
     tree: "TreeCanvas"
     child_index: int | None
 
-    def __init__(self, parent, stone: Node):
+    def __init__(self, parent, node: Node):
         super().__init__(parent)
-        self.bstone = stone
+        self.node = node
         self.tree = parent
         self.setStyleSheet(
-            "QLabel { color: %s }" % ("white" if self.bstone.color == Color.BLACK else "black")
+            "QLabel { color: %s }" % ("white" if self.node.color == Color.BLACK else "black")
         )
-        self.setText(str(len(self.bstone.path())))
+        self.setText(str(len(self.node.path())))
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        if stone.parent:
-            assert self.bstone.parent
-            self.child_index = self.bstone.parent.children.index(self.bstone)
+        if node.parent:
+            assert self.node.parent
+            self.child_index = self.node.parent.children.index(self.node)
         else:
             self.child_index = None
 
@@ -38,9 +43,9 @@ class StoneNode(QLabel):
     def paintEvent(self, event):
         painter = QPainter()
         painter.begin(self)
-        if self.bstone.color == Color.BLACK:
+        if self.node.color == Color.BLACK:
             qcol = QColorConstants.Black  # type: ignore
-        elif self.bstone.color == Color.WHITE:
+        elif self.node.color == Color.WHITE:
             qcol = QColorConstants.White  # type: ignore
         else:
             qcol = QColorConstants.Gray  # type: ignore
@@ -65,28 +70,36 @@ class StoneNode(QLabel):
         painter.drawEllipse(self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2)
         super().paintEvent(event)
 
-    def mousePressEvent(self, _event):
-        self.tree.callback(self.bstone)
+    def mousePressEvent(self, event):
+
+        is_rightclick = event.button() == Qt.MouseButton.RightButton
+        if is_rightclick:
+            node = self.node.parent
+            self.tree.del_stone(self)
+        else:
+            node = self.node
+        self.tree.callback(node)
 
 
 class TreeCanvas(QWidget):
-    def __init__(self, parent, callback):
+    def __init__(self, parent: "Tree", callback):
+        self.tree = parent
         super().__init__(parent)
-        self.nodes = {}
+        self.tree_nodes = {}
         self.root = None
         self.tree_cursor = None
-        self.setMinimumWidth(StoneNode.WIDTH * 5)
+        self.setMinimumWidth(TreeNode.WIDTH * 5)
         self.callback = callback
         self.maxx = 0
         self.maxy = 0
 
     def add_stone(self, stone):
         def add(stone):
-            node = StoneNode(self, stone)
-            if not self.nodes:
-                self.root = node
-            self.nodes[id(stone)] = node
-            self.tree_cursor = node
+            tree_node = TreeNode(self, stone)
+            if not self.tree_nodes:
+                self.root = tree_node
+            self.tree_nodes[id(stone)] = tree_node
+            self.tree_cursor = tree_node
             for child in stone.children:
                 add(child)
 
@@ -98,29 +111,46 @@ class TreeCanvas(QWidget):
             add(stone)
             self.set_stones()
 
+    def del_stone(self, tree_node: TreeNode):
+        parent = tree_node.node.parent
+        if not parent:
+            return
+
+        def _del(tree_node):
+            del self.tree_nodes[id(tree_node.node)]
+            children = tree_node.node.children
+            tree_node.node.__del__()
+            tree_node.hide()
+            del tree_node
+            for child in children:
+                _del(self.tree_nodes[id(child)])
+        print("N1", tree_node)
+        _del(self.tree_nodes[id(tree_node.node)])
+        self.tree.set_cursor(parent)
+
     def set_stones(self):
         alreade_used = set()
 
-        def _set(node, treex, treey):
-            node.show()
+        def _set(tree_node, treex, treey):
+            tree_node.show()
             while (
-                xpos := int((StoneNode.WIDTH * treex) - (StoneNode.WIDTH / 3)),
-                ypos := (StoneNode.WIDTH * treey),
+                xpos := int((TreeNode.WIDTH * treex) - (TreeNode.WIDTH / 3)),
+                ypos := (TreeNode.WIDTH * treey),
             ) in alreade_used:
                 treex += 1
             alreade_used.add((xpos, ypos))
-            node.treex = treex
-            node.treey = treey
-            node.setGeometry(xpos, ypos, node.WIDTH, node.WIDTH)
+            tree_node.treex = treex
+            tree_node.treey = treey
+            tree_node.setGeometry(xpos, ypos, tree_node.WIDTH, tree_node.WIDTH)
             self.maxx = max(self.maxx, xpos)
             self.maxy = max(self.maxy, ypos)
-            for index, child in enumerate(node.bstone.children):
-                node = self.nodes[id(child)]
+            for index, child in enumerate(tree_node.node.children):
+                node = self.tree_nodes[id(child)]
                 if node:
                     _set(node, index + treex, treey + 1)
 
         _set(self.root, 1, 1)
-        self.resize(self.maxx + StoneNode.WIDTH, self.maxy + StoneNode.WIDTH)
+        self.resize(self.maxx + TreeNode.WIDTH, self.maxy + TreeNode.WIDTH)
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -128,39 +158,40 @@ class TreeCanvas(QWidget):
         visible_rect = self.visibleRegion().boundingRect()
         width = visible_rect.width()
         assert self.tree_cursor
-        path = self.tree_cursor.bstone.path()
+        path = self.tree_cursor.node.path()
 
         def centered(pos):
-            return QPoint(pos.x() + StoneNode.WIDTH // 2, pos.y() + StoneNode.WIDTH // 2)
+            return QPoint(pos.x() + TreeNode.WIDTH // 2, pos.y() + TreeNode.WIDTH // 2)
 
-        def conn(node):
-            pos = node.pos()
-            height = node.height()
-            if visible_rect.contains(pos) and node.child_index is not None:
-                if node.bstone in path:
-                    if winrate := node.bstone.annos.winrates:
-                        best = sorted([float(val[0]) for val in winrate.values()])[-1]
-                        half = int((width / 100) * best)
-                        if node.bstone.color == Color.BLACK:
-                            half = width - half
-                        painter.fillRect(0, pos.y(), half, height, QColor("darkGray"))
-                        painter.fillRect(half, pos.y(), width - half, height, QColor("lightGray"))
-                    painter.setBrush(QColorConstants.White)
-                    painter.setPen(QColorConstants.White)
-                else:
-                    painter.setBrush(QColorConstants.Gray)
-                    painter.setPen(QColorConstants.Gray)
+        def conn(tree_node):
+            pos = tree_node.pos()
+            height = tree_node.height()
+            if visible_rect.contains(pos) and tree_node.child_index is not None:
+
+                # if node.bstone in path:
+                #     if winrate := node.bstone.annos.winrates:
+                #         best = sorted([float(val[0]) for val in winrate.values()])[-1]
+                #         half = int((width / 100) * best)
+                #         if node.bstone.color == Color.BLACK:
+                #             half = width - half
+                #         painter.fillRect(0, pos.y(), half, height, QColor("darkGray"))
+                #         painter.fillRect(half, pos.y(), width - half, height, QColor("lightGray"))
+                #     painter.setBrush(QColorConstants.White)
+                #     painter.setPen(QColorConstants.White)
+                # else:
+                #     painter.setBrush(QColorConstants.Gray)
+                #     painter.setPen(QColorConstants.Gray)
                 painter.drawLine(
                     centered(pos),
-                    centered(self.nodes[id(node.bstone.parent)].pos()),
+                    centered(self.tree_nodes[id(tree_node.node.parent)].pos()),
                 )
 
             if (
                 pos.y() < visible_rect.y() + visible_rect.height()
                 and pos.x() < visible_rect.x() + visible_rect.width()
             ):
-                for child in node.bstone.children:
-                    if child_node := self.nodes.get(id(child)):
+                for child in tree_node.node.children:
+                    if child_node := self.tree_nodes.get(id(child)):
                         conn(child_node)
 
         painter = QPainter()
@@ -175,31 +206,32 @@ class Tree(QScrollArea, BaseReceiver):
 
     def __init__(self, parent, callback):
         super().__init__(parent)
-        self.canvas = TreeCanvas(parent=None, callback=callback)
+        self.canvas = TreeCanvas(parent=self, callback=callback)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setWidget(self.canvas)
         self.stones_signal.connect(self.set_cursor)
-        self.setMinimumWidth(int(StoneNode.WIDTH * 1.5))
+        self.setMinimumWidth(int(TreeNode.WIDTH * 1.5))
         self.horizontalScrollBar().valueChanged.connect(self.moved)
         self.verticalScrollBar().valueChanged.connect(self.moved)
-        self.events = {results.TurnDone, results.AnnotationDone}
+        self.events = {results.TurnDone}  # , results.AnnotationDone}
         parent.game_ui.controller.add_receiver(self)
 
     def moved(self, *args, **kwargs):
         self.canvas.update()
 
     def set_cursor(self, stone: Node):
-        if node := self.canvas.nodes.get(id(stone)):
-            self.canvas.tree_cursor = node
+        print("SC", stone)
+        if tree_node := self.canvas.tree_nodes.get(id(stone)):
+            self.canvas.tree_cursor = tree_node
         else:
             self.canvas.add_stone(stone)
         self.ensureWidgetVisible(self.canvas.tree_cursor)
-        if self.canvas.tree_cursor.bstone != stone:
+        if self.canvas.tree_cursor.node != stone:
             self.set_cursor(stone)
         self.canvas.update()
 
     def received_turn(self, result: results.TurnDone):
         self.stones_signal.emit(result.node)
 
-    def received_annotated(self, result):
-        self.canvas.update()
+    # def received_annotated(self, result):
+    #     self.canvas.update()

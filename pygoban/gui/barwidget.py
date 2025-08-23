@@ -21,13 +21,9 @@ from pygoban import Color, gtp
 from pygoban.sgf import writer
 
 from . import GameUI, GUIMode, filedialog
-from .boxes import (
-    Box,
-    BoxesByName,
-    CommentsBox,
-)
+from .boxes import Box, BoxesByName, CommentsBox
 from .boxes.controlsbox import ControllsBox
-
+from .boxes.diagram2 import DiagramBox
 from .boxes.playersbox import PlayersBox
 
 # from .chart import MyChart
@@ -53,7 +49,9 @@ class BoxesWidget(QWidget):
         # self.game_box = self.add_box(GameBox(self), vis=not is_edit)
         # self.edit_box = self.add_box(EditBox(self), vis=is_edit)
         self.ctrl_box = self.add_box(ControllsBox(self), vis=True)
-        self.add_box(CommentsBox(self), vis=is_edit)
+        # self.add_box(CommentsBox(self), vis=is_edit)
+        self.add_box(CommentsBox(self), vis=False)
+        self.add_box(DiagramBox(self), vis=is_edit)
         self._layout.addRow("Ruleset", QLabel("Some data"))
         self.setLayout(self._layout)
 
@@ -154,7 +152,8 @@ class BarWidget(QFrame):
                 if self.game_ui.last_turn:
 
                     if key == "analyze_full":
-                        pass  # self.game_ui.controller.set_cursor(self.game_ui.last_turn.node.root())
+                        # self.game_ui.controller.set_cursor(self.game_ui.last_turn.node.root())
+                        pass
                     cpy = copy(self.game_ui.last_turn)
                     cpy.reset = True
                     gtpctrl.receive_game_event(cpy)

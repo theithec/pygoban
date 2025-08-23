@@ -163,7 +163,7 @@ class GameUI(QWidget):
     def open_as_new(self):
         raise NotImplementedError()
 
-    def inter_clicked(self, is_rightclick: bool):
+    def inter_clicked(self, intersection, is_rightclick: bool):
         raise NotImplementedError()
 
 

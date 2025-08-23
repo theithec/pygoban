@@ -18,8 +18,8 @@ from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
 )
 from PyQt6.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
-from .. import Color, Intersection, Pos, Node
-from . import BASE_DIR, GUIMode, GameUI
+from .. import Color, Intersection, Node, Pos
+from . import BASE_DIR, GameUI, GUIMode
 
 if TYPE_CHECKING:
     from .boardwidget import BoardWidget, InsParams
@@ -53,6 +53,7 @@ class IntersectionWidget(QWidget):
 
     def mousePressEvent(self, event) -> None:
         self.game_ui.inter_clicked(self, is_rightclick=event.button() == Qt.MouseButton.RightButton)
+
         self._hover = False
 
     def draw_number(self, painter, params) -> None:

@@ -13,7 +13,7 @@ from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
 # from PyQt6.QtMultimedia import QSound  # pylint: disable=no-name-in-module
 from PyQt6.QtMultimedia import QSoundEffect
 
-from .. import BaseReceiver, Color, MainGameController, Marker, Parties, results, Pos
+from .. import BaseReceiver, Color, MainGameController, Marker, Parties, Pos, results
 from . import BASE_DIR, GameUI, GUIMode, MainUI
 from .barwidget import BarWidget
 from .boardwidget import BoardOverlay, BoardWidget
@@ -165,6 +165,7 @@ class GameWidget(GameUI):
                 if inter.color:
                     self.controller.toggle_status(pos)
             elif self.annotation_type:
+                print("TYPE", self.annotation_type)
                 val: str | Marker | Color | None = None
                 end = None
                 match self.annotation_type:

@@ -117,6 +117,7 @@ class GTPController(BaseReceiver, SubGameController):
             match = pattern.search(part)
             if match:
                 groups = match.groups()
+                # print("G", groups)
                 pos = gtp_coord_to_pos(groups[0], self.ruleset.boardsize)
                 winrate = float(groups[3]) * 100
                 score = float(groups[4])
@@ -129,7 +130,7 @@ class GTPController(BaseReceiver, SubGameController):
         self.annotate_winrates(infos)
         if self.autoplay and self.last_stone:
             if self.last_stone.children:
-                node = self.last_stone.children[0]
+                node = self.last_stone.children[-1]
                 self.play(node.color, node.pos)
             else:
                 self.set_action("analyze_full", False)

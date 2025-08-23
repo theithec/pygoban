@@ -1,4 +1,3 @@
-# from threading import Thread
 from . import results
 from .board import Marker
 from .nodescontroller import Color, Node, NodesController, Pos
@@ -24,7 +23,6 @@ class Game:
         self.receivers: list[BaseReceiver] = []
         self.ruleset.set_node_controller(nodes)
         self.nodes = nodes
-        # self._event_threads: list[Thread] = []
         self._started = False
         self.timers = (
             {
@@ -42,13 +40,9 @@ class Game:
 
         cls = result.__class__
         for receiver in self.receivers:
-            if not cls in receiver.events:
+            if cls not in receiver.events:
                 continue
-            # print(cls, receiver.__class__)
             receiver.receive_game_event(result)
-            # thread = Thread(target=receiver.receive_game_event, args=(result,))
-            # self._event_threads.append(thread)
-            # thread.start()
 
     def period_ended(self, color: Color, next_time: int):
         """A time period ended"""

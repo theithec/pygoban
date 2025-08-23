@@ -81,6 +81,14 @@ class Node:
             return self.annos == other.annos
         return not any(sval != oval for (sval, oval) in cmprs)
 
+    def __del__(self):
+        print("DEL", self)
+        if self.parent:
+            print("cc1", self.parent.children)
+            del self.parent.children[self.parent.children.index(self)]
+            print("cc2", self.parent.children)
+            del self
+
     def _as_copy(
         self, target: "Node", found: Optional["Node"] = None
     ) -> Tuple["Node", Optional["Node"]]:
