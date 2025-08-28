@@ -34,27 +34,31 @@ class NewGameBaseDialog(QDialog):
 
     def init_ui(self):  # pylint: disable=invalid-name
         layout = QFormLayout()
-        self.for_player = {}
+        self.widgets_by_color = {}
 
         settings = self.manager.settings
         for color in (Color.BLACK, Color.WHITE):
             colname = str(color)
-            self.for_player[color] = {}
+            self.widgets_by_color[color] = {}
             group_box = QGroupBox(colname)
             group_layout = QFormLayout()
 
-            for_player = self.for_player[color]
-            if self.SHOW_PLAYER_TYPE:
-                for_player["type"] = QComboBox()
-                playertypes = ["human", *settings.gtp_engines.keys()]
-                for_player["type"].addItems(playertypes)
-                group_layout.addRow("Type", for_player["type"])
-            for_player["name_edit"] = QLineEdit(
+            widgets = self.widgets_by_color[color]
+            widgets["name_edit"] = QLineEdit(
                 _translate(
-                    "NewGameDialog", getattr(settings, f"{color.name.lower()}_name", colname)
+                    "NewGameDialog",
+                    getattr(settings, f"{color.name.lower()}_name", colname),
                 )
             )
-            group_layout.addRow("Name", for_player["name_edit"])
+            if self.SHOW_PLAYER_TYPE:
+                widgets["type"] = QComboBox()
+                playertypes = ["human", *settings.gtp_engines.keys()]
+                widgets["type"].addItems(playertypes)
+                widgets["type"].currentTextChanged.connect(
+                    self.name_changer_for_color(color)
+                )
+                group_layout.addRow("Type", widgets["type"])
+            group_layout.addRow("Name", widgets["name_edit"])
             group_box.setLayout(group_layout)
             layout.addRow(group_box)
 
@@ -84,6 +88,12 @@ class NewGameBaseDialog(QDialog):
         self.setWindowTitle("New Game - Pygoban")
         # self.show()
 
+    def name_changer_for_color(self, color):
+        def changer(name):
+            self.widgets_by_color[color]["name_edit"].setText(name)
+
+        return changer
+
     def add_rows(self, layout):
         pass
 
@@ -93,8 +103,8 @@ class NewGameBaseDialog(QDialog):
                 boardsize=int(self.size_box.currentText()),
                 komi=float(self.komi_edit.text()),
                 handicap=int(self.handicap_box.currentText()),
-                black_name=str(self.for_player[Color.BLACK]["name_edit"].text()),
-                white_name=self.for_player[Color.WHITE]["name_edit"].text(),
+                black_name=str(self.widgets_by_color[Color.BLACK]["name_edit"].text()),
+                white_name=self.widgets_by_color[Color.WHITE]["name_edit"].text(),
                 modestr=self.GUI_MODE.value,
                 timestr=timestr,
             )
@@ -105,11 +115,14 @@ class NewGameBaseDialog(QDialog):
         controller = self.manager.add_game_from_atomic_values(**data)
         if self.SHOW_PLAYER_TYPE:
             for color in (Color.BLACK, Color.WHITE):
-                txt = self.for_player[color]["type"].currentText()
+                txt = self.widgets_by_color[color]["type"].currentText()
                 if txt != "human":
                     cmd = self.manager.settings.gtp_engines[txt]
                     gtpctrl, created = controller.add_controller(
-                        cls=gtp.GTPController, cmd_line=cmd, actions=[color], force_create=True
+                        cls=gtp.GTPController,
+                        cmd_line=cmd,
+                        actions=[color],
+                        force_create=True,
                     )
                     logging.debug("create for %s: %s", color, cmd)
                     if created:

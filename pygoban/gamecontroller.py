@@ -21,6 +21,7 @@ class BaseGameController:
         return self.receiver.last_turn.node
 
     def play(self, color: Color, pos: Pos | None = None):
+
         self.__game._place(color=color, pos=pos)  # pylint: disable=protected-access
 
     def set_cursor(self, node: Node):

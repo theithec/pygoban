@@ -27,7 +27,8 @@ class TreeNode(QLabel):
         self.node = node
         self.tree = parent
         self.setStyleSheet(
-            "QLabel { color: %s }" % ("white" if self.node.color == Color.BLACK else "black")
+            "QLabel { color: %s }"
+            % ("white" if self.node.color == Color.BLACK else "black")
         )
         self.setText(str(len(self.node.path())))
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -56,7 +57,9 @@ class TreeNode(QLabel):
         painter.setPen(pen)
         painter.setBrush(qcol)
         pen.setCosmetic(True)
-        painter.drawEllipse(self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2)
+        painter.drawEllipse(
+            self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2
+        )
         painter.end()
         painter = QPainter()
         painter.begin(self)
@@ -67,11 +70,12 @@ class TreeNode(QLabel):
             pen.setBrush(QColorConstants.Red)  # type: ignore
             pen.setCosmetic(True)
             painter.setPen(pen)
-        painter.drawEllipse(self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2)
+        painter.drawEllipse(
+            self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2
+        )
         super().paintEvent(event)
 
     def mousePressEvent(self, event):
-
         is_rightclick = event.button() == Qt.MouseButton.RightButton
         if is_rightclick:
             node = self.node.parent
@@ -167,7 +171,6 @@ class TreeCanvas(QWidget):
             pos = tree_node.pos()
             height = tree_node.height()
             if visible_rect.contains(pos) and tree_node.child_index is not None:
-
                 # if node.bstone in path:
                 #     if winrate := node.bstone.annos.winrates:
                 #         best = sorted([float(val[0]) for val in winrate.values()])[-1]
@@ -224,6 +227,7 @@ class Tree(QScrollArea, BaseReceiver):
             self.canvas.tree_cursor = tree_node
         else:
             self.canvas.add_stone(stone)
+            pass
         self.ensureWidgetVisible(self.canvas.tree_cursor)
         if self.canvas.tree_cursor.node != stone:
             self.set_cursor(stone)

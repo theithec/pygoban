@@ -157,7 +157,7 @@ class ControllsBox(Box):
 
         self.game_box.buttons["Done"].setVisible(False)
         self.game_box.buttons["Pass"].setVisible(True)
-        self.game_box.buttons["Undo"].setVisible(bool(result.node.is_root))
+        self.game_box.buttons["Undo"].setVisible(not result.node.is_root)
         if self.game_ui.gui_mode == GUIMode.EDIT:
             self.edit_box.update_controlls(result)
 
