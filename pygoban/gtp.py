@@ -117,8 +117,9 @@ class GTPController(BaseReceiver, SubGameController):
             match = pattern.search(part)
             if match:
                 groups = match.groups()
-                # print("G", groups)
-                pos = gtp_coord_to_pos(groups[0], self.ruleset.boardsize)
+                if (group0 := groups[0]) == "pass":
+                    continue
+                pos = gtp_coord_to_pos(group0, self.ruleset.boardsize)
                 winrate = float(groups[3]) * 100
                 score = float(groups[4])
                 moves = [

@@ -124,7 +124,7 @@ class TreeCanvas(QWidget):
             del tree_node
             for child in children:
                 _del(self.tree_nodes[id(child)])
-        print("N1", tree_node)
+
         _del(self.tree_nodes[id(tree_node.node)])
         self.tree.set_cursor(parent)
 
@@ -220,7 +220,6 @@ class Tree(QScrollArea, BaseReceiver):
         self.canvas.update()
 
     def set_cursor(self, stone: Node):
-        print("SC", stone)
         if tree_node := self.canvas.tree_nodes.get(id(stone)):
             self.canvas.tree_cursor = tree_node
         else:

@@ -186,7 +186,7 @@ class BoardWidget(QWidget):
 class BoardOverlay(QWidget, BaseReceiver):
 
     def __init__(self, parent: "GameWidget") -> None:
-        super().__init__(parent=parent)  # pylint: disable=unexpected-keyword-arg
+        super().__init__(parent)  # pylint: disable=unexpected-keyword-arg
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.board = parent.boardwidget
         self.game_ui: GameUI = cast(GameUI, parent)

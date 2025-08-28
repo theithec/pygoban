@@ -28,7 +28,7 @@ class Node:
         color: Color,
         pos: Optional[Pos] = None,
         parent: Optional["Node"] = None,
-    ):
+    ) -> None:
         self.color = color
         self.pos = pos
         self.children: List["Node"] = []
@@ -53,6 +53,14 @@ class Node:
 
     def path(self) -> List["Node"]:
         return self._full_path()[1:]
+
+    def full_path_to_last(self):
+        path = self._full_path()
+        node = self
+        while node:
+            if node := node.children[-1] if node.children else None:
+                path.append(node)
+        return path
 
     def root(self) -> "Node":
         return self._full_path()[0]
@@ -82,34 +90,16 @@ class Node:
         return not any(sval != oval for (sval, oval) in cmprs)
 
     def __del__(self):
-        print("DEL", self)
-        if self.parent:
-            print("cc1", self.parent.children)
+        if self.parent and self in self.parent.children:
             del self.parent.children[self.parent.children.index(self)]
-            print("cc2", self.parent.children)
-            del self
+        del self
 
-    def _as_copy(
-        self, target: "Node", found: Optional["Node"] = None
-    ) -> Tuple["Node", Optional["Node"]]:
+    def as_copy(self) -> "Node":
         pos = Pos(*self.pos) if self.pos else None
         move: "Node" = self.__class__(color=self.color, pos=pos)
         move.annos = Annotations(**vars(self.annos))
         for child in self.children:
-            child_cpy, found = child._as_copy(target=target, found=found)
+            child_cpy = child.as_copy()
             move.children.append(child_cpy)
             child_cpy.parent = move
-            if target == child:
-                found = child_cpy
-        return (
-            move,
-            found,
-        )
-
-    def as_copy(self):
-        """start with root!"""
-        path = self.path()
-        root = self if not self.parent else path[0].parent
-        assert root
-        rcpy = root._as_copy(target=self)
-        return rcpy[1]
+        return move

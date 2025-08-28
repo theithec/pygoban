@@ -36,6 +36,8 @@ class GuiReceiver(BaseReceiver):
     def received_turn(self, result: results.TurnDone) -> None:
         self.game_ui.last_turn = result
         self.game_ui.boardwidget.update()
+        if result.node.color != Color.EMPTY:
+            self.game_ui.stonesound.play()
 
     def received_resign(self, result) -> None:
         pass
@@ -130,7 +132,9 @@ class GameWidget(GameUI):
             match atype:
                 case "B" | "W":
                     # self.last_turn.node.annos.stones.pop(pos, None)
-                    if found := self.last_turn.board.intersection(pos).color.name.startswith(atype):
+                    if found := self.last_turn.board.intersection(
+                        pos
+                    ).color.name.startswith(atype):
                         self.controller.annotate(iwidget.board_pos, Color.EMPTY)
                 case "TR" | "SQ" | "CR":
                     if annos.markers[pos].name == atype:
@@ -165,7 +169,6 @@ class GameWidget(GameUI):
                 if inter.color:
                     self.controller.toggle_status(pos)
             elif self.annotation_type:
-                print("TYPE", self.annotation_type)
                 val: str | Marker | Color | None = None
                 end = None
                 match self.annotation_type:
@@ -195,7 +198,9 @@ class GameWidget(GameUI):
                     self.controller.annotate(pos=pos, name=val, end=end)
             else:
                 # self.boardwidget.show_analyzed_variation = False
-                if isinstance(self.parties[color := self.last_turn.next_color], GUIPlayer):
+                if isinstance(
+                    self.parties[color := self.last_turn.next_color], GUIPlayer
+                ):
                     self.controller.play(
                         color=color,
                         pos=iwidget.board_pos,
@@ -208,7 +213,7 @@ class GameWidget(GameUI):
     def open_as_new(self) -> None:
         ruleset = copy(self.ruleset)
         assert self.last_turn
-        cpy = self.last_turn.node.as_copy()
+        cpy = self.last_turn.node.root().as_copy()
         self.main_ui.add_game(
             mode=GUIMode.EDIT,
             ruleset=ruleset,

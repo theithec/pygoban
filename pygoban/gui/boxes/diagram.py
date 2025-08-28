@@ -59,7 +59,6 @@ class DiagramBox(Box):
         print("Anno", result)
 
     def received_turn(self, result: results.TurnDone) -> None:
-        print("R turn")
         self.turnlines.clear()
         self.turnlines.append(self.cnt, self.cnt // 2)
         self.cnt += 10

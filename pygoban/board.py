@@ -1,10 +1,10 @@
-"""The board and helpers """
+"""The board and helpers"""
 
 from dataclasses import dataclass
 from enum import Enum, IntEnum
 from typing import Dict, List, Optional, Set, Tuple
 
-from . import coords, Pos
+from . import Pos, coords
 
 i = 3
 
@@ -60,7 +60,10 @@ class Board(List[List[Intersection]]):
         super().__init__()
         self.boardrange = range(boardsize)
         self.extend(
-            [[Intersection(color=Color.EMPTY) for _x in self.boardrange] for _y in self.boardrange]
+            [
+                [Intersection(color=Color.EMPTY) for _x in self.boardrange]
+                for _y in self.boardrange
+            ]
         )
         self.boardsize = boardsize
 
@@ -146,7 +149,9 @@ class Board(List[List[Intersection]]):
 
     def analyze(self, pos: Pos, findkilled: bool = True):
         """Return the finished analyze of a played stone"""
-        _started, _group, killed, libs, _findkilled = self._analyze(pos=pos, findkilled=findkilled)
+        _started, _group, killed, libs, _findkilled = self._analyze(
+            pos=pos, findkilled=findkilled
+        )
         return killed, libs
 
     def intersection(
@@ -172,7 +177,10 @@ class Board(List[List[Intersection]]):
             x = cpy.boardsize - xorg - 1
             txt += "%2s  " % (x + 1)
             txt += " ".join(
-                [cpy.intersection(Pos(y, xorg)).color.short() for y in range(cpy.boardsize)]
+                [
+                    cpy.intersection(Pos(y, xorg)).color.short()
+                    for y in range(cpy.boardsize)
+                ]
             )
             txt += "\n"
 
