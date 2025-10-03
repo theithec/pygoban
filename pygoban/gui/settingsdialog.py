@@ -20,8 +20,8 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
 
 from pygoban import Settings
 
-from . import CenteredMixin
 from pygoban import gtp
+from . import CenteredMixin
 
 _translate = QCoreApplication.translate
 
@@ -53,7 +53,6 @@ class SettingsDialog(QDialog, CenteredMixin):
         self.setLayout(layout)
         self.setGeometry(300, 300, 350, 300)
         self.setWindowTitle(_translate("SettingsDialog", "Pygoban Settings"))
-        # self.exec_()
 
     def add_tab(self, name, layout):
         widget = QWidget()
@@ -149,33 +148,57 @@ class SettingsDialog(QDialog, CenteredMixin):
             layout.addWidget(gtp_nameedit, index, 1)
             gtp_cmdedit = QLineEdit(cmd)
             layout.addWidget(gtp_cmdedit, index, 2)
-            gtp_btn_check = QPushButton("Check")
-            gtp_btn_check.clicked.connect(mk_handler(index))
-            layout.addWidget(gtp_btn_check, index, 3)
+            if name:
+                gtp_btn_check = QPushButton("Check")
+                gtp_btn_check.clicked.connect(mk_handler(index))
+                layout.addWidget(gtp_btn_check, index, 3)
         return layout
 
     def get_gtplayout(self):
-        layout = QVBoxLayout()
-        label_layout = QHBoxLayout()
-        label_layout.addWidget(QLabel("Name"))
-        label_layout.addWidget(QLabel("Command"))
+        # layout = QVBoxLayout()
+        layout = QGridLayout()
+        # label_layout = QHBoxLayout()
+        lbl = QLabel("Name")
+        lbl.setMinimumWidth(80)
+        lbl.setMaximumWidth(80)
+        # lbl.setMaximumWidth(80)
+        layout.addWidget(lbl, 1, 1)
+        lbl = QLabel("Command")
+        lbl.setMinimumWidth(180)
+        # lbl.setMaximumWidth(180)
+        layout.addWidget(lbl, 1, 2)
         labels = QWidget()
-        labels.setLayout(label_layout)
-        layout.addWidget((labels))
+        # labels.setLayout(label_layout)
+        # )layout.addWidget((labels))
 
         items = list(self.settings.gtp_engines.items())
         items.append(("", ""))
 
-        for name, cmd in items:
-            gtp_group = QGroupBox(name or "New")
-            gtp_group_layout = QHBoxLayout()
+        def mk_handler(name):
+            def handler(*args, **kwargs):
+                print("check ", self.settings.gtp_engines[name])
+                # process = gtp.get_process(items[index][1])
+                # gtp.do_cmd("help", process)
+                # nextline = process.stdout.readline().decode().strip()
+                # print("gtp:", nextline)
+
+            return handler
+
+        for index, (name, cmd) in enumerate(items):
             gtp_nameedit = QLineEdit(name)
+            gtp_nameedit.setMinimumWidth(80)
+            gtp_nameedit.setMaximumWidth(80)
             gtp_cmdedit = QLineEdit(cmd)
+            gtp_cmdedit.setMinimumWidth(180)
             self.gtp_fields_list.append((gtp_nameedit, gtp_cmdedit))
-            gtp_group_layout.addWidget(gtp_nameedit)
-            gtp_group_layout.addWidget(gtp_cmdedit)
-            gtp_group.setLayout(gtp_group_layout)
-            layout.addWidget(gtp_group)
+            layout.addWidget(gtp_nameedit, index + 2, 1)
+            layout.addWidget(gtp_cmdedit, index + 2, 2)
+            if name:
+                gtp_btn_check = QPushButton("Check")
+                gtp_btn_check.clicked.connect(mk_handler(name))
+                layout.addWidget(gtp_btn_check, index + 2, 3)
+            # gtp_group.setLayout(gtp_group_layout)
+            # layout.addWidget(gtp_group, index + 2, 1)
         return layout
 
     def save(self):
