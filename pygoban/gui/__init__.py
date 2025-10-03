@@ -59,16 +59,28 @@ def get_qsettings() -> QSettings:
         qsettings.beginGroup(groupname)
         for key, val in data.items():
             if (qval := qsettings.value(key)) is None:
-                logging.debug("No value for '%s' in qsettings. Use default '%s'", key, val)
+                logging.debug(
+                    "No value for '%s/%s' in qsettings. Use default '%s'",
+                    groupname,
+                    key,
+                    val,
+                )
                 qsettings.setValue(key, val)
             else:
-                logging.debug("Value for '%s' from  qsettings: '%s'", key, qval)
+                logging.debug(
+                    "Value for '%s/%s' from  qsettings: '%s'", groupname, key, qval
+                )
         qsettings.endGroup()
 
     qsettings = QSettings("theithec", "pygoban")
     defaults = Settings()
     ensure(
-        "board", {"size": defaults.boardsize, "komi": defaults.komi, "handicap": defaults.handicap}
+        "board",
+        {
+            "size": defaults.boardsize,
+            "komi": defaults.komi,
+            "handicap": defaults.handicap,
+        },
     )
     ensure(
         "clock",
@@ -90,7 +102,9 @@ def merged_config() -> Settings:
     argsdict = vars(parser.parse_args())
     if argsdict["time"]:
         parts = argsdict["time"].strip().split(":")
-        timedict = dict(zip(("main_time", "byoyomi_time", "byoyomi_num", "byoyomi_stones"), parts))
+        timedict = dict(
+            zip(("main_time", "byoyomi_time", "byoyomi_num", "byoyomi_stones"), parts)
+        )
         argsdict.update(timedict)
     else:
         for key in ("main_time", "byoyomi_time", "byoyomi_num", "byoyomi_stones"):

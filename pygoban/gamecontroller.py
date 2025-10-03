@@ -21,7 +21,6 @@ class BaseGameController:
         return self.receiver.last_turn.node
 
     def play(self, color: Color, pos: Pos | None = None):
-
         self.__game._place(color=color, pos=pos)  # pylint: disable=protected-access
 
     def set_cursor(self, node: Node):
@@ -44,7 +43,10 @@ class BaseGameController:
         self.set_cursor(curr)
 
     def _do_sibling(self, direction: int):
-        if not self.last_stone.parent or len(children := self.last_stone.parent.children) == 1:
+        if (
+            not self.last_stone.parent
+            or len(children := self.last_stone.parent.children) == 1
+        ):
             return
         index = children.index(self.last_stone) + direction
         if 0 <= index < len(children):
@@ -105,7 +107,6 @@ class BaseGameController:
 
 
 class SubGameController(BaseGameController):
-
     def __init__(self, game: Game) -> None:
         super().__init__(game=game)
         self.__game = self._BaseGameController__game
@@ -118,23 +119,19 @@ G = TypeVar("G", bound=SubGameController)
 
 
 class MainGameController(BaseGameController):
-
     def __init__(self, game: Game) -> None:
         super().__init__(game=game)
         self.__game = self._BaseGameController__game
-        self._subs: set[SubGameController] = set()
+        self._subs: dict[str, Type[SubGameController]] = {}
 
-    def add_controller(self, cls: Type[G], force_create=False, **kwargs) -> tuple[G, bool]:
+    def add_controller(self, cls: Type[G], name, **kwargs) -> tuple[G, bool]:
         created = False
         ctrl = None
-        if not force_create:
-            for sub in self._subs:
-                if cls == sub.__class__:
-                    ctrl = sub
-                    break
-        if not ctrl:
+        if name in self._subs:
+            ctrl = self._subs[name]
+        else:
             ctrl = cls(game=self.__game, **kwargs)
-            self._subs.add(ctrl)
+            self._subs[name] = ctrl
             created = True
         return ctrl, created
 
@@ -144,6 +141,6 @@ class MainGameController(BaseGameController):
 
     def quit(self):
         logging.debug("QUIT CONTROLLER %s", self)
-        for ctrl in self._subs:
+        for ctrl in self._subs.values():
             ctrl.quit()
         self.__game.quit()

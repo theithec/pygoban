@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QComboBox,
     QDialog,
     QFormLayout,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -20,6 +21,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
 from pygoban import Settings
 
 from . import CenteredMixin
+from pygoban import gtp
 
 _translate = QCoreApplication.translate
 
@@ -120,6 +122,38 @@ class SettingsDialog(QDialog, CenteredMixin):
         # autowidget.setChecked(bool(self.settings.get("auto_save")))
         return layout
 
+    def get_gtplayout3(self):
+        items = list(self.settings.gtp_engines.items())
+        # items = (("kata", "/bin/katago"), ("gnugo", "/usr/games/gnugo"))
+
+        def mk_handler(index):
+            def handler(*args, **kwargs):
+                print("check ", items[index], args, kwargs)
+                process = gtp.get_process(items[index][1])
+                gtp.do_cmd("help", process)
+                nextline = process.stdout.readline().decode().strip()
+                print("gtp:", nextline)
+
+            return handler
+
+        layout = QGridLayout()
+        items = list(self.settings.gtp_engines.items()) + [("", "")]
+        # items = (("kata", "/bin/katago"), ("gnugo", "/usr/games/gnugo"))
+        for index, (name, cmd) in enumerate(items):
+            label = QLabel(name)
+            label.setMinimumWidth(80)
+            layout.addWidget(label, index, 0)
+            gtp_nameedit = QLineEdit(name)
+            gtp_nameedit.setMinimumWidth(80)
+            gtp_nameedit.setMaximumWidth(80)
+            layout.addWidget(gtp_nameedit, index, 1)
+            gtp_cmdedit = QLineEdit(cmd)
+            layout.addWidget(gtp_cmdedit, index, 2)
+            gtp_btn_check = QPushButton("Check")
+            gtp_btn_check.clicked.connect(mk_handler(index))
+            layout.addWidget(gtp_btn_check, index, 3)
+        return layout
+
     def get_gtplayout(self):
         layout = QVBoxLayout()
         label_layout = QHBoxLayout()
@@ -145,7 +179,6 @@ class SettingsDialog(QDialog, CenteredMixin):
         return layout
 
     def save(self):
-
         handled = self.elems.copy()
         gtp_engines = {}
         for fields in self.gtp_fields_list:
@@ -163,6 +196,7 @@ class SettingsDialog(QDialog, CenteredMixin):
             "byoyomi_num": "clock/byoyomi_num",
             "byoyomi_time": "clock/byoyomi_time",
             "byoyomi_stones": "clock/byoyomi_stones",
+            # "gtp_engines": "gtp/engines",
         }
         for name, widget in handled.items():
             if isinstance(widget, QComboBox):
@@ -172,6 +206,7 @@ class SettingsDialog(QDialog, CenteredMixin):
             full_name = full_names.get(name, name)
             self.qsettings.setValue(full_name, val)
             setattr(self.settings, name, val)
-
+            print("SET", name, full_name, val)
+        print("SAVE", self.qsettings.value("gtp/engines"))
         self.qsettings.sync()
         self.accept()

@@ -31,14 +31,35 @@ class GTPException(Exception):
     pass
 
 
+def get_process(cmd_line: str):
+    return subprocess.Popen(
+        cmd_line.split(" "),
+        shell=False,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+
+
+def do_cmd(cmd: str, process):
+    print("do cmd", cmd)
+    try:
+        assert process.stdin
+        process.stdin.write(f"{cmd}\r\n".encode())
+        process.stdin.flush()
+    except (BrokenPipeError, ValueError):
+        logging.warning("Connection broke", exc_info=True)
+
+
 class GTPController(BaseReceiver, SubGameController):
     def __init__(self, cmd_line: str, game: Game, actions: Iterable[str] | None = None):
         BaseReceiver.__init__(self)
         SubGameController.__init__(self, game=game)
+        print("Controller for", actions, cmd_line)
         self.autoplay = False
         self.receiver = self
         self.events = {results.TurnDone, results.GameResultDone, results.Counted}
-        self.process = self.get_process(cmd_line)
+        self.process = get_process(cmd_line)
         self.is_running = True
         self.actions: set[str] = set()
         if actions:
@@ -86,30 +107,14 @@ class GTPController(BaseReceiver, SubGameController):
             if not self.is_running:
                 break
 
-    def get_process(self, cmd_line: str):
-        return subprocess.Popen(
-            cmd_line.split(" "),
-            shell=False,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-
     def do_cmd(self, cmd: str):
         if not self.is_running:
             return
-        print("do cmd", cmd)
-        try:
-            assert self.process.stdin
-            self.process.stdin.write(f"{cmd}\r\n".encode())
-            self.process.stdin.flush()
-        except (BrokenPipeError, ValueError):
-            logging.warning("Connection broke", exc_info=True)
-            return
+        do_cmd(cmd, self.process)
 
     def annotate_res(self, res):
         parts = res.split("info ")
-        parts = parts[0: min(11, len(parts))]
+        parts = parts[0 : min(11, len(parts))]
         infos = {}
         for part in parts:
             if not part:
@@ -123,7 +128,9 @@ class GTPController(BaseReceiver, SubGameController):
                 winrate = float(groups[3]) * 100
                 score = float(groups[4])
                 moves = [
-                    None if coord == "pass" else gtp_coord_to_pos(coord, self.ruleset.boardsize)
+                    None
+                    if coord == "pass"
+                    else gtp_coord_to_pos(coord, self.ruleset.boardsize)
                     # gtp_coord_to_pos(coord, self.ruleset.boardsize)
                     for coord in groups[13].strip().split()
                 ]
@@ -138,6 +145,7 @@ class GTPController(BaseReceiver, SubGameController):
                 self.do_cmd("stop")
 
     def set_action(self, action: str, status: bool):
+        print("a", action, self)
         if action == "analyze_full":
             self.autoplay = status
             action = "analyze"

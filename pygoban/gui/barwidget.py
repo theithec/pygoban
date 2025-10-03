@@ -73,11 +73,9 @@ class BoxesWidget(QWidget):
 
 
 class BarWidget(QFrame):
-
     game_ui: GameUI
 
     def __init__(self, parent: GameUI):
-
         self.game_ui = parent
         super().__init__(parent)
         self._layout = QFormLayout()
@@ -91,7 +89,9 @@ class BarWidget(QFrame):
         self.tree = Tree(self, callback=self.game_ui.controller.set_cursor)
         self.game_ui.controller.add_receiver(self.tree)
         splitter.addWidget(self.tree)
-        splitter.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        splitter.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
         self.btn_settings.setMenu(self.get_menu())
         self._layout.addRow(splitter)
         self.setLayout(self._layout)
@@ -99,7 +99,10 @@ class BarWidget(QFrame):
     def update_menu(self):
         found = False
         for action in self.engines_menu.actions():
-            is_connected = action.iconText() not in self.game_ui.controller.connected_engines.keys()
+            is_connected = (
+                action.iconText()
+                not in self.game_ui.controller.connected_engines.keys()
+            )
             action.setEnabled(is_connected)
             found = found or is_connected
         if found:
@@ -127,7 +130,7 @@ class BarWidget(QFrame):
         settings_action = QAction("Settings", self)
         menu.addAction(settings_action)
 
-        # settings_action.triggered.connect(self.controller.parent().show_settings_dialog)
+        settings_action.triggered.connect(self.game_ui.parent().show_settings_dialog)
 
         open_action = QAction("Open as new", self)
         open_action.triggered.connect(self.game_ui.open_as_new)
@@ -140,17 +143,20 @@ class BarWidget(QFrame):
         menu.addAction(open_action)
         self.engines_menu = cast(QMenu, menu.addMenu("Engines"))
 
-        def mk_handler(cmd, key):
+        def mk_handler(name, cmd, key):
             def handler():
+                print("hanlde", cmd, key)
 
                 gtpctrl, created = self.game_ui.controller.add_controller(
-                    gtp.GTPController, cmd_line=cmd, actions=[key]
+                    gtp.GTPController,
+                    name=name,
+                    cmd_line=cmd,
+                    actions=[key],  # , key=name
                 )
                 if not created:
                     gtpctrl.set_action(key, True)
                 self.game_ui.controller.add_receiver(gtpctrl)
                 if self.game_ui.last_turn:
-
                     if key == "analyze_full":
                         # self.game_ui.controller.set_cursor(self.game_ui.last_turn.node.root())
                         pass
@@ -167,7 +173,7 @@ class BarWidget(QFrame):
             cmd = engines[name]
             for key in ("analyze", "analyze_full", Color.BLACK, Color.WHITE):
                 action = QAction(str(key), self)
-                action.triggered.connect(mk_handler(cmd, key))
+                action.triggered.connect(mk_handler(name, cmd, key))
                 engine_menu.addAction(action)
             self.engines_menu.addMenu(engine_menu)
 

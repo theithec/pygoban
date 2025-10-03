@@ -121,8 +121,9 @@ class NewGameBaseDialog(QDialog):
                     gtpctrl, created = controller.add_controller(
                         cls=gtp.GTPController,
                         cmd_line=cmd,
+                        name=txt,
                         actions=[color],
-                        force_create=True,
+                        # key=txt
                     )
                     logging.debug("create for %s: %s", color, cmd)
                     if created:
