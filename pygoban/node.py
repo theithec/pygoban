@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
 from .board import Board, Color, Marker, Pos
 
@@ -13,7 +13,8 @@ class Annotations:
     owned: dict[Pos, Color] = field(default_factory=dict)
     winrates: dict[Pos, str] = field(default_factory=dict)
     comment: str = ""
-    time_left: dict[Color, int] = field(default_factory=dict)
+    # time_left: dict[Color, int] = field(default_factory=dict)
+    time_left: int = 0
     stones_left: dict[Color, int] = field(default_factory=dict)
     byoyomi_left: dict[Color, int] = field(default_factory=dict)
     progress: dict[Pos, Any] = field(default_factory=dict)
@@ -31,7 +32,7 @@ class Node:
     ) -> None:
         self.color = color
         self.pos = pos
-        self.children: List["Node"] = []
+        self.children: list["Node"] = []
         self.annos = Annotations()
         self.set_parent(parent)
         self.is_pass = self.color and self.parent and not self.pos
@@ -42,7 +43,7 @@ class Node:
             parent.children.append(self)
         self.parent = parent
 
-    def _full_path(self) -> List["Node"]:
+    def _full_path(self) -> list["Node"]:
         path = []
         curr: Optional[Node] = self
         while curr:
@@ -51,7 +52,7 @@ class Node:
         path.reverse()
         return path
 
-    def path(self) -> List["Node"]:
+    def path(self) -> list["Node"]:
         return self._full_path()[1:]
 
     def full_path_to_last(self):
@@ -72,7 +73,7 @@ class Node:
     def __str__(self):
         return (
             f"Stone {self.color}: {self.pos} / {len(self.path())}"
-            f"C[{self.annos.comment[:(min(4, len(self.annos.comment) - 1))]}]"
+            f"C[{self.annos.comment[: (min(4, len(self.annos.comment) - 1))]}]"
         )
 
     def __repr__(self):

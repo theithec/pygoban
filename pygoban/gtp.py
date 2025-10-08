@@ -42,7 +42,7 @@ def get_process(cmd_line: str):
 
 
 def do_cmd(cmd: str, process):
-    print("do cmd", cmd)
+    # print("do cmd", cmd)
     try:
         assert process.stdin
         process.stdin.write(f"{cmd}\r\n".encode())
@@ -55,7 +55,6 @@ class GTPController(BaseReceiver, SubGameController):
     def __init__(self, cmd_line: str, game: Game, actions: Iterable[str] | None = None):
         BaseReceiver.__init__(self)
         SubGameController.__init__(self, game=game)
-        print("Controller for", actions, cmd_line)
         self.autoplay = False
         self.receiver = self
         self.events = {results.TurnDone, results.GameResultDone, results.Counted}
@@ -64,7 +63,7 @@ class GTPController(BaseReceiver, SubGameController):
         self.actions: set[str] = set()
         if actions:
             for action in actions:
-                self.set_action(action, True)
+                self.toggle_action(action)
         logging.debug("START GTP LOOP %s", self)
         self.got_turn = False
         thread = threading.Thread(target=self.loop, args=tuple())
@@ -141,18 +140,23 @@ class GTPController(BaseReceiver, SubGameController):
                 node = self.last_stone.children[-1]
                 self.play(node.color, node.pos)
             else:
-                self.set_action("analyze_full", False)
+                self.toggle_action("analyze_full")
                 self.do_cmd("stop")
 
-    def set_action(self, action: str, status: bool):
-        print("a", action, self)
+    def toggle_action(self, action: str) -> bool:
         if action == "analyze_full":
-            self.autoplay = status
+            self.autoplay = True
             action = "analyze"
-        if status:
-            self.actions.add(action)
-        elif action in self.actions:
+        has_action = action in self.actions
+        if has_action:
             self.actions.remove(action)
+        else:
+            self.actions.add(action)
+        if action == "analyze":
+            if has_action:
+                self.autoplay = False
+                self.do_cmd("stop")
+        return not has_action
 
     def received_turn(self, result: results.TurnDone) -> None:
         if result.reset:

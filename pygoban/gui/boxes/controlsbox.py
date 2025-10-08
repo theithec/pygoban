@@ -90,8 +90,12 @@ class EditBox(Box):
         self.decobox.setCheckable(True)
         self.decobox.setChecked(False)
         self.decobox.toggled.connect(self.toggle_deco)
-        self.decogroup.addButton(add_decobutton(0, 0, "B", icon=f"{BASE_DIR}/gui/imgs/black.png"))
-        self.decogroup.addButton(add_decobutton(0, 1, "W", icon=f"{BASE_DIR}/gui/imgs/white.png"))
+        self.decogroup.addButton(
+            add_decobutton(0, 0, "B", icon=f"{BASE_DIR}/gui/imgs/black.png")
+        )
+        self.decogroup.addButton(
+            add_decobutton(0, 1, "W", icon=f"{BASE_DIR}/gui/imgs/white.png")
+        )
         self.decogroup.addButton(add_decobutton(1, 0, "TR", "△"))
         self.decogroup.addButton(add_decobutton(1, 1, "SQ", "□"))
         self.decogroup.addButton(add_decobutton(1, 2, "CR", "○"))
@@ -143,7 +147,6 @@ class ControllsBox(Box):
     name = "ctrls"
 
     def init(self, **_kwargs):
-
         layout = QHBoxLayout()
         gui_mode = self.game_ui.gui_mode
         self.game_box = GameBox(self, visible=gui_mode == GUIMode.PLAY)
@@ -154,10 +157,9 @@ class ControllsBox(Box):
         self.events = {results.TurnDone}
 
     def received_turn(self, result: results.TurnDone):
-
         self.game_box.buttons["Done"].setVisible(False)
         self.game_box.buttons["Pass"].setVisible(True)
-        self.game_box.buttons["Undo"].setVisible(not result.node.is_root)
+        self.game_box.buttons["Undo"].setEnabled(not result.node.is_root)
         if self.game_ui.gui_mode == GUIMode.EDIT:
             self.edit_box.update_controlls(result)
 

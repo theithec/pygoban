@@ -29,7 +29,6 @@ class Parser:
         }
         self.cursor = Node(color=Color.EMPTY, pos=None)
         self.last_char = None
-        # self.node = ""
         self.node_started = False
         self.val_started = False
         self.curr_cmd = ""
@@ -43,7 +42,9 @@ class Parser:
 
         if not self.ruleset:
             self.infos.update({key: val[0] for key, val in self.node_props.items()})
-            info = GameInfo(names={Color.BLACK: self.infos["PB"], Color.WHITE: self.infos["PW"]})
+            info = GameInfo(
+                names={Color.BLACK: self.infos["PB"], Color.WHITE: self.infos["PW"]}
+            )
             self.ruleset = Ruleset(
                 boardsize=int(self.infos["SZ"]),
                 komi=float(self.infos["KM"]),
@@ -56,7 +57,11 @@ class Parser:
                 if colchr in self.node_props:
                     color = self.colors[colchr]
                     coord = self.node_props[colchr][0]
-                    pos = coords.sgf_to_pos(coord) if coord and coord.lower() != "tt" else None
+                    pos = (
+                        coords.sgf_to_pos(coord)
+                        if coord and coord.lower() != "tt"
+                        else None
+                    )
                     self.node_props.pop(colchr)
                     break
             self.cursor = Node(color=color, pos=pos, parent=self.cursor)
@@ -246,6 +251,9 @@ class Parser:
 
     def do_dd(self, val):
         self._do_marker(val, Marker.DIMMED)
+
+    def do_ha(self, val):
+        self.infos["HA"] = val[0]
 
     def do_lb(self, vals):
         for val in vals:

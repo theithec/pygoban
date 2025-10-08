@@ -27,7 +27,7 @@ class TreeNode(QLabel):
         self.node = node
         self.tree = parent
         self.setStyleSheet(
-            "QLabel { color: %s }"
+            "QLabel { font-size: 7pt; color: %s }"
             % ("white" if self.node.color == Color.BLACK else "black")
         )
         self.setText(str(len(self.node.path())))
@@ -171,19 +171,6 @@ class TreeCanvas(QWidget):
             pos = tree_node.pos()
             height = tree_node.height()
             if visible_rect.contains(pos) and tree_node.child_index is not None:
-                # if node.bstone in path:
-                #     if winrate := node.bstone.annos.winrates:
-                #         best = sorted([float(val[0]) for val in winrate.values()])[-1]
-                #         half = int((width / 100) * best)
-                #         if node.bstone.color == Color.BLACK:
-                #             half = width - half
-                #         painter.fillRect(0, pos.y(), half, height, QColor("darkGray"))
-                #         painter.fillRect(half, pos.y(), width - half, height, QColor("lightGray"))
-                #     painter.setBrush(QColorConstants.White)
-                #     painter.setPen(QColorConstants.White)
-                # else:
-                #     painter.setBrush(QColorConstants.Gray)
-                #     painter.setPen(QColorConstants.Gray)
                 painter.drawLine(
                     centered(pos),
                     centered(self.tree_nodes[id(tree_node.node.parent)].pos()),

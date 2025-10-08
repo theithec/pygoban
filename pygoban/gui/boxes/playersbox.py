@@ -82,44 +82,44 @@ class _PlayerBox(Box):
 class PlayerGameBox(_PlayerBox):
     timer = None
     _seconds: int
-    clock_stop_signal = pyqtSignal(int)
-    clock_update_signal = pyqtSignal(int)
+    clock_stop_signal = pyqtSignal()
+    clock_update_signal = pyqtSignal(int, bool)
 
     def init(self, player: Party, **_kwargs) -> None:  # type: ignore
         super().init(player)
         self.clock = QLCDNumber()
         self.byoyomi_label = QLabel("")
         if time := self.game_ui.controller.ruleset.timesettings:
-            self.set_byoyomi_text(periods_left=time.byoyomi_num, stones_left=time.byoyomi_stones)
+            self.set_byoyomi_text(
+                periods_left=time.byoyomi_num, stones_left=time.byoyomi_stones
+            )
             self.clock.display(seconds_to_str(0))
             self.formlayout.addRow(self.clock)
             self.formlayout.addRow(self.byoyomi_label)
         self.setLayout(self.formlayout)
-        self.clock_stop_signal.connect(self.stop_clockdisplay)
-        self.clock_update_signal.connect(self.set_clockdisplay)
+        self.clock_stop_signal.connect(self.stop_clock)
+        self.clock_update_signal.connect(self.clock_update)
         self.events = {results.TurnDone, results.TimeDone}
+
+    def stop_clock(self):
+        if self.timer:
+            self.timer.stop()
+        # if seconds != -1:  # 'None' does  not work with signals
+        #    self.clock.display(seconds_to_str(seconds))
 
     def clockdisplay_tick(self):
         self._seconds -= 1
         txt = seconds_to_str(self._seconds)
         self.clock.display(txt)
 
-    def stop_clockdisplay(self, seconds: int):
-        if self.timer:
-            self.timer.stop()
-        if seconds != -1:  # 'None' does  not work with signals
-            self.clock.display(seconds_to_str(seconds))
-
-    def set_clockdisplay(self, seconds):
-        self.stop_clockdisplay(seconds)
+    def clock_update(self, seconds, start_timer=False):
         self._seconds = seconds
-        if seconds > 0:
+        if start_timer:
+            self.stop_clock()
             self.timer = QTimer(self)
             self.timer.start(1000)
-            self.clock.display(seconds_to_str(seconds))
             self.timer.timeout.connect(self.clockdisplay_tick)
-        else:
-            self.clock.display("00:00")
+        self.clock.display(seconds_to_str(seconds))
 
     def set_byoyomi_text(self, periods_left, stones_left):
         if not (time := self.game_ui.controller.ruleset.timesettings):
@@ -138,13 +138,22 @@ class PlayerGameBox(_PlayerBox):
             return
         b = result.byoyomi
         self.set_byoyomi_text(periods_left=b.periods_left, stones_left=b.stones_left)
-        self.clock_update_signal.emit(result.next_time)
+        self.clock_update_signal.emit(result.next_time, True)
 
     def received_turn(self, result: results.TurnDone):
-        if result.node.color == self.player.color:
-            super().received_turn(result=result)
-            if byo := result.byoyomi:
-                self.set_byoyomi_text(periods_left=byo.periods_left, stones_left=byo.stones_left)
+        super().received_turn(result=result)
+        if not (timesettings := self.game_ui.controller.ruleset.timesettings):
+            return
+        if result.next_color == self.player.color:
+            time_left = (
+                result.node.parent.annos.time_left
+                if result.node.parent
+                else timesettings.maintime
+            )
+            self.clock_update_signal.emit(time_left, True)
+        elif result.next_color.other() == self.player.color:
+            self.clock_stop_signal.emit()
+            self.clock_update_signal.emit(result.node.annos.time_left, False)
 
 
 class PlayerCountBox(_PlayerBox):
@@ -154,7 +163,9 @@ class PlayerCountBox(_PlayerBox):
         self.formlayout.addRow("Liberties:", self.libs_label)
 
         if player.color == Color.WHITE:
-            self.formlayout.addRow("Komi:", QLabel(str(self.game_ui.controller.ruleset.komi)))
+            self.formlayout.addRow(
+                "Komi:", QLabel(str(self.game_ui.controller.ruleset.komi))
+            )
         else:
             self.formlayout.addRow("", QLabel(""))
         self.total_label = QLabel(str(0))
@@ -169,7 +180,9 @@ class PlayersBox(Box):
 
     def init(self, players: dict[Color, Party]):  # type: ignore  # pylint: disable=arguments-differ
         self.boxlayout = QHBoxLayout()
-        self.boxes_by_mode: dict[GUIMode, dict[Color, PlayerCountBox | PlayerGameBox]] = {
+        self.boxes_by_mode: dict[
+            GUIMode, dict[Color, PlayerCountBox | PlayerGameBox]
+        ] = {
             GUIMode.PLAY: {
                 Color.BLACK: PlayerGameBox(self, player=players[Color.BLACK]),
                 Color.WHITE: PlayerGameBox(self, player=players[Color.WHITE]),
@@ -185,7 +198,7 @@ class PlayersBox(Box):
             self.boxlayout.addWidget(box)
             box.setVisible(True)
 
-        self.events = {results.TurnDone, results.GameResultDone, results.Counted}
+        self.events = {results.GameResultDone, results.Counted}
         self.setLayout(self.boxlayout)
 
     def received_result_done(self, result: results.GameResultDone):
@@ -193,25 +206,14 @@ class PlayersBox(Box):
             return
         boxes = self.boxes_by_mode[GUIMode.PLAY]
         for box in boxes.values():
-            cast(PlayerGameBox, box).clock_stop_signal.emit(-1)
-
-    def received_turn(self, result: results.TurnDone):
-        if not self.game_ui.controller.ruleset.timesettings:
-            return
-        boxes = self.boxes_by_mode[GUIMode.PLAY]
-        cast(PlayerGameBox, boxes[result.next_color]).clock_update_signal.emit(
-            result.node.annos.time_left[result.next_color]
-        )
-        cast(PlayerGameBox, boxes[result.next_color.other()]).clock_stop_signal.emit(
-            result.node.annos.time_left[result.next_color.other()]
-        )
+            cast(PlayerGameBox, box).clock_stop_signal.emit()
 
     def received_count(self, result: results.Counted):
-
         boxes = self.boxes_by_mode[self.game_ui.gui_mode]
         for color in (Color.BLACK, Color.WHITE):
             box = boxes[color]
             assert isinstance(box, PlayerCountBox), box
+            box.clock_stop_signal.emit()
             playerresult = result[color]
             numcoords = len(playerresult.coords)
             box.libs_label.setText(str(numcoords))
@@ -231,5 +233,5 @@ class PlayersBox(Box):
                     next_boxes[color],
                 )
                 curr_boxes[color].setVisible(False)
-                next_boxes[color].setVisible(True)  # True)
+                next_boxes[color].setVisible(True)
         self.last_gui_mode = gui_mode

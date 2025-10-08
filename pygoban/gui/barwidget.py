@@ -23,7 +23,7 @@ from pygoban.sgf import writer
 from . import GameUI, GUIMode, filedialog
 from .boxes import Box, BoxesByName, CommentsBox
 from .boxes.controlsbox import ControllsBox
-from .boxes.diagram2 import DiagramBox
+from .boxes.diagram import DiagramBox
 from .boxes.playersbox import PlayersBox
 
 # from .chart import MyChart
@@ -46,12 +46,9 @@ class BoxesWidget(QWidget):
         is_edit = self.game_ui.gui_mode == GUIMode.EDIT
         pbox = PlayersBox(self, players=self.game_ui.parties)
         self.players_box = self.add_box(pbox, vis=True)
-        # self.game_box = self.add_box(GameBox(self), vis=not is_edit)
-        # self.edit_box = self.add_box(EditBox(self), vis=is_edit)
         self.ctrl_box = self.add_box(ControllsBox(self), vis=True)
-        # self.add_box(CommentsBox(self), vis=is_edit)
-        self.add_box(CommentsBox(self), vis=False)
-        self.add_box(DiagramBox(self), vis=is_edit)
+        self.add_box(CommentsBox(self), vis=is_edit)
+        self.add_box(DiagramBox(self), vis=False)
         self._layout.addRow("Ruleset", QLabel("Some data"))
         self.setLayout(self._layout)
 
@@ -145,17 +142,17 @@ class BarWidget(QFrame):
 
         def mk_handler(name, cmd, key):
             def handler():
-                print("hanlde", cmd, key)
-
+                print("CMD", cmd)
                 gtpctrl, created = self.game_ui.controller.add_controller(
                     gtp.GTPController,
                     name=name,
                     cmd_line=cmd,
-                    actions=[key],  # , key=name
+                    # actions=[key],  # , key=name
                 )
-                if not created:
-                    gtpctrl.set_action(key, True)
-                self.game_ui.controller.add_receiver(gtpctrl)
+                if created:
+                    self.game_ui.controller.add_receiver(gtpctrl)
+                gtpctrl.toggle_action(key)
+
                 if self.game_ui.last_turn:
                     if key == "analyze_full":
                         # self.game_ui.controller.set_cursor(self.game_ui.last_turn.node.root())
@@ -170,9 +167,14 @@ class BarWidget(QFrame):
         for name in engines.keys():
             engine_menu = cast(QMenu, self.engines_menu.addMenu(name))
 
-            cmd = engines[name]
-            for key in ("analyze", "analyze_full", Color.BLACK, Color.WHITE):
+            keys = [Color.BLACK, Color.WHITE]
+            cmd, can_anaylze = engines[name]
+            if can_anaylze:
+                keys.extend(["analyze", "analyze_full"])
+            for key in keys:
                 action = QAction(str(key), self)
+                action.setCheckable(False)
+                action.setChecked(False)
                 action.triggered.connect(mk_handler(name, cmd, key))
                 engine_menu.addAction(action)
             self.engines_menu.addMenu(engine_menu)

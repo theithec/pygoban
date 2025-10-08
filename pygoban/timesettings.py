@@ -51,12 +51,12 @@ class PlayerTime:
         self.ended = False
 
     def start_timer(self):
-
         assert not self.ended
         self.last_started = datetime.now()
         self.timer = _PlayerTimer(self.nexttime(), self.period_ended)
 
     def cancel_timer(self, is_turn=False):
+        assert not self.ended
         if is_turn and self.maintime == 0:
             self.byoyomi.stones_left -= 1
         if self.timer:
@@ -67,7 +67,7 @@ class PlayerTime:
         return self.nexttime()
 
     def period_ended(self):
-
+        assert not self.ended
         if self.maintime == 0:
             self.byoyomi.periods_left -= 1
         self.cancel_timer()
@@ -80,7 +80,9 @@ class PlayerTime:
                 self.start_timer()
             else:
                 self.byoyomi.time_left = 0
+                # self.game.timers = None  # [1, 2]
                 self.ended = True
+                print("ENDED TIMER", self)
 
         logging.info("Timeperiod ended %s", self.byoyomi)
         self.game.period_ended(self.color, self.nexttime())
@@ -101,4 +103,4 @@ class PlayerTime:
                 self.byoyomi.stones_left = self.byoyomi_stones_org
 
     def __str__(self):
-        return f"Timer {self.color} "
+        return f"Timer {self.color}"

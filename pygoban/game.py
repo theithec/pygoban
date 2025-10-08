@@ -46,15 +46,18 @@ class Game:
 
     def period_ended(self, color: Color, next_time: int):
         """A time period ended"""
-        if not (timers := self.timers):
-            return
+        # if not (timers := self.timers):
+        #    return
         result: results.Event = results.TimeDone(
-            color=color, next_time=next_time, byoyomi=timers[color].byoyomi
+            color=color, next_time=next_time, byoyomi=self.timers[color].byoyomi
         )
         self.send_game_event(result)
         if not next_time:
+            self.timers = None
             result_type = results.GameResultType.LOST_BY_TIME
-            msg = results.GAME_RESULT_STR_BY_TYPE[result_type].format(color=color.other())
+            msg = results.GAME_RESULT_STR_BY_TYPE[result_type].format(
+                color=color.other()
+            )
             result = results.GameResultDone(
                 winner=color.other(), msg=msg, type=results.GameResultType.LOST_BY_TIME
             )
@@ -81,10 +84,9 @@ class Game:
         result = self.nodes.set_cursor(cursor)
         if self.timers:
             self.timers[result.next_color].start_timer()
-            result.node.annos.time_left = {
-                Color.BLACK: self.timers[result.next_color].nexttime(),
-                Color.WHITE: self.timers[result.next_color.other()].nexttime(),
-            }
+            result.node.annos.time_left = self.timers[
+                result.next_color.other()
+            ].nexttime()
 
         self.send_game_event(result)
 
@@ -97,8 +99,12 @@ class Game:
         cnt = Counter(board=self.nodes.board)
         coords, killed = cnt.result()
         game_result = results.Counted(
-            black=results.ColorResult(killed=killed[Color.WHITE], coords=coords[Color.BLACK]),
-            white=results.ColorResult(killed=killed[Color.BLACK], coords=coords[Color.WHITE]),
+            black=results.ColorResult(
+                killed=killed[Color.WHITE], coords=coords[Color.BLACK]
+            ),
+            white=results.ColorResult(
+                killed=killed[Color.BLACK], coords=coords[Color.WHITE]
+            ),
         )
         self.send_game_event(game_result)
 
@@ -114,16 +120,14 @@ class Game:
             print(err)
         else:
             self.nodes.apply_result(result)
-            if self.timers:
-                next_next_time = self.timers[color].cancel_timer(is_turn=True)
-                curr_next_time = (other_timer := self.timers[color.other()]).nexttime()
-                self.nodes.cursor.annos.time_left = {
-                    color.other(): curr_next_time,
-                    color: next_next_time,
-                }
+            if self.timers:  # and not color.is_empty():
+                self.nodes.cursor.annos.time_left = self.timers[color].cancel_timer(
+                    is_turn=True
+                )
+                other_timer = self.timers[color.other()]
                 if not other_timer.ended:
                     other_timer.start_timer()
-                result.byoyomi = self.timers[color].byoyomi
+                # result.byoyomi = self.timers[color].byoyomi
             self.send_game_event(result)
 
     def _reset(self, node: Node):
@@ -140,14 +144,18 @@ class Game:
         chain = self.nodes.board.get_chain(pos)
         start = self.nodes.board.intersection(pos)
         owner = (
-            None if start.owner else (Color.BLACK if start.color == Color.WHITE else Color.WHITE)
+            None
+            if start.owner
+            else (Color.BLACK if start.color == Color.WHITE else Color.WHITE)
         )
         for cpos in chain:
             inter = self.nodes.board.intersection(cpos)
             inter.owner = owner
         self._count()
 
-    def annotate(self, pos: Pos, name: str | Color | Marker, end: Pos | None = None) -> None:
+    def annotate(
+        self, pos: Pos, name: str | Color | Marker, end: Pos | None = None
+    ) -> None:
         cursor = self.nodes.cursor
         if isinstance(name, Color):
             cursor.annos.stones[pos] = name
@@ -159,7 +167,6 @@ class Game:
             if name == "A":
                 cursor.annos.chars[pos] = chr(65 + len(cursor.annos.chars))
             elif name == "1":
-
                 numbers = [int(num) for num in cursor.annos.numbers.values()] or [0]
                 cursor.annos.numbers[pos] = str(1 + max(numbers))
             elif name == "AR":
@@ -204,7 +211,9 @@ class Game:
                 cnt = Counter(board=self.nodes.board)
                 coords, killed = cnt.result()
                 for color in (Color.BLACK, Color.WHITE):
-                    killed[color] += self.nodes.total_dead[color.other()] + len(coords[color])
+                    killed[color] += self.nodes.total_dead[color.other()] + len(
+                        coords[color]
+                    )
                 killed[Color.WHITE] += self.ruleset.komi
                 winner = max(killed, key=killed.get)
                 points_diff = killed[winner] - killed[winner.other()]

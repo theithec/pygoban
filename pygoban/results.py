@@ -14,21 +14,29 @@ class Event:
 
 
 @dataclass
+class TimeData:
+    # next_time: dict[Color, int | None] = field(
+    #     default_factory=lambda: {Color.BLACK: None, Color.WHITE: None}
+    # )
+    # byoyomi: Optional["Byoyomi"] = None
+    foox: int = 3
+
+
+@dataclass
 class TurnDone(Event):
     """A players turn, placement or pass"""
 
     board: Board
     node: "Node"
     next_color: Color
-    next_time: dict[Color, int | None] = field(
-        default_factory=lambda: {Color.BLACK: None, Color.WHITE: None}
-    )
+    # time: TimeData
     killed: Set[Pos] = field(default_factory=set)
     libs: Set[Pos] = field(default_factory=set)
-    total_dead: Dict[Color, int] = field(default_factory=lambda: {Color.BLACK: 0, Color.WHITE: 0})
+    total_dead: Dict[Color, int] = field(
+        default_factory=lambda: {Color.BLACK: 0, Color.WHITE: 0}
+    )
     ko: Pos | None = None
     reset: bool = False
-    byoyomi: Optional["Byoyomi"] = None
 
 
 @dataclass

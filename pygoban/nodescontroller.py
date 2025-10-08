@@ -46,7 +46,11 @@ class NodesController:
             self.apply_result(result)
 
         if not result:  # path is empty -> only root
-            result = TurnDone(board=self.board, node=self.root, next_color=self.default_next_color)
+            result = TurnDone(
+                board=self.board,
+                node=self.root,
+                next_color=self.default_next_color,
+            )
         result.reset = True
         return result
 
@@ -54,9 +58,9 @@ class NodesController:
         oldcursor = self.cursor
         self.cursor = result.node
         self.cursor.set_parent(oldcursor)
-        self.total_dead[Color.BLACK if result.node.color == Color.WHITE else Color.WHITE] += len(
-            result.killed
-        )
+        self.total_dead[
+            Color.BLACK if result.node.color == Color.WHITE else Color.WHITE
+        ] += len(result.killed)
         result.total_dead = self.total_dead
         self.board = result.board
         for pos in result.killed:
@@ -64,7 +68,11 @@ class NodesController:
         result.node.apply_permanent_annos(self.board)
 
     def get_result(
-        self, color: Color, pos: Pos | None, annos: Annotations | None = None, use_copy=True
+        self,
+        color: Color,
+        pos: Pos | None,
+        annos: Annotations | None = None,
+        use_copy=True,
     ) -> TurnDone:
         """set use_copy to False if no validation is required"""
         assert self.board
@@ -88,4 +96,10 @@ class NodesController:
 
         next_color = color.other() if not color.is_empty() else self.default_next_color
 
-        return TurnDone(board=boardcpy, node=stone, next_color=next_color, killed=killed, libs=libs)
+        return TurnDone(
+            board=boardcpy,
+            node=stone,
+            next_color=next_color,
+            killed=killed,
+            libs=libs,
+        )

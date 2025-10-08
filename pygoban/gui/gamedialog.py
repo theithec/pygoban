@@ -109,7 +109,7 @@ class NewGameBaseDialog(QDialog):
                 timestr=timestr,
             )
         except ValueError as err:
-            msgbox = QMessageBox.critical(self, "Error", str(err))
+            QMessageBox.critical(self, "Error", str(err))
             return
 
         controller = self.manager.add_game_from_atomic_values(**data)
@@ -117,13 +117,12 @@ class NewGameBaseDialog(QDialog):
             for color in (Color.BLACK, Color.WHITE):
                 txt = self.widgets_by_color[color]["type"].currentText()
                 if txt != "human":
-                    cmd = self.manager.settings.gtp_engines[txt]
+                    cmd = self.manager.settings.gtp_engines[txt][0]
                     gtpctrl, created = controller.add_controller(
                         cls=gtp.GTPController,
                         cmd_line=cmd,
                         name=txt,
                         actions=[color],
-                        # key=txt
                     )
                     logging.debug("create for %s: %s", color, cmd)
                     if created:

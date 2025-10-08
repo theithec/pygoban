@@ -35,7 +35,7 @@ class SettingsDialog(QDialog, CenteredMixin):
         self.elems: dict[str, QComboBox | QLineEdit | QCheckBox] = {}
         self.qsettings = QSettings("theithec", "pygoban")
         self.widgets = defaultdict((lambda: QLineEdit), boardsize=QComboBox)  # type: ignore
-        self.gtp_fields_list: list[tuple[QLineEdit, QLineEdit]] = []
+        self.gtp_fields_list: list[tuple[QLineEdit, QLineEdit, QCheckBox]] = []
         self.init_ui()
 
     def init_ui(self):
@@ -121,84 +121,37 @@ class SettingsDialog(QDialog, CenteredMixin):
         # autowidget.setChecked(bool(self.settings.get("auto_save")))
         return layout
 
-    def get_gtplayout3(self):
-        items = list(self.settings.gtp_engines.items())
-        # items = (("kata", "/bin/katago"), ("gnugo", "/usr/games/gnugo"))
-
-        def mk_handler(index):
-            def handler(*args, **kwargs):
-                print("check ", items[index], args, kwargs)
-                process = gtp.get_process(items[index][1])
-                gtp.do_cmd("help", process)
-                nextline = process.stdout.readline().decode().strip()
-                print("gtp:", nextline)
-
-            return handler
-
-        layout = QGridLayout()
-        items = list(self.settings.gtp_engines.items()) + [("", "")]
-        # items = (("kata", "/bin/katago"), ("gnugo", "/usr/games/gnugo"))
-        for index, (name, cmd) in enumerate(items):
-            label = QLabel(name)
-            label.setMinimumWidth(80)
-            layout.addWidget(label, index, 0)
-            gtp_nameedit = QLineEdit(name)
-            gtp_nameedit.setMinimumWidth(80)
-            gtp_nameedit.setMaximumWidth(80)
-            layout.addWidget(gtp_nameedit, index, 1)
-            gtp_cmdedit = QLineEdit(cmd)
-            layout.addWidget(gtp_cmdedit, index, 2)
-            if name:
-                gtp_btn_check = QPushButton("Check")
-                gtp_btn_check.clicked.connect(mk_handler(index))
-                layout.addWidget(gtp_btn_check, index, 3)
-        return layout
-
     def get_gtplayout(self):
-        # layout = QVBoxLayout()
         layout = QGridLayout()
-        # label_layout = QHBoxLayout()
         lbl = QLabel("Name")
         lbl.setMinimumWidth(80)
         lbl.setMaximumWidth(80)
-        # lbl.setMaximumWidth(80)
         layout.addWidget(lbl, 1, 1)
         lbl = QLabel("Command")
         lbl.setMinimumWidth(180)
-        # lbl.setMaximumWidth(180)
         layout.addWidget(lbl, 1, 2)
-        labels = QWidget()
-        # labels.setLayout(label_layout)
-        # )layout.addWidget((labels))
+        lbl = QLabel("Supports kata-analyze")
+        lbl.setMinimumWidth(80)
+        layout.addWidget(lbl, 1, 3)
 
-        items = list(self.settings.gtp_engines.items())
-        items.append(("", ""))
+        # items = list(self.settings.gtp_engines.items())
+        # items.append(("", "", False))
 
-        def mk_handler(name):
-            def handler(*args, **kwargs):
-                print("check ", self.settings.gtp_engines[name])
-                # process = gtp.get_process(items[index][1])
-                # gtp.do_cmd("help", process)
-                # nextline = process.stdout.readline().decode().strip()
-                # print("gtp:", nextline)
-
-            return handler
-
-        for index, (name, cmd) in enumerate(items):
+        for index, (name, vals) in enumerate(self.settings.gtp_engines.items()):
+            cmd, checked = vals
             gtp_nameedit = QLineEdit(name)
             gtp_nameedit.setMinimumWidth(80)
             gtp_nameedit.setMaximumWidth(80)
             gtp_cmdedit = QLineEdit(cmd)
             gtp_cmdedit.setMinimumWidth(180)
-            self.gtp_fields_list.append((gtp_nameedit, gtp_cmdedit))
             layout.addWidget(gtp_nameedit, index + 2, 1)
             layout.addWidget(gtp_cmdedit, index + 2, 2)
-            if name:
-                gtp_btn_check = QPushButton("Check")
-                gtp_btn_check.clicked.connect(mk_handler(name))
-                layout.addWidget(gtp_btn_check, index + 2, 3)
-            # gtp_group.setLayout(gtp_group_layout)
-            # layout.addWidget(gtp_group, index + 2, 1)
+            gtp_checkbox_analyze = QCheckBox("")
+            gtp_checkbox_analyze.setChecked(checked)
+            layout.addWidget(gtp_checkbox_analyze, index + 2, 3)
+            self.gtp_fields_list.append(
+                (gtp_nameedit, gtp_cmdedit, gtp_checkbox_analyze)
+            )
         return layout
 
     def save(self):
@@ -207,7 +160,7 @@ class SettingsDialog(QDialog, CenteredMixin):
         for fields in self.gtp_fields_list:
             name = fields[0].text()
             if name:
-                gtp_engines[name] = fields[1].text()
+                gtp_engines[name] = (fields[1].text(), fields[2].isChecked())
         self.qsettings.setValue("gtp/engines", gtp_engines)
         self.settings.gtp_engines = gtp_engines
 
@@ -219,7 +172,6 @@ class SettingsDialog(QDialog, CenteredMixin):
             "byoyomi_num": "clock/byoyomi_num",
             "byoyomi_time": "clock/byoyomi_time",
             "byoyomi_stones": "clock/byoyomi_stones",
-            # "gtp_engines": "gtp/engines",
         }
         for name, widget in handled.items():
             if isinstance(widget, QComboBox):
@@ -229,7 +181,5 @@ class SettingsDialog(QDialog, CenteredMixin):
             full_name = full_names.get(name, name)
             self.qsettings.setValue(full_name, val)
             setattr(self.settings, name, val)
-            print("SET", name, full_name, val)
-        print("SAVE", self.qsettings.value("gtp/engines"))
         self.qsettings.sync()
         self.accept()
