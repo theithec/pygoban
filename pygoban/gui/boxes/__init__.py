@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QSizePolicy,
     QTextEdit,
     QWidget,
+    QVBoxLayout,
 )
 
 from pygoban import BaseReceiver, Color, Node, Party, gtp, results
@@ -30,7 +31,9 @@ def _(txt):
 def btn_adder(
     layout: QLayout, buttoncls: Type[QPushButton] | Type[QRadioButton] = QPushButton
 ) -> Callable:
-    def add_button(label: str, callback: Callable | None = None) -> QPushButton | QRadioButton:
+    def add_button(
+        label: str, callback: Callable | None = None
+    ) -> QPushButton | QRadioButton:
         button = buttoncls(label)
         # m = QSizePolicy.Policy.Minimum
         button.setMinimumWidth(5)
@@ -90,3 +93,45 @@ class CommentsBox(Box):
         # self.comments.setText(result.node.annos.comment)
         self.set_comment_signal.emit(result.node.annos.comment)
         self.curr_node = result.node
+
+
+class GTPBox(Box):
+    name = "GTPBox"
+
+    def init(self) -> None:  # type: ignore
+        self.layout = QVBoxLayout(self)
+        self.layout.setSpacing(0)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.events = {results.GTPStarted, results.GTPStopped}
+        self.widgets_by_name: dict[str : set[QWidget]] = {}
+
+    def received_gtp_stopped(self, result: results.GTPStopped) -> None:
+        for widget in self.widgets_by_name.get(result.name, []):
+            if widget.role in result.roles:
+                self.layout.removeWidget(widget)
+                widget.hide()
+                del widget
+
+    def received_gtp_started(self, result: results.GTPStarted) -> None:
+        def mk_handler(name, role):
+            def handler():
+                self.game_ui.controller._subs[name].toggle_action(role)
+
+            return handler
+
+        for widget in self.widgets_by_name.get(result.name, []):
+            self.layout.removeWidget(widget)
+        self.widgets_by_name[result.name] = set()
+        for role in result.roles:
+            layout = QHBoxLayout()
+            layout.setSpacing(0)
+            layout.setContentsMargins(0, 0, 0, 0)
+            widget = QWidget()
+            widget.role = role
+            widget.setLayout(layout)
+            self.widgets_by_name.setdefault(result.name, set())
+            self.widgets_by_name[result.name].add(widget)
+            btn = QPushButton(f"Stop {result.name}: {role.name}")
+            btn.clicked.connect(mk_handler(result.name, role))
+            layout.addWidget(btn)
+            self.layout.addWidget(widget)

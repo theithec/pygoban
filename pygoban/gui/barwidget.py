@@ -21,7 +21,7 @@ from pygoban import Color, gtp
 from pygoban.sgf import writer
 
 from . import GameUI, GUIMode, filedialog
-from .boxes import Box, BoxesByName, CommentsBox
+from .boxes import Box, BoxesByName, CommentsBox, GTPBox
 from .boxes.controlsbox import ControllsBox
 from .boxes.diagram import DiagramBox
 from .boxes.playersbox import PlayersBox
@@ -47,6 +47,7 @@ class BoxesWidget(QWidget):
         pbox = PlayersBox(self, players=self.game_ui.parties)
         self.players_box = self.add_box(pbox, vis=True)
         self.ctrl_box = self.add_box(ControllsBox(self), vis=True)
+        self.gtp_box = self.add_box(GTPBox(self), vis=True)
         self.add_box(CommentsBox(self), vis=is_edit)
         self.add_box(DiagramBox(self), vis=False)
         self._layout.addRow("Ruleset", QLabel("Some data"))
@@ -167,10 +168,10 @@ class BarWidget(QFrame):
         for name in engines.keys():
             engine_menu = cast(QMenu, self.engines_menu.addMenu(name))
 
-            keys = [Color.BLACK, Color.WHITE]
+            keys = [gtp.Role.BLACK, gtp.Role.WHITE]
             cmd, can_anaylze = engines[name]
             if can_anaylze:
-                keys.extend(["analyze", "analyze_full"])
+                keys.extend([gtp.Role.ANALYZE])
             for key in keys:
                 action = QAction(str(key), self)
                 action.setCheckable(False)

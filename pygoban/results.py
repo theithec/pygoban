@@ -7,6 +7,7 @@ from .board import Board, Color, Pos
 if TYPE_CHECKING:
     from .node import Node
     from .timesettings import Byoyomi
+    from .gtp import Role
 
 
 class Event:
@@ -37,6 +38,20 @@ class TurnDone(Event):
     )
     ko: Pos | None = None
     reset: bool = False
+
+
+@dataclass
+class _GTP(Event):
+    name: str
+    roles: set["Role"] = field(default_factory=set)
+
+
+class GTPStarted(_GTP):
+    pass
+
+
+class GTPStopped(_GTP):
+    pass
 
 
 @dataclass

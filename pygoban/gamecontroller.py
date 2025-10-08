@@ -1,10 +1,14 @@
 import logging
-from typing import Type, TypeVar
+from typing import Type, TypeVar, TYPE_CHECKING
 
 from .board import Color, Marker
 from .game import Game, Node
 from .pos import Pos
 from .receivers import BaseReceiver
+from . import results
+
+if TYPE_CHECKING:
+    from .gtp import Role
 
 
 class BaseGameController:
@@ -102,6 +106,13 @@ class BaseGameController:
     def count(self):
         self.__game._count()
 
+    def gtp_started(self, name: str, roles: set["Role"]):
+        self.__game.send_game_event(results.GTPStarted(name=name, roles=roles))
+
+    def gtp_stopped(self, name: str, roles: set["Role"]):
+        print("CTRL STOP", name, roles)
+        self.__game.send_game_event(results.GTPStopped(name=name, roles=roles))
+
     def add_receiver(self, receiver: BaseReceiver):
         self.__game.add_receiver(receiver=receiver)
 
@@ -130,7 +141,7 @@ class MainGameController(BaseGameController):
         if name in self._subs:
             ctrl = self._subs[name]
         else:
-            ctrl = cls(game=self.__game, **kwargs)
+            ctrl = cls(game=self.__game, name=name, **kwargs)
             self._subs[name] = ctrl
             created = True
         return ctrl, created

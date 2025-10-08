@@ -5,6 +5,7 @@ import subprocess
 import threading
 from collections.abc import Iterable
 from typing import cast
+from enum import Enum
 
 from . import results
 from .coords import gtp_coord_to_pos, pos_to_gtp_coord
@@ -27,6 +28,13 @@ COORD_OR_PASS = r"= ([A-Z]\d{1,2}|PASS)"
 pattern = re.compile((KATA_ANALYZE_STR))
 
 
+class Role(Enum):
+    BLACK = 1
+    WHITE = 2
+    ANALYZE = 3
+    # ANALYZE_FULL = 4
+
+
 class GTPException(Exception):
     pass
 
@@ -42,7 +50,6 @@ def get_process(cmd_line: str):
 
 
 def do_cmd(cmd: str, process):
-    # print("do cmd", cmd)
     try:
         assert process.stdin
         process.stdin.write(f"{cmd}\r\n".encode())
@@ -52,20 +59,24 @@ def do_cmd(cmd: str, process):
 
 
 class GTPController(BaseReceiver, SubGameController):
-    def __init__(self, cmd_line: str, game: Game, actions: Iterable[str] | None = None):
+    def __init__(
+        self, name: str, cmd_line: str, game: Game, roles: set[Role] | None = None
+    ):
         BaseReceiver.__init__(self)
         SubGameController.__init__(self, game=game)
-        self.autoplay = False
+        self.name = name
+        # self.autoplay = False
         self.receiver = self
         self.events = {results.TurnDone, results.GameResultDone, results.Counted}
         self.process = get_process(cmd_line)
         self.is_running = True
-        self.actions: set[str] = set()
-        if actions:
-            for action in actions:
-                self.toggle_action(action)
+        # self.actions: set[str] = set()
+        self.roles: set[Role] = set()
+        for role in roles:
+            self.toggle_action(role)
         logging.debug("START GTP LOOP %s", self)
         self.got_turn = False
+        self.last_own_move = None
         thread = threading.Thread(target=self.loop, args=tuple())
         thread.start()
 
@@ -89,6 +100,7 @@ class GTPController(BaseReceiver, SubGameController):
                 else:
                     pos = gtp_coord_to_pos(val, self.ruleset.boardsize)
                 assert self.last_turn
+                self.last_own_move = (self.last_turn.next_color, pos)
                 self.play(self.last_turn.next_color, pos)
             elif part := nextline[0:50].strip():
                 logging.debug("GTP OUT: %s", part)
@@ -135,28 +147,26 @@ class GTPController(BaseReceiver, SubGameController):
                 ]
                 infos[pos] = (str(winrate)[0:4], str(score), moves)
         self.annotate_winrates(infos)
-        if self.autoplay and self.last_stone:
-            if self.last_stone.children:
-                node = self.last_stone.children[-1]
-                self.play(node.color, node.pos)
-            else:
-                self.toggle_action("analyze_full")
+        # if self.autoplay and self.last_stone:
+        #    if self.last_stone.children:
+        #        node = self.last_stone.children[-1]
+        #        self.play(node.color, node.pos)
+        #    else:
+        #        self.toggle_action("analyze_full")
+        #        self.do_cmd("stop")
+
+    def toggle_action(self, role: Role) -> bool:
+        has_role = role in self.roles
+        if has_role:
+            self.roles.remove(role)
+            if role == Role.ANALYZE:
                 self.do_cmd("stop")
 
-    def toggle_action(self, action: str) -> bool:
-        if action == "analyze_full":
-            self.autoplay = True
-            action = "analyze"
-        has_action = action in self.actions
-        if has_action:
-            self.actions.remove(action)
+            self.gtp_stopped(self.name, {role})
         else:
-            self.actions.add(action)
-        if action == "analyze":
-            if has_action:
-                self.autoplay = False
-                self.do_cmd("stop")
-        return not has_action
+            self.roles.add(role)
+            self.gtp_started(self.name, self.roles)
+        return not has_role
 
     def received_turn(self, result: results.TurnDone) -> None:
         if result.reset:
@@ -180,15 +190,15 @@ class GTPController(BaseReceiver, SubGameController):
                     self.do_cmd(cmd=f"play {node.color.name} {coord}")
         else:
             node = result.node
-            if node.color not in self.actions:
-                if node.pos:
+            if Role[node.color.name] not in self.roles:
+                if node.pos and self.last_own_move != (node.color, node.pos):
                     coord = pos_to_gtp_coord(node.pos, boardsize=self.ruleset.boardsize)
                     self.do_cmd(cmd=f"play {node.color.name} {coord}")
         is_undo = result.reset and result.node.pos and self.got_turn
-        if result.next_color in self.actions and not is_undo:
+        if Role[result.next_color.name] in self.roles and not is_undo:
             self.do_cmd(f"genmove {result.next_color}")
 
-        if "analyze" in self.actions:
+        if Role.ANALYZE in self.roles:
             self.do_cmd(f"kata-analyze {result.next_color.name} 100")
 
         self.got_turn = True
