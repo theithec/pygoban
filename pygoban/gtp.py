@@ -32,7 +32,7 @@ class Role(Enum):
     BLACK = 1
     WHITE = 2
     ANALYZE = 3
-    # ANALYZE_FULL = 4
+    ANALYZE_FULL = 4
 
 
 class GTPException(Exception):
@@ -59,9 +59,7 @@ def do_cmd(cmd: str, process):
 
 
 class GTPController(BaseReceiver, SubGameController):
-    def __init__(
-        self, name: str, cmd_line: str, game: Game, roles: set[Role] | None = None
-    ):
+    def __init__(self, name: str, cmd_line: str, game: Game):
         BaseReceiver.__init__(self)
         SubGameController.__init__(self, game=game)
         self.name = name
@@ -72,8 +70,9 @@ class GTPController(BaseReceiver, SubGameController):
         self.is_running = True
         # self.actions: set[str] = set()
         self.roles: set[Role] = set()
-        for role in roles:
-            self.toggle_action(role)
+        # if roles:
+        #    for role in roles:
+        #        self.toggle_action(role)
         logging.debug("START GTP LOOP %s", self)
         self.got_turn = False
         self.last_own_move = None
@@ -142,24 +141,23 @@ class GTPController(BaseReceiver, SubGameController):
                     None
                     if coord == "pass"
                     else gtp_coord_to_pos(coord, self.ruleset.boardsize)
-                    # gtp_coord_to_pos(coord, self.ruleset.boardsize)
                     for coord in groups[13].strip().split()
                 ]
                 infos[pos] = (str(winrate)[0:4], str(score), moves)
         self.annotate_winrates(infos)
-        # if self.autoplay and self.last_stone:
-        #    if self.last_stone.children:
-        #        node = self.last_stone.children[-1]
-        #        self.play(node.color, node.pos)
-        #    else:
-        #        self.toggle_action("analyze_full")
-        #        self.do_cmd("stop")
+        if Role.ANALYZE_FULL in self.roles and self.last_stone:
+            if self.last_stone.children:
+                node = self.last_stone.children[-1]
+                self.play(node.color, node.pos)
+            else:
+                self.toggle_action(Role.ANALYZE_FULL)
+                self.do_cmd("stop")
 
     def toggle_action(self, role: Role) -> bool:
         has_role = role in self.roles
         if has_role:
             self.roles.remove(role)
-            if role == Role.ANALYZE:
+            if role in (Role.ANALYZE, Role.ANALYZE_FULL):
                 self.do_cmd("stop")
 
             self.gtp_stopped(self.name, {role})
@@ -198,7 +196,7 @@ class GTPController(BaseReceiver, SubGameController):
         if Role[result.next_color.name] in self.roles and not is_undo:
             self.do_cmd(f"genmove {result.next_color}")
 
-        if Role.ANALYZE in self.roles:
+        if Role.ANALYZE in self.roles or Role.ANALYZE_FULL in self.roles:
             self.do_cmd(f"kata-analyze {result.next_color.name} 100")
 
         self.got_turn = True
@@ -218,7 +216,9 @@ class GTPController(BaseReceiver, SubGameController):
     def received_annotated(self, result: results.AnnotationDone) -> None: ...
 
     def received_count(self, result: results.Counted) -> None:
-        self.set_action("analyze_full", False)
+        for role in (Role.ANALYZE, Role.ANALYZE_FULL):
+            if role in self.roles:
+                self.toggle_action(role)
         self.do_cmd("quit")
 
     def received_period_ended(self, result: results.TimeDone) -> None: ...

@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QLabel,
     QLCDNumber,
 )
+
 from PyQt6.QtCore import QTimer, pyqtSignal  # pylint: disable=no-name-in-module
 
 from pygoban import Color, Party, results
@@ -150,7 +151,9 @@ class PlayerGameBox(_PlayerBox):
                 if result.node.parent
                 else timesettings.maintime
             )
-            self.clock_update_signal.emit(time_left, True)
+            self.clock_update_signal.emit(
+                time_left, self.game_ui.gui_mode == GUIMode.PLAY
+            )
         elif result.next_color.other() == self.player.color:
             self.clock_stop_signal.emit()
             self.clock_update_signal.emit(result.node.annos.time_left, False)
@@ -209,11 +212,14 @@ class PlayersBox(Box):
             cast(PlayerGameBox, box).clock_stop_signal.emit()
 
     def received_count(self, result: results.Counted):
+        boxes = self.boxes_by_mode[GUIMode.PLAY]
+        for color in (Color.BLACK, Color.WHITE):
+            box = boxes[color]
+            box.clock_stop_signal.emit()
         boxes = self.boxes_by_mode[self.game_ui.gui_mode]
         for color in (Color.BLACK, Color.WHITE):
             box = boxes[color]
             assert isinstance(box, PlayerCountBox), box
-            box.clock_stop_signal.emit()
             playerresult = result[color]
             numcoords = len(playerresult.coords)
             box.libs_label.setText(str(numcoords))

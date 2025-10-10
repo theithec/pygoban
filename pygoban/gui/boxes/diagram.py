@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
 from pygoban import results
 from pygoban.gui import BASE_DIR
 from pygoban.gui.boxes import Box
+from pygoban.gtp import Role
 
 
 class DiagramCanvas(QWidget):
@@ -161,7 +162,7 @@ class DiagramBox(Box):
 
     def init(self, **kwargs):
         layout = QVBoxLayout()
-        self.events = {results.AnnotationDone, results.TurnDone}
+        self.events = {results.AnnotationDone, results.TurnDone, results.GTPStarted}
         self.canvas = DiagramCanvas(parent=self)
 
         self.canvas.setSizePolicy(
@@ -197,3 +198,9 @@ class DiagramBox(Box):
     def received_turn(self, result: results.TurnDone) -> None:
         self.canvas.last_turn = result
         self.canvas.update()
+
+    def received_gtp_started(self, result: results.GTPStarted):
+        ctrl = self.game_ui.controller._subs[result.name]
+        analyzing = Role.ANALYZE in ctrl.roles
+        if analyzing:
+            self.setVisible(True)

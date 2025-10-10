@@ -143,21 +143,16 @@ class BarWidget(QFrame):
 
         def mk_handler(name, cmd, key):
             def handler():
-                print("CMD", cmd)
                 gtpctrl, created = self.game_ui.controller.add_controller(
                     gtp.GTPController,
                     name=name,
                     cmd_line=cmd,
-                    # actions=[key],  # , key=name
                 )
                 if created:
                     self.game_ui.controller.add_receiver(gtpctrl)
                 gtpctrl.toggle_action(key)
 
                 if self.game_ui.last_turn:
-                    if key == "analyze_full":
-                        # self.game_ui.controller.set_cursor(self.game_ui.last_turn.node.root())
-                        pass
                     cpy = copy(self.game_ui.last_turn)
                     cpy.reset = True
                     gtpctrl.receive_game_event(cpy)
@@ -171,7 +166,7 @@ class BarWidget(QFrame):
             keys = [gtp.Role.BLACK, gtp.Role.WHITE]
             cmd, can_anaylze = engines[name]
             if can_anaylze:
-                keys.extend([gtp.Role.ANALYZE])
+                keys.extend([gtp.Role.ANALYZE, gtp.Role.ANALYZE_FULL])
             for key in keys:
                 action = QAction(str(key), self)
                 action.setCheckable(False)

@@ -1,4 +1,5 @@
 import logging
+from threading import Timer
 from typing import Type, TypeVar, TYPE_CHECKING
 
 from .board import Color, Marker
@@ -134,6 +135,8 @@ class MainGameController(BaseGameController):
         super().__init__(game=game)
         self.__game = self._BaseGameController__game
         self._subs: dict[str, Type[SubGameController]] = {}
+        self.auto = False
+        self.stop_auto = False
 
     def add_controller(self, cls: Type[G], name, **kwargs) -> tuple[G, bool]:
         created = False
@@ -149,6 +152,24 @@ class MainGameController(BaseGameController):
     def start(self, receiver: BaseReceiver, node: Node | None = None) -> None:
         self.receiver = receiver
         self.__game.start([self.receiver], node=node)
+
+    def auto_to_end(self):
+        if not self.__game.nodes.cursor.children:
+            return
+        node = self.__game.nodes.cursor.children[-1]
+        self.play(node.color, node.pos)
+
+        if node.children and not self.stop_auto:
+            timer = Timer(3, self.auto_to_end)
+            timer.start()
+
+    def toggle_auto(self):
+        self.auto = not self.auto
+        if self.auto:
+            self.stop_auto = False
+            self.auto_to_end()
+        else:
+            self.stop_auto = True
 
     def quit(self):
         logging.debug("QUIT CONTROLLER %s", self)

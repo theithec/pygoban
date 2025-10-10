@@ -3,14 +3,13 @@
 import os
 from copy import copy
 
-from PyQt6.QtCore import QUrl, pyqtSignal  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import QUrl, pyqtSignal, QTimer  # pylint: disable=no-name-in-module
 from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
     QCloseEvent,
     QKeySequence,
     QShortcut,
 )
 
-# from PyQt6.QtMultimedia import QSound  # pylint: disable=no-name-in-module
 from PyQt6.QtMultimedia import QSoundEffect
 
 from .. import BaseReceiver, Color, MainGameController, Marker, Parties, Pos, results
@@ -36,8 +35,10 @@ class GuiReceiver(BaseReceiver):
     def received_turn(self, result: results.TurnDone) -> None:
         self.game_ui.last_turn = result
         self.game_ui.boardwidget.update()
-        if result.node.color != Color.EMPTY:
-            self.game_ui.stonesound.play()
+        if result.node.color != Color.EMPTY and result.node.pos:
+            # Avoid warning:
+            # QBasicTimer::start: QBasicTimer can only be used with threads started with QThread
+            QTimer.singleShot(0, self.game_ui.stonesound.play)
 
     def received_resign(self, result) -> None:
         pass

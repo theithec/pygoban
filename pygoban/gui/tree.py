@@ -221,6 +221,7 @@ class Tree(QScrollArea, BaseReceiver):
         self.canvas.update()
 
     def received_turn(self, result: results.TurnDone):
+        # return
         self.stones_signal.emit(result.node)
 
     # def received_annotated(self, result):

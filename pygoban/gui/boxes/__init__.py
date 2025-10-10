@@ -1,13 +1,13 @@
 # pylint: disable=invalid-name, arguments-differ, abstract-method
 # because qt and do_-commands and Box overloading
-from copy import copy
-from typing import Any, Callable, Type, TypeVar, Union, cast
+from typing import Any, Callable, Type
 
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal  # pylint: disable=no-name-in-module
-from PyQt6.QtGui import QAction  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import pyqtSignal  # pylint: disable=no-name-in-module
+from PyQt6.QtGui import QAction, QPixmap  # pylint: disable=no-name-in-module
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QGroupBox,
     QHBoxLayout,
+    QLabel,
     QLayout,
     QPushButton,
     QRadioButton,
@@ -17,11 +17,10 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QVBoxLayout,
 )
 
-from pygoban import BaseReceiver, Color, Node, Party, gtp, results
+from pygoban.gui import BASE_DIR
+from pygoban import BaseReceiver, results
 
-from .. import GameUI, GUIMode, ModeChangeListenerMixin
-
-# from .chart import MyChart
+from .. import GameUI, ModeChangeListenerMixin
 
 
 def _(txt):
@@ -90,7 +89,6 @@ class CommentsBox(Box):
     def received_turn(self, result):
         if self.curr_node:
             self.curr_node.annos.comment = self.comments.toPlainText().strip()
-        # self.comments.setText(result.node.annos.comment)
         self.set_comment_signal.emit(result.node.annos.comment)
         self.curr_node = result.node
 
@@ -131,7 +129,12 @@ class GTPBox(Box):
             widget.setLayout(layout)
             self.widgets_by_name.setdefault(result.name, set())
             self.widgets_by_name[result.name].add(widget)
-            btn = QPushButton(f"Stop {result.name}: {role.name}")
+            label1 = QLabel()  # f"{result.name}: {role.name}")
+            label1.setPixmap(QPixmap(f"{BASE_DIR}/gui/imgs/led-green-black.svg"))
+            layout.addWidget(label1)
+            label2 = QLabel(f"{result.name}: {role.name}")
+            layout.addWidget(label2)
+            btn = QPushButton("Stop")
             btn.clicked.connect(mk_handler(result.name, role))
             layout.addWidget(btn)
             self.layout.addWidget(widget)

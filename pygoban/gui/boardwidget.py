@@ -42,7 +42,6 @@ HOSHIS = {
 
 
 class BoardWidget(QWidget):
-
     def __init__(self, parent: GameUI, boardsize: int):
         super().__init__(parent=parent)
         self.bgimage = QImage(os.path.join(BASE_DIR, "gui/imgs/shinkaya.jpg"))
@@ -124,8 +123,7 @@ class BoardWidget(QWidget):
         painter.setPen(pen)
         painter.setRenderHints(
             # painter.Antialiasing | painter.SmoothPixmapTransform | painter.HighQualityAntialiasing
-            QPainter.RenderHint.Antialiasing
-            | QPainter.RenderHint.SmoothPixmapTransform
+            QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform
         )
         hdist = dist // 2
         # painter.fillRect(
@@ -184,7 +182,6 @@ class BoardWidget(QWidget):
 
 
 class BoardOverlay(QWidget, BaseReceiver):
-
     def __init__(self, parent: "GameWidget") -> None:
         super().__init__(parent)  # pylint: disable=unexpected-keyword-arg
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
@@ -248,5 +245,5 @@ class BoardOverlay(QWidget, BaseReceiver):
             draw_arrow(pospair)
         painter.end()
 
-    def received_turn(self, result):
+    def received_turn(self, result: results.TurnDone):
         self.result = result

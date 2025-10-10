@@ -122,16 +122,16 @@ class NewGameBaseDialog(QDialog):
                         cls=gtp.GTPController,
                         cmd_line=cmd,
                         name=txt,
-                        roles={gtp.Role[color.name]},
+                        # roles={gtp.Role[color.name]},
                     )
                     logging.debug("create for %s: %s", color, cmd)
+
+                    gtpctrl.toggle_action(gtp.Role[color.name])
                     if created:
                         assert controller.receiver.last_turn
                         gtpctrl.receive_game_event(controller.receiver.last_turn)
                         controller.add_receiver(gtpctrl)
                         # data[color.name.lower() + "_engine"] = txt
-                    else:
-                        gtpctrl.toggle_action(gtp.Role[color.name])
 
         self.close()
 
