@@ -13,10 +13,9 @@ class Annotations:
     owned: dict[Pos, Color] = field(default_factory=dict)
     winrates: dict[Pos, str] = field(default_factory=dict)
     comment: str = ""
-    # time_left: dict[Color, int] = field(default_factory=dict)
     time_left: int = 0
-    stones_left: dict[Color, int] = field(default_factory=dict)
-    byoyomi_left: dict[Color, int] = field(default_factory=dict)
+    stones_left: int = 0
+    periods_left: int = 0
     progress: dict[Pos, Any] = field(default_factory=dict)
     infos: dict[str, str] = field(default_factory=dict)
     arrows: list[tuple[Pos, Pos]] = field(default_factory=list)

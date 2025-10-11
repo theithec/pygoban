@@ -117,6 +117,9 @@ class BaseGameController:
     def add_receiver(self, receiver: BaseReceiver):
         self.__game.add_receiver(receiver=receiver)
 
+    def get_timer(self, color: Color):
+        return self.__game.timers[color]
+
 
 class SubGameController(BaseGameController):
     def __init__(self, game: Game) -> None:

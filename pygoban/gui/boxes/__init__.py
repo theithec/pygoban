@@ -81,7 +81,7 @@ class CommentsBox(Box):
         self.comments = QTextEdit()
         layout.addWidget(self.comments)
         self.set_comment_signal.connect(self.comments.setText)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setLayout(layout)
         self.events = {results.TurnDone}
         self.curr_node: results.TurnDone | None = None

@@ -97,18 +97,18 @@ class DiagramCanvas(QWidget):
 
                 vert_npos1 = int(last_num * horheight + 50 * onepc)
                 vert_npos2 = int(num * horheight + 50 * onepc)
-                # painter.drawLine(
-                #     QPoint(
-                #         # block * (index - 1) + self._left,
-                #         hor_pos1,
-                #         vert_npos1,
-                #     ),
-                #     QPoint(
-                #         # block * index + self._left,
-                #         hor_pos2,
-                #         vert_npos2,
-                #     ),
-                # )
+                painter.drawLine(
+                    QPoint(
+                        # block * (index - 1) + self._left,
+                        hor_pos1,
+                        vert_npos1,
+                    ),
+                    QPoint(
+                        # block * index + self._left,
+                        hor_pos2,
+                        vert_npos2,
+                    ),
+                )
                 # //print("%: ",last_percent,percent)
                 print(
                     "%",
@@ -171,11 +171,6 @@ class DiagramBox(Box):
         layout.addWidget(self.canvas)
         row = QWidget(self)
         rowlayout = QHBoxLayout()
-
-        btn = QPushButton("ki")
-        icon = QIcon(f"{BASE_DIR}/gui/imgs/led-green-black.svg")
-        btn.setIcon(QIcon(f"{BASE_DIR}/gui/imgs/led-green-black.svg"))
-        rowlayout.addWidget(btn)
         row.setLayout(rowlayout)
         layout.addWidget(row)
         self.setMaximumHeight(220)
@@ -201,6 +196,6 @@ class DiagramBox(Box):
 
     def received_gtp_started(self, result: results.GTPStarted):
         ctrl = self.game_ui.controller._subs[result.name]
-        analyzing = Role.ANALYZE in ctrl.roles
+        analyzing = Role.ANALYZE in ctrl.roles or Role.ANALYZE_FULL in ctrl.roles
         if analyzing:
             self.setVisible(True)

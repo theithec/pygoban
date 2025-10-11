@@ -44,7 +44,6 @@ class GuiReceiver(BaseReceiver):
         pass
 
     def received_annotated(self, result) -> None:
-        print("received annotated", self.game_ui.gui_mode)
         self.game_ui.boardwidget.update()
 
     def received_count(self, result) -> None:

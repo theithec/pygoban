@@ -48,9 +48,9 @@ class BoxesWidget(QWidget):
         self.players_box = self.add_box(pbox, vis=True)
         self.ctrl_box = self.add_box(ControllsBox(self), vis=True)
         self.gtp_box = self.add_box(GTPBox(self), vis=True)
-        self.add_box(CommentsBox(self), vis=is_edit)
         self.add_box(DiagramBox(self), vis=False)
-        self._layout.addRow("Ruleset", QLabel("Some data"))
+        self.add_box(CommentsBox(self), vis=is_edit)
+        self._layout.addRow("Ruleset", QLabel(self.game_ui.controller.ruleset.name))
         self.setLayout(self._layout)
 
     def add_box(self, box: B, vis: bool) -> B:

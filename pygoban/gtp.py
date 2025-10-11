@@ -63,16 +63,11 @@ class GTPController(BaseReceiver, SubGameController):
         BaseReceiver.__init__(self)
         SubGameController.__init__(self, game=game)
         self.name = name
-        # self.autoplay = False
         self.receiver = self
         self.events = {results.TurnDone, results.GameResultDone, results.Counted}
         self.process = get_process(cmd_line)
         self.is_running = True
-        # self.actions: set[str] = set()
         self.roles: set[Role] = set()
-        # if roles:
-        #    for role in roles:
-        #        self.toggle_action(role)
         logging.debug("START GTP LOOP %s", self)
         self.got_turn = False
         self.last_own_move = None
@@ -120,6 +115,8 @@ class GTPController(BaseReceiver, SubGameController):
     def do_cmd(self, cmd: str):
         if not self.is_running:
             return
+
+        logging.debug("GTP DO CMD: %s", cmd)
         do_cmd(cmd, self.process)
 
     def annotate_res(self, res):
@@ -171,6 +168,10 @@ class GTPController(BaseReceiver, SubGameController):
             self.got_turn = False
             self.do_cmd(cmd="clear_board")
             self.do_cmd(f"boardsize {self.ruleset.boardsize}")
+            if tss := self.ruleset.timesettings:
+                self.do_cmd(
+                    f"time_settings {tss.maintime} {tss.byoyomi_time} {tss.byoyomi_stones}"
+                )
             komi = self.ruleset.komi
             if int(komi == 375):  # fox
                 komi = 7.5
@@ -193,7 +194,10 @@ class GTPController(BaseReceiver, SubGameController):
                     coord = pos_to_gtp_coord(node.pos, boardsize=self.ruleset.boardsize)
                     self.do_cmd(cmd=f"play {node.color.name} {coord}")
         is_undo = result.reset and result.node.pos and self.got_turn
-        if Role[result.next_color.name] in self.roles and not is_undo:
+        if Role[(col := result.next_color).name] in self.roles and not is_undo:
+            self.do_cmd("kata-debug-print-tc")
+            timer = self.get_timer(result.next_color)
+            self.do_cmd(f"time_left {col.short()} {timer.nexttime()} 1")
             self.do_cmd(f"genmove {result.next_color}")
 
         if Role.ANALYZE in self.roles or Role.ANALYZE_FULL in self.roles:

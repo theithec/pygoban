@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional, Tuple, Union
+from enum import StrEnum
 
 from .board import Board, Color, Pos
 from .info import GameInfo
@@ -8,6 +9,11 @@ from .nodescontroller import NodesController
 from .timesettings import TimeSettings
 
 # from .timesettings import TimeSettings
+
+
+class Key(StrEnum):
+    CHINESE = "Chinese"
+    JAPANESE = "Japanse"
 
 
 class RuleViolation(Exception):
@@ -152,3 +158,19 @@ class Ruleset:
         else:
             self.ko = None
         return result
+
+
+class JapaneseRuleset(Ruleset):
+    name = Key.JAPANESE.name.capitalize()
+    CounterCls = Counter
+
+
+class ChineseRuleset(Ruleset):
+    name = Key.CHINESE.name.capitalize()
+    CounterCls = Counter
+
+
+by_key = {
+    Key.CHINESE: ChineseRuleset,
+    Key.JAPANESE: JapaneseRuleset,
+}

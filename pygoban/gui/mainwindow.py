@@ -8,8 +8,8 @@ from pygoban import (
     GameInfo,
     Node,
     Parties,
-    Ruleset,
     TimeSettings,
+    rulesets,
 )
 from pygoban.sgf import reader
 
@@ -59,12 +59,14 @@ class MainWindow(MainUI):
         dlg.show()
 
     def add_game(
-        self, mode: GUIMode, ruleset: Ruleset, cursor: Node | None = None
+        self, mode: GUIMode, ruleset: rulesets.Ruleset, cursor: Node | None = None
     ) -> MainGameController:
         game = Game(ruleset=ruleset)
         gamecontroller = MainGameController(game=game)
         parties = {
-            color.name.lower(): GUIPlayer(color=color, name=ruleset.info.names[color], members=[])
+            color.name.lower(): GUIPlayer(
+                color=color, name=ruleset.info.names[color], members=[]
+            )
             for color in (Color.BLACK, Color.WHITE)
         }
 
@@ -90,15 +92,22 @@ class MainWindow(MainUI):
         white_name: str,
         modestr: str,
         timestr: str,
+        ruleset_name: str,
     ) -> MainGameController:
         mode: GUIMode = GUIMode[modestr]
         info = GameInfo(names={Color.BLACK: black_name, Color.WHITE: white_name})
         if timestr:
-            timesettings = TimeSettings(*[int(part) for part in timestr.strip().split(":")])
+            timesettings = TimeSettings(
+                *[int(part) for part in timestr.strip().split(":")]
+            )
         else:
             timesettings = None
-        ruleset = Ruleset(
-            boardsize=boardsize, komi=komi, handicap=handicap, info=info, timesettings=timesettings
+        ruleset: rulesets.Ruleset = rulesets.by_key[rulesets.Key[ruleset_name]](
+            boardsize=boardsize,
+            komi=komi,
+            handicap=handicap,
+            info=info,
+            timesettings=timesettings,
         )
         return self.add_game(mode=mode, ruleset=ruleset, cursor=None)
 

@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module; QFormLayout,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QPushButton,
     QRadioButton,
     QSizePolicy,
     QVBoxLayout,
@@ -80,16 +81,23 @@ class EditBox(Box):
             btn = QRadioButton(parent=self, text=label)
             btn.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
             btn.clicked.connect(mk_decobutton_callback(key))  # type: ignore
+            btn.key = key
             if icon:
                 btn.setIcon(QIcon(icon))
             deco_layout.addWidget(btn, x, y)
             return btn
 
-        self.decobox = QGroupBox("Deco")
+        self.decobtn = QPushButton("△ □ ○")
+        self.decobtn.setCheckable(True)
+        self.decobtn.clicked.connect(self.toggle_deco)
+        self.decobox = QGroupBox("")
+        self.decobox.setFlat(True)
+        self.decobox.setVisible(False)
         self.decogroup = QButtonGroup()
-        self.decobox.setCheckable(True)
-        self.decobox.setChecked(False)
-        self.decobox.toggled.connect(self.toggle_deco)
+        self.decogroup.setExclusive(True)
+        # self.decobox.setCheckable(True)
+        # self.decobox.setChecked(False)
+        # self.decobox.toggled.connect(self.toggle_deco)
         self.decogroup.addButton(
             add_decobutton(0, 0, "B", icon=f"{BASE_DIR}/gui/imgs/black.png")
         )
@@ -108,6 +116,8 @@ class EditBox(Box):
         # box_layout.addLayout(btns_layout1)
         box_layout.addLayout(btns_layout1)
         box_layout.addLayout(btns_layout2)
+
+        box_layout.addWidget(self.decobtn)
         box_layout.addWidget(self.decobox)
         self.setLayout(box_layout)
 
@@ -120,8 +130,18 @@ class EditBox(Box):
         self.game_ui.boardwidget.update()
 
     def toggle_deco(self):
-        if not self.decobox.isChecked():
+        checked = self.decobtn.isChecked()
+        self.decobox.setVisible(checked)
+        if checked:
+            print("B", self.decogroup.checkedButton())
+            if btn := self.decogroup.checkedButton():
+                self.game_ui.annotation_type = btn.key
+        else:
             self.game_ui.annotation_type = ""
+        # if checked:
+        # if not self.decobox.isChecked():
+        #    self.game_ui.annotation_type = ""
+        # self.decogroup.setVisible(self.decogroup.isChecked())
 
     def do_nr(self):
         pass

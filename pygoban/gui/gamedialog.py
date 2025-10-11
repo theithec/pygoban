@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
 )
 from PyQt6.QtGui import QIntValidator
 
-from .. import Color, gtp
+from .. import Color, gtp, rulesets
 from . import GUIMode, MainUI
 
 _translate = QCoreApplication.translate
@@ -67,7 +67,7 @@ class NewGameBaseDialog(QDialog):
         index = self.size_box.findText(str(settings.boardsize))
         self.size_box.setCurrentIndex(index)
         self.ruleset_box = QComboBox()
-        self.ruleset_box.addItems(["Edit", "Japanese"])
+        self.ruleset_box.addItems(key.name for key in rulesets.Key)
         self.ruleset_box.setCurrentIndex(1)
         self.komi_edit = QLineEdit(str(settings.komi))
         self.handicap_box = QComboBox()
@@ -99,15 +99,18 @@ class NewGameBaseDialog(QDialog):
 
     def startgame(self, timestr: str | None = None):
         try:
-            data: dict[str, Any] = dict(
-                boardsize=int(self.size_box.currentText()),
-                komi=float(self.komi_edit.text()),
-                handicap=int(self.handicap_box.currentText()),
-                black_name=str(self.widgets_by_color[Color.BLACK]["name_edit"].text()),
-                white_name=self.widgets_by_color[Color.WHITE]["name_edit"].text(),
-                modestr=self.GUI_MODE.value,
-                timestr=timestr,
-            )
+            data: dict[str, Any] = {
+                "boardsize": int(self.size_box.currentText()),
+                "komi": float(self.komi_edit.text()),
+                "handicap": int(self.handicap_box.currentText()),
+                "black_name": str(
+                    self.widgets_by_color[Color.BLACK]["name_edit"].text()
+                ),
+                "white_name": self.widgets_by_color[Color.WHITE]["name_edit"].text(),
+                "modestr": self.GUI_MODE.value,
+                "timestr": timestr,
+                "ruleset_name": self.ruleset_box.currentText(),
+            }
         except ValueError as err:
             QMessageBox.critical(self, "Error", str(err))
             return

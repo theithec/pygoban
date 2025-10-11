@@ -2,7 +2,7 @@ from . import results
 from .board import Marker
 from .nodescontroller import Color, Node, NodesController, Pos
 from .receivers import BaseReceiver
-from .rulesets import Counter, Ruleset, RuleViolation, ThreePasses
+from .rulesets import by_key, Ruleset, RuleViolation, ThreePasses
 from .timesettings import PlayerTime
 
 
@@ -46,8 +46,6 @@ class Game:
 
     def period_ended(self, color: Color, next_time: int):
         """A time period ended"""
-        # if not (timers := self.timers):
-        #    return
         result: results.Event = results.TimeDone(
             color=color, next_time=next_time, byoyomi=self.timers[color].byoyomi
         )
@@ -83,10 +81,12 @@ class Game:
             cursor = self.nodes.root
         result = self.nodes.set_cursor(cursor)
         if self.timers:
-            self.timers[result.next_color].start_timer()
-            result.node.annos.time_left = self.timers[
-                result.next_color.other()
-            ].nexttime()
+            timer = self.timers[result.next_color]
+            timer.start_timer()
+            timer = self.timers[result.next_color.other()]
+            result.node.annos.time_left = timer.nexttime()
+            result.node.annos.stones_left = timer.byoyomi.stones_left
+            result.node.annos.periods_left = timer.byoyomi.periods_left
 
         self.send_game_event(result)
 
@@ -96,7 +96,7 @@ class Game:
         if self.timers:
             for timer in self.timers.values():
                 timer.cancel_timer()
-        cnt = Counter(board=self.nodes.board)
+        cnt = self.ruleset.CounterCls(board=self.nodes.board)
         coords, killed = cnt.result()
         game_result = results.Counted(
             black=results.ColorResult(
@@ -127,7 +127,8 @@ class Game:
                 other_timer = self.timers[color.other()]
                 if not other_timer.ended:
                     other_timer.start_timer()
-                # result.byoyomi = self.timers[color].byoyomi
+                result.node.annos.periods_left = self.timers[color].byoyomi.periods_left
+                result.node.annos.stones_left = self.timers[color].byoyomi.stones_left
             self.send_game_event(result)
 
     def _reset(self, node: Node):
@@ -208,7 +209,7 @@ class Game:
                 winner = color.other()
                 msg = fmt.format(color=winner)
             case types.COUNTED:
-                cnt = Counter(board=self.nodes.board)
+                cnt = self.ruleset.CounterCls(board=self.nodes.board)
                 coords, killed = cnt.result()
                 for color in (Color.BLACK, Color.WHITE):
                     killed[color] += self.nodes.total_dead[color.other()] + len(

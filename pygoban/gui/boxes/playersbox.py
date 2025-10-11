@@ -131,7 +131,8 @@ class PlayerGameBox(_PlayerBox):
         if time.byoyomi_stones > 1:
             if txt:
                 txt += ", "
-            txt += f"{stones_left}/{time.byoyomi_stones} stones"
+            txt += f"{time.byoyomi_stones - stones_left}/{time.byoyomi_stones} stones"
+
         self.byoyomi_label.setText(txt)
 
     def received_period_ended(self, result: results.TimeDone):
@@ -157,6 +158,9 @@ class PlayerGameBox(_PlayerBox):
         elif result.next_color.other() == self.player.color:
             self.clock_stop_signal.emit()
             self.clock_update_signal.emit(result.node.annos.time_left, False)
+
+            annos = result.node.annos
+            self.set_byoyomi_text(annos.periods_left, annos.stones_left)
 
 
 class PlayerCountBox(_PlayerBox):
