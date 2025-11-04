@@ -129,8 +129,8 @@ class Ruleset:
         return self
 
     def validate_result(self, result: TurnDone) -> TurnDone:
-        stone = result.node
-        if stone.pos:
+        node = result.node
+        if node.pos:
             self.passed = 0
         else:
             self.passed += 1
@@ -138,21 +138,21 @@ class Ruleset:
                 self.passed = 0
                 raise ThreePasses()
             return result
-        assert stone.pos
-        if stone.color.is_empty():
+        assert node.pos
+        if node.color.is_empty():
             return result
         assert self.nodes
-        color = self.nodes.board.intersection(stone.pos).color
+        color = self.nodes.board.intersection(node.pos).color
         if not color.is_empty():
             raise OccupiedViolation(f"Not empty: {result} BUT {color}")
         if not result.libs and not result.killed:
             raise NoLibsViolation(f"No liberties: {result}")
-        if stone.pos == self.ko:
+        if node.pos == self.ko:
             raise KoViolation(f"Invalid Ko: {result}")
         if (
             len(result.libs) == 1
             and result.libs == result.killed
-            and len(result.board.get_chain(stone.pos)) == 1
+            and len(result.board.get_chain(node.pos)) == 1
         ):
             self.ko = list(result.killed)[0]
         else:

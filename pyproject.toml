@@ -21,7 +21,12 @@ requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
 [dependency-groups]
-dev = ["coverage", "pytest", "pytest-mock>=3.12.0"]
+dev = [
+    "coverage",
+    "pytest",
+    "pytest-mock>=3.12.0",
+    "pytest-cov>=7.0.0",
+]
 
 [tool.pytest]
 testpaths = "tests"

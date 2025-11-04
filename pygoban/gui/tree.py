@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QSizePolicy,
     QWidget,
 )
-
+from . import GameUI, GUIMode
 from .. import BaseReceiver, Color, Node, results
 
 
@@ -76,6 +76,8 @@ class TreeNode(QLabel):
         super().paintEvent(event)
 
     def mousePressEvent(self, event):
+        if self.tree.tree.game_ui.gui_mode == GUIMode.PLAY:
+            return
         is_rightclick = event.button() == Qt.MouseButton.RightButton
         if is_rightclick:
             node = self.node.parent
@@ -196,6 +198,7 @@ class Tree(QScrollArea, BaseReceiver):
 
     def __init__(self, parent, callback):
         super().__init__(parent)
+        self.game_ui: GameUI = parent.parent()
         self.canvas = TreeCanvas(parent=self, callback=callback)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setWidget(self.canvas)
@@ -214,7 +217,6 @@ class Tree(QScrollArea, BaseReceiver):
             self.canvas.tree_cursor = tree_node
         else:
             self.canvas.add_stone(stone)
-            pass
         self.ensureWidgetVisible(self.canvas.tree_cursor)
         if self.canvas.tree_cursor.node != stone:
             self.set_cursor(stone)

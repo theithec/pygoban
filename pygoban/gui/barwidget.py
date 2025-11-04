@@ -50,7 +50,8 @@ class BoxesWidget(QWidget):
         self.gtp_box = self.add_box(GTPBox(self), vis=True)
         self.add_box(DiagramBox(self), vis=False)
         self.add_box(CommentsBox(self), vis=is_edit)
-        self._layout.addRow("Ruleset", QLabel(self.game_ui.controller.ruleset.name))
+        infoBtn = QPushButton("🛈")
+        self._layout.addRow("", infoBtn)
         self.setLayout(self._layout)
 
     def add_box(self, box: B, vis: bool) -> B:
@@ -85,6 +86,7 @@ class BarWidget(QFrame):
         self.inner = BoxesWidget(self)
         splitter.addWidget(self.inner)
         self.tree = Tree(self, callback=self.game_ui.controller.set_cursor)
+        # self.tree.setVisible(False)
         self.game_ui.controller.add_receiver(self.tree)
         splitter.addWidget(self.tree)
         splitter.setSizePolicy(
@@ -187,4 +189,5 @@ class BarWidget(QFrame):
 
     def open_file(self) -> None:
         path = filedialog.filename_from_opendialog(parent=self)
+        self.game_ui.main_ui.load_sgf(path)
         self.game_ui.main_ui.load_sgf(path)

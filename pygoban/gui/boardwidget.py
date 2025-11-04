@@ -188,9 +188,10 @@ class BoardOverlay(QWidget, BaseReceiver):
         self.board = parent.boardwidget
         self.game_ui: GameUI = cast(GameUI, parent)
         self.game_ui.controller.add_receiver(self)
-        self.events = {results.TurnDone}
+        self.events = {results.TurnDone, results.GameResultDone}
         self.result: results.TurnDone | None = None
         self.startpos: Pos | None = None
+        self.msg = ""
 
     def paintEvent(self, _event):
         """Paint a board"""
@@ -243,7 +244,20 @@ class BoardOverlay(QWidget, BaseReceiver):
             draw_line(pospair)
         for pospair in self.result.node.annos.arrows:
             draw_arrow(pospair)
+
+        if self.msg:
+            font = painter.font()  # QFont()
+            font.setPixelSize(self.height() // 8)
+            painter.setFont(font)
+
+            painter.drawText(100, 100, self.msg)
+
         painter.end()
 
     def received_turn(self, result: results.TurnDone):
         self.result = result
+        self.msg = ""
+
+    def received_result_done(self, result: results.GameResultDone):
+        self.msg = result.msg
+        # self.update()

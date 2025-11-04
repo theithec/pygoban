@@ -3,7 +3,7 @@ import os
 import re
 from typing import Callable, Dict, List
 
-from pygoban import Color, GameInfo, Marker, Node, Ruleset, coords
+from pygoban import Color, GameInfo, Marker, Node, rulesets, coords
 
 from . import INFO_PROPS, NODE_PROPS, ROOT_PROPS
 
@@ -20,9 +20,10 @@ class Parser:
         self.defaults.setdefault("PL", "Black")
         self.defaults.setdefault("PB", "Black")
         self.defaults.setdefault("PW", "White")
+        self.defaults.setdefault("RU", "Japanese")
         self.variations: List[Node] = []
         self.infos = {**defaults}
-        self.ruleset: Ruleset | None = None
+        self.ruleset: rulesets.Ruleset | None = None
         self.must_match_when_set = {
             "GM": "1",
             "FF": "4",
@@ -45,7 +46,7 @@ class Parser:
             info = GameInfo(
                 names={Color.BLACK: self.infos["PB"], Color.WHITE: self.infos["PW"]}
             )
-            self.ruleset = Ruleset(
+            self.ruleset = rulesets.by_key[rulesets.Key.JAPANESE](
                 boardsize=int(self.infos["SZ"]),
                 komi=float(self.infos["KM"]),
                 handicap=int(self.infos["HA"]),
@@ -291,14 +292,14 @@ class Parser:
         self._do_l(val, Color.WHITE)
 
 
-def parse(sgftxt: str, defaults: Dict) -> tuple[Ruleset, Node]:
+def parse(sgftxt: str, defaults: Dict) -> tuple[rulesets.Ruleset, Node]:
     parser = Parser(sgftxt, defaults)
     parser.parse()
     assert parser.ruleset and parser.cursor, f"{parser.ruleset} / {parser.cursor}"
     return parser.ruleset, parser.cursor  # .root()
 
 
-def load(path: str) -> tuple[Ruleset, Node]:
+def load(path: str) -> tuple[rulesets.Ruleset, Node]:
     with open(path, encoding="utf-8") as fobj:
         sgftxt = fobj.read()
     ruleset, cursor = parse(sgftxt, {})

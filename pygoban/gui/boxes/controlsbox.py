@@ -59,6 +59,7 @@ class EditBox(Box):
         self.btn_next_var = add_dirbutton(">>", controller.do_next_variation)
         self.btn_last_stone = add_dirbutton(">|", controller.do_last_stone)
         self.btn_auto = add_dirbutton("auto", controller.toggle_auto)
+        self.btn_auto.setCheckable(True)
         btns_layout2 = QHBoxLayout()
         add_dirbutton = btn_adder(btns_layout2)
         self.btn_auto = add_dirbutton("Pass", controller.do_pass)

@@ -195,9 +195,10 @@ class GTPController(BaseReceiver, SubGameController):
                     self.do_cmd(cmd=f"play {node.color.name} {coord}")
         is_undo = result.reset and result.node.pos and self.got_turn
         if Role[(col := result.next_color).name] in self.roles and not is_undo:
-            self.do_cmd("kata-debug-print-tc")
-            timer = self.get_timer(result.next_color)
-            self.do_cmd(f"time_left {col.short()} {timer.nexttime()} 1")
+            if self.ruleset.timesettings:
+                # self.do_cmd("kata-debug-print-tc")
+                timer = self.get_timer(result.next_color)
+                self.do_cmd(f"time_left {col.short()} {timer.nexttime()} 1")
             self.do_cmd(f"genmove {result.next_color}")
 
         if Role.ANALYZE in self.roles or Role.ANALYZE_FULL in self.roles:
@@ -229,3 +230,4 @@ class GTPController(BaseReceiver, SubGameController):
 
     def received_result_done(self, result: results.GameResultDone) -> None:
         self.do_cmd("stop")
+        self.gtp_stopped(self.name, self.roles)

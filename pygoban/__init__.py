@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 
 from .pos import Pos
-from .board import Color, Intersection, Marker
+from .board import Color, Intersection, Marker, Board
 from .game import Game
 from .gamecontroller import MainGameController, SubGameController
 from .info import GameInfo
@@ -41,21 +41,22 @@ def get_argparser() -> argparse.ArgumentParser:
     parser.add_argument("sgf_path", nargs="?", default=None)
     parser.add_argument("-b", "--black-name", help="Black Name")
     parser.add_argument("-w", "--white-name", help="White Name")
-    # parser.add_argument("--black-engine", help="Black GTP")
-    # parser.add_argument("--white-engine", help="White GTP")
     parser.add_argument("--handicap", help="Handicap", type=int, default=0)
     parser.add_argument("-s", "--boardsize", help="Boardsize", type=int, default=19)
     parser.add_argument("--komi", help="komi", type=float)
     parser.add_argument(
         "--mode", help="Modus(play, edit)", choices=("PLAY", "EDIT"), default="PLAY"
     )
-    parser.add_argument("--time", help="[maintime]:[byoyomi_time]:[byoyomi_num]:[byoyomi_stones]")
+    parser.add_argument(
+        "--time", help="[maintime]:[byoyomi_time]:[byoyomi_num]:[byoyomi_stones]"
+    )
     return parser
 
 
 __all__ = [
     "get_argparser",
     "BaseReceiver",
+    "Board",
     "Color",
     "Game",
     "GameInfo",

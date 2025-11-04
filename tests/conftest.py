@@ -1,29 +1,18 @@
 import pytest
 
 from pygoban.receivers import BaseReceiver
-from pygoban.results import ActionResult
+from pygoban import results
 
 
 class TestReceiver(BaseReceiver):
-    def received_stone(self, result: ActionResult) -> None:
-        pass
+    def __init__(self) -> None:  # type: ignore
+        super().__init__()
+        self.events = set([results.TurnDone])
 
-    def received_reset(self, result: ActionResult) -> None:
-        pass
-
-    def received_resign(self, result: ActionResult) -> None:
-        pass
-
-    def received_annotated(self, result: ActionResult) -> None:
-        pass
-
-    def received_count(self, result: ActionResult) -> None:
-        pass
-
-    def received_count_done(self, result: ActionResult) -> None:
+    def received_turn(self, result: results.TurnDone) -> None:
         pass
 
 
 @pytest.fixture
-def receiver_cls():
-    return TestReceiver
+def receiver():
+    return TestReceiver()
