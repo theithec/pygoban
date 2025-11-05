@@ -51,7 +51,6 @@ class BoardWidget(QWidget):
         self.intersections: dict[Pos, IntersectionWidget] = {}
         self.boardrange = range(self.boardsize)
         self.current_in = None  # "Active" intersection
-        # self.boardupdate_signal.connect(self.update_board)
         self.ins_params = InsParams()
         self.create_intersections()
         self.setAutoFillBackground(True)
@@ -126,16 +125,9 @@ class BoardWidget(QWidget):
             QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform
         )
         hdist = dist // 2
-        # painter.fillRect(
-        #     self.borderspace,
-        #     self.borderspace,
-        #     self.boardwidth,
-        #     self.boardwidth,  # + hdist,
-        #     QBrush(Qt.green),
-        # )
         for pos in self.boardrange:
             pen = painter.pen()
-            firstorlast = pos == 0 or pos == self.boardsize - 1
+            firstorlast = pos in (0, self.boardsize - 1)
             pen.setWidth(4 if firstorlast else 2)
             width = self.boardwidth - (1 if not firstorlast else 2)
             painter.setPen(pen)
@@ -181,9 +173,9 @@ class BoardWidget(QWidget):
         painter.end()
 
 
-class BoardOverlay(QWidget, BaseReceiver):
+class BoardOverlay(QWidget, BaseReceiver):  # pylint: disable=abstract-method
     def __init__(self, parent: "GameWidget") -> None:
-        super().__init__(parent)  # pylint: disable=unexpected-keyword-arg
+        super().__init__(parent)  # pylint: disable=too-many-function-args
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.board = parent.boardwidget
         self.game_ui: GameUI = cast(GameUI, parent)
@@ -260,4 +252,3 @@ class BoardOverlay(QWidget, BaseReceiver):
 
     def received_result_done(self, result: results.GameResultDone):
         self.msg = result.msg
-        # self.update()

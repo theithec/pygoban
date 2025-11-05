@@ -15,22 +15,12 @@ class Event:
 
 
 @dataclass
-class TimeData:
-    # next_time: dict[Color, int | None] = field(
-    #     default_factory=lambda: {Color.BLACK: None, Color.WHITE: None}
-    # )
-    # byoyomi: Optional["Byoyomi"] = None
-    foox: int = 3
-
-
-@dataclass
 class TurnDone(Event):
     """A players turn, placement or pass"""
 
     board: Board
     node: "Node"
     next_color: Color
-    # time: TimeData
     killed: Set[Pos] = field(default_factory=set)
     libs: Set[Pos] = field(default_factory=set)
     total_dead: Dict[Color, int] = field(
@@ -46,11 +36,11 @@ class _GTP(Event):
     roles: set["Role"] = field(default_factory=set)
 
 
-class GTPStarted(_GTP):
+class GTPStarted(_GTP):  # pylint: disable=too-few-public-methods
     pass
 
 
-class GTPStopped(_GTP):
+class GTPStopped(_GTP):  # pylint: disable=too-few-public-methods
     pass
 
 

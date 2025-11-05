@@ -16,11 +16,11 @@ class Key(StrEnum):
     JAPANESE = "Japanse"
 
 
-class RuleViolation(Exception):
+class WrongColor(Exception):
     pass
 
 
-class WrongColor(Exception):
+class RuleViolation(Exception):
     pass
 
 
@@ -50,7 +50,7 @@ PosSetByColor = dict[Color, set[Pos]]
 FloatByColor = dict[Color, float]
 
 
-class Counter:
+class Counting:
     def __init__(self, board: Board) -> None:
         self.board = board
         self.checked: set[Pos] = set()
@@ -75,6 +75,8 @@ class Counter:
             self.board.intersection(coord).owner = group.owner
         return group
 
+
+class JapaneseCounting(Counting):
     def result(self) -> Tuple[PosSetByColor, FloatByColor]:
         self.checked = set()
         empties: PosSetByColor = {Color.BLACK: set(), Color.WHITE: set()}
@@ -101,6 +103,43 @@ class Counter:
         return empties, deadonboard
 
 
+class ChineseCounting(Counting):
+    def __init__(self, board: Board) -> None:
+        self.board = board
+        self.checked: set[Pos] = set()
+        self.owned = {Color.BLACK: set(), Color.WHITE: set()}
+
+    def result(self) -> (PosSetByColor, FloatByColor):
+        boardrange = range(self.board.boardsize)
+
+        for x in boardrange:
+            for y in boardrange:
+                inter = self.board[x][y]
+                if inter.is_empty():
+                    continue
+                inter.owner = inter.color
+
+        empties: PosSetByColor = {Color.BLACK: set(), Color.WHITE: set()}
+        for x in boardrange:
+            for y in boardrange:
+                pos = Pos(x, y)
+                inter = self.board.intersection(pos)
+                if pos in self.checked:
+                    continue
+                if inter.is_empty():
+                    group = self.check(pos)
+
+        for x in boardrange:
+            for y in boardrange:
+                inter = self.board[x][y]
+                if inter.owner:
+                    self.owned[inter.owner].add(Pos(x, y))
+
+        # breakpoint()
+
+        return (self.owned, {Color.BLACK: 0, Color.WHITE: 0})
+
+
 class Ruleset:
     name = "default"
 
@@ -111,7 +150,6 @@ class Ruleset:
         handicap: int,
         info: GameInfo,
         first: Color = Color.BLACK,
-        # title: str,
         timesettings: TimeSettings | None = None,
     ):
         self.boardsize = boardsize
@@ -162,12 +200,12 @@ class Ruleset:
 
 class JapaneseRuleset(Ruleset):
     name = Key.JAPANESE.name.capitalize()
-    CounterCls = Counter
+    CounterCls = JapaneseCounting
 
 
 class ChineseRuleset(Ruleset):
     name = Key.CHINESE.name.capitalize()
-    CounterCls = Counter
+    CounterCls = ChineseCounting
 
 
 by_key = {

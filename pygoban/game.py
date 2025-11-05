@@ -177,8 +177,7 @@ class Game:
                 assert end
                 cursor.annos.lines.append((pos, end))
 
-        action_result = results.AnnotationDone()
-        self.send_game_event(action_result)
+        self.send_game_event(results.AnnotationDone())
 
     def rm_anno(self):
         action_result = results.AnnotationDone()
@@ -195,7 +194,6 @@ class Game:
             self.receivers.append(receiver)
 
     def set_end_result(self, result_type, color: Color | None = None):
-        print("Print TODO WRITE RESULT")
         if self.timers:
             for timer in self.timers.values():
                 timer.cancel_timer()

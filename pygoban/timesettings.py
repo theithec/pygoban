@@ -68,21 +68,23 @@ class PlayerTime:
 
     def period_ended(self):
         assert not self.ended
+
+        # assert self.maintime == 0, self.maintime
         if self.maintime == 0:
             self.byoyomi.periods_left -= 1
         self.cancel_timer()
-        if self.maintime > 0:
-            self.maintime = 0
+        print("MT", self.maintime)
+        # if self.maintime > 0:
+        self.maintime = 0
 
-        if self.maintime == 0:
-            if self.byoyomi.periods_left > 0:
-                self.byoyomi.time_left = self.byoyomi_time_org
-                self.start_timer()
-            else:
-                self.byoyomi.time_left = 0
-                # self.game.timers = None  # [1, 2]
-                self.ended = True
-                print("ENDED TIMER", self)
+        if self.byoyomi.periods_left > 0:
+            self.byoyomi.time_left = self.byoyomi_time_org
+            self.start_timer()
+        else:
+            self.byoyomi.time_left = 0
+            # self.game.timers = None  # [1, 2]
+            self.ended = True
+            print("ENDED TIMER", self)
 
         logging.info("Timeperiod ended %s", self.byoyomi)
         self.game.period_ended(self.color, self.nexttime())
