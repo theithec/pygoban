@@ -10,12 +10,6 @@ readme = "README.md"
 license = { text = "MIT" }
 
 [project.optional-dependencies]
-lint = [
-    "pylint>=3.3.8",
-    "mypy>=1.17.1",
-    "rope>=1.14.0",
-    "pylsp-rope>=0.1.17",
-]
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
