@@ -1,15 +1,17 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Set, Optional
+from typing import TYPE_CHECKING, Dict, Set
 
 from .board import Board, Color, Pos
 
 if TYPE_CHECKING:
-    from .node import Node
-    from .timesettings import Byoyomi
     from .gtp import Role
+    from .node import Node
+    from .rulesets import BaseColorResult
+    from .timesettings import Byoyomi
 
 
+@dataclass
 class Event:
     pass
 
@@ -36,11 +38,13 @@ class _GTP(Event):
     roles: set["Role"] = field(default_factory=set)
 
 
-class GTPStarted(_GTP):  # pylint: disable=too-few-public-methods
+@dataclass
+class GTPStarted(_GTP):
     pass
 
 
-class GTPStopped(_GTP):  # pylint: disable=too-few-public-methods
+@dataclass
+class GTPStopped(_GTP):
     pass
 
 
@@ -59,20 +63,9 @@ class TimeDone(Event):
 
 
 @dataclass
-class ColorResult(Event):
-    """Result after counting"""
-
-    killed: int
-    coords: Set[Pos] = field(default_factory=set)
-
-    def total(self):
-        return len(self.coords) + self.killed
-
-
-@dataclass
 class Counted(Event):
-    black: ColorResult | None = None
-    white: ColorResult | None = None
+    black: "BaseColorResult | None" = None
+    white: "BaseColorResult | None" = None
 
     def __getitem__(self, color: Color):
         if color == Color.BLACK:

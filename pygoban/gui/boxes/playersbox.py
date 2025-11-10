@@ -1,6 +1,8 @@
 # pylint: disable=abstract-method
 # because qt and do_-commands and Box overloading
 from typing import cast
+
+from PyQt6.QtCore import QTimer, pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QFormLayout,
     QHBoxLayout,
@@ -8,11 +10,9 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QLCDNumber,
 )
 
-from PyQt6.QtCore import QTimer, pyqtSignal  # pylint: disable=no-name-in-module
-
 from pygoban import Color, Party, results
-from .. import GUIMode
 
+from .. import GUIMode
 from . import Box
 
 
@@ -48,7 +48,7 @@ class _PlayerBox(Box):
         """
         clsname = self.__class__.__name__
         css1 = f"""
-        {clsname} {{
+{clsname} {{
            padding-top: 2ex; /* leave space at the top for the title */
            background-color: {bg};
            {colors}
@@ -72,8 +72,6 @@ class _PlayerBox(Box):
         """
         self.setStyleSheet(css1)
         self.formlayout = QFormLayout()
-        self.prisoners_label = QLabel(str(0))
-        self.formlayout.addRow("Prisoners:", self.prisoners_label)
 
     def received_turn(self, result: results.TurnDone):
         numdead = result.total_dead[self.player.color.other()]
@@ -97,6 +95,9 @@ class PlayerGameBox(_PlayerBox):
             self.clock.display(seconds_to_str(0))
             self.formlayout.addRow(self.clock)
             self.formlayout.addRow(self.byoyomi_label)
+
+        self.prisoners_label = QLabel(str(0))
+        self.formlayout.addRow("Prisoners:", self.prisoners_label)
         self.setLayout(self.formlayout)
         self.clock_stop_signal.connect(self.stop_clock)
         self.clock_update_signal.connect(self.clock_update)
@@ -164,21 +165,13 @@ class PlayerGameBox(_PlayerBox):
 
 
 class PlayerCountBox(_PlayerBox):
-    def init(self, player: Party):  # type: ignore
+    def init(self, player: Party):  # type: ignore  # pylint: disable=arguments-differ
         super().init(player)
-        self.libs_label = QLabel(str(0))
-        self.formlayout.addRow("Liberties:", self.libs_label)
+        self.labels: dict[str, QLabel] = {}
 
-        if player.color == Color.WHITE:
-            self.formlayout.addRow(
-                "Komi:", QLabel(str(self.game_ui.controller.ruleset.komi))
-            )
-        else:
-            self.formlayout.addRow("", QLabel(""))
         self.total_label = QLabel(str(0))
         self.total_label.setObjectName("total_label")
-        self.formlayout.addRow("", self.total_label)
-        self.setLayout(self.formlayout)
+        # self.setLayout(self.formlayout)
 
 
 class PlayersBox(Box):
@@ -200,8 +193,8 @@ class PlayersBox(Box):
             },
         }
         self.boxes_by_mode[GUIMode.EDIT] = self.boxes_by_mode[GUIMode.PLAY]
+        self.last_gui_mode: GUIMode = self.game_ui.gui_mode
         for box in self.boxes_by_mode[self.game_ui.gui_mode].values():
-            self.last_gui_mode: GUIMode = self.game_ui.gui_mode
             self.boxlayout.addWidget(box)
             box.setVisible(True)
 
@@ -216,9 +209,29 @@ class PlayersBox(Box):
             cast(PlayerGameBox, box).clock_stop_signal.emit()
 
     def received_count(self, result: results.Counted):
+        boxes = self.boxes_by_mode[GUIMode.COUNT]
+        for color in (Color.BLACK, Color.WHITE):
+            box = cast(PlayerCountBox, boxes[color])
+            for caption, value in result[color].summands():
+                print("FF", caption, value)
+                if caption in box.labels:
+                    box.labels[caption].setText(str(value))
+                else:
+                    # ibox.rows.add(caption)
+                    box.labels[caption] = QLabel(str(value))
+                    box.formlayout.addRow(caption, box.labels[caption])
+
+            total = result[color].total
+            box.total_label.setText(str(total))
+
+            box.formlayout.addRow("", box.total_label)
+            # box.formlayout.setSizeConstraint(QFormLayout.SizeConstraint.SetFixedSize)
+            box.setLayout(box.formlayout)
+
+    def received_count2(self, result: results.Counted):
         boxes = self.boxes_by_mode[GUIMode.PLAY]
         for color in (Color.BLACK, Color.WHITE):
-            box = boxes[color]
+            box = cast(PlayerGameBox, boxes[color])
             box.clock_stop_signal.emit()
         boxes = self.boxes_by_mode[self.game_ui.gui_mode]
         for color in (Color.BLACK, Color.WHITE):

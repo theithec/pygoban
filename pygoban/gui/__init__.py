@@ -1,7 +1,7 @@
-import os
 import logging
+import os
 import signal
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Callable
 
@@ -12,17 +12,16 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QPushButton,
     QWidget,
 )
+
 from pygoban import (
     MainGameController,
     Node,
     Parties,
-    Ruleset,
-    results,
     Settings,
     get_argparser,
-    Game,
+    results,
 )
-
+from pygoban.rulesets import BaseRuleset as Ruleset
 
 # kill with strg c
 signal.signal(signal.SIGINT, signal.SIG_DFL)

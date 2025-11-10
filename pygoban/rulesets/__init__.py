@@ -1,14 +1,12 @@
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, Union
 from enum import StrEnum
+from typing import Generator, Optional, Type, Union
 
-from .board import Board, Color, Pos
-from .info import GameInfo
-from .results import TurnDone
-from .nodescontroller import NodesController
-from .timesettings import TimeSettings
-
-# from .timesettings import TimeSettings
+from ..board import Board, Color, Pos
+from ..info import GameInfo
+from ..nodescontroller import NodesController
+from ..results import Event, TurnDone
+from ..timesettings import TimeSettings
 
 
 class Key(StrEnum):
@@ -46,11 +44,30 @@ class Group:
     coords: set[Pos] = field(default_factory=set)
 
 
+@dataclass
+class BaseColorResult(Event):
+    """_summands: tuple must be defined in subclasses"""
+
+    owned: set[Pos]
+    komi: float | None
+
+    def __post_init__(self):
+        self._summands = []
+
+    @property
+    def points(self) -> int:
+        return len(self.owned)
+
+    def summands(self) -> Generator[tuple, None, None]:
+        for summand in self._summands:
+            yield summand, getattr(self, summand)
+
+
 PosSetByColor = dict[Color, set[Pos]]
 FloatByColor = dict[Color, float]
 
 
-class Counting:
+class BaseCounting:
     def __init__(self, board: Board) -> None:
         self.board = board
         self.checked: set[Pos] = set()
@@ -75,73 +92,16 @@ class Counting:
             self.board.intersection(coord).owner = group.owner
         return group
 
+    def toggle_status(self, pos):
+        raise NotImplementedError
 
-class JapaneseCounting(Counting):
-    def result(self) -> Tuple[PosSetByColor, FloatByColor]:
-        self.checked = set()
-        empties: PosSetByColor = {Color.BLACK: set(), Color.WHITE: set()}
-        deadonboard: FloatByColor = {Color.BLACK: 0, Color.WHITE: 0}
-        boardrange = range(self.board.boardsize)
-        for x in boardrange:
-            for y in boardrange:
-                pos = Pos(x, y)
-                inter = self.board.intersection(pos)
-                if pos in self.checked:
-                    continue
-                if inter.is_empty():
-                    group = self.check(pos)
-                    if group.owner and group.coords:
-                        empties[group.owner].update(group.coords)
-                else:
-                    group = Group()
-                if inter.owner and inter.owner != inter.color:
-                    if inter.color:
-                        deadonboard[inter.color] += 1
-                        if group.owner:
-                            empties[group.owner].add(pos)
-
-        return empties, deadonboard
+    def result(self):
+        raise NotImplementedError
 
 
-class ChineseCounting(Counting):
-    def __init__(self, board: Board) -> None:
-        self.board = board
-        self.checked: set[Pos] = set()
-        self.owned = {Color.BLACK: set(), Color.WHITE: set()}
-
-    def result(self) -> (PosSetByColor, FloatByColor):
-        boardrange = range(self.board.boardsize)
-
-        for x in boardrange:
-            for y in boardrange:
-                inter = self.board[x][y]
-                if inter.is_empty():
-                    continue
-                inter.owner = inter.color
-
-        empties: PosSetByColor = {Color.BLACK: set(), Color.WHITE: set()}
-        for x in boardrange:
-            for y in boardrange:
-                pos = Pos(x, y)
-                inter = self.board.intersection(pos)
-                if pos in self.checked:
-                    continue
-                if inter.is_empty():
-                    group = self.check(pos)
-
-        for x in boardrange:
-            for y in boardrange:
-                inter = self.board[x][y]
-                if inter.owner:
-                    self.owned[inter.owner].add(Pos(x, y))
-
-        # breakpoint()
-
-        return (self.owned, {Color.BLACK: 0, Color.WHITE: 0})
-
-
-class Ruleset:
+class BaseRuleset:
     name = "default"
+    _CounterCls: Type[BaseCounting]
 
     def __init__(
         self,
@@ -162,7 +122,7 @@ class Ruleset:
         self.info: GameInfo = info
         self.timesettings = timesettings
 
-    def set_node_controller(self, nodes: NodesController) -> "Ruleset":
+    def set_node_controller(self, nodes: NodesController) -> "BaseRuleset":
         self.nodes = nodes
         return self
 
@@ -197,18 +157,11 @@ class Ruleset:
             self.ko = None
         return result
 
+    def count(self):
+        raise NotImplementedError
 
-class JapaneseRuleset(Ruleset):
-    name = Key.JAPANESE.name.capitalize()
-    CounterCls = JapaneseCounting
-
-
-class ChineseRuleset(Ruleset):
-    name = Key.CHINESE.name.capitalize()
-    CounterCls = ChineseCounting
+    def toggle_status(self, pos: Pos):
+        raise NotImplementedError
 
 
-by_key = {
-    Key.CHINESE: ChineseRuleset,
-    Key.JAPANESE: JapaneseRuleset,
-}
+by_key: dict[Key, Type[BaseRuleset]] = {}

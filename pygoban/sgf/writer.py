@@ -1,4 +1,4 @@
-from pygoban import Color, Marker, Node, Ruleset, coords, Pos
+from pygoban import Color, Marker, Node, Pos, coords, rulesets
 
 p2s = coords.pos_to_sgf
 
@@ -34,7 +34,11 @@ def to_sgf(node: Node) -> str:
         for posstart, posend in shapes:
             txt += f"[{p2s(posstart)}:{p2s(posend)}]"
     if node.annos.stones:
-        stones: dict[Color, list[Pos]] = {Color.BLACK: [], Color.WHITE: [], Color.EMPTY: []}
+        stones: dict[Color, list[Pos]] = {
+            Color.BLACK: [],
+            Color.WHITE: [],
+            Color.EMPTY: [],
+        }
         for pos, color in node.annos.stones.items():
             stones[color].append(pos)
         for color, pos_list in stones.items():
@@ -54,7 +58,7 @@ def to_sgf(node: Node) -> str:
     return txt
 
 
-def write(cursor: Node, ruleset: Ruleset) -> str:
+def write(cursor: Node, ruleset: rulesets.BaseRuleset) -> str:
     # print("I", ruleset.info)
     info = ruleset.info
     curr = cursor.root()

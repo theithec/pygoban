@@ -6,11 +6,9 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from . import Pos, coords
 
-i = 3
-
 
 class Color(IntEnum):
-    """The 'color' of an intersection (and of 'stone.Stone)'"""
+    """The 'color' of an intersection (and of `node.Node`)"""
 
     EMPTY = 0
     BLACK = 1
@@ -124,7 +122,7 @@ class Board(List[List[Intersection]]):
                 libs.add(Pos(*axy))
 
             # friend
-            elif inter == self[pos[0]][pos[1]]:
+            elif inter == self.intersection(pos):
                 started, group, killed, libs = self._analyze(
                     axy,
                     started=started,
@@ -166,6 +164,12 @@ class Board(List[List[Intersection]]):
             self[x][y].owner = owner
         return self[x][y]
 
+    def iter(self):
+        boardrange = range(self.boardsize)
+        for x in boardrange:
+            for y in boardrange:
+                yield Pos(x, y), self[x][y]
+
     def __str__(self):
         return "BOARD"
         cpy = self  # .rotated(switch_axis=False, switch_y=False)
@@ -187,8 +191,7 @@ class Board(List[List[Intersection]]):
         return txt
 
     def __repr__(self):
-        size = str(len(self))
-        return "x".join((size,) * 2)
+        return "x".join((str(self.boardsize),) * 2)
 
     # def rotated(self, switch_axis=False, switch_x=False, switch_y=False):
     #     if not any((switch_axis, switch_x, switch_y)):

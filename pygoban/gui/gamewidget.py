@@ -3,16 +3,23 @@
 import os
 from copy import copy
 
-from PyQt6.QtCore import QUrl, pyqtSignal, QTimer  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import QTimer, QUrl, pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
     QCloseEvent,
     QKeySequence,
     QShortcut,
 )
-
 from PyQt6.QtMultimedia import QSoundEffect
 
-from .. import BaseReceiver, Color, MainGameController, Marker, Parties, Pos, results
+from .. import (
+    BaseReceiver,
+    Color,
+    MainGameController,
+    Marker,
+    Parties,
+    Pos,
+    results,
+)
 from . import BASE_DIR, GameUI, GUIMode, MainUI
 from .barwidget import BarWidget
 from .boardwidget import BoardOverlay, BoardWidget
@@ -26,7 +33,6 @@ class GuiReceiver(BaseReceiver):
         self.events = {
             results.TurnDone,
             results.AnnotationDone,
-            results.ColorResult,
             results.Counted,
             results.GameResultDone,
         }
@@ -48,9 +54,9 @@ class GuiReceiver(BaseReceiver):
 
     def received_count(self, result) -> None:
         self.game_ui.gui_mode = GUIMode.COUNT
-        assert self.game_ui.last_turn
-        for color in (Color.BLACK, Color.WHITE):
-            result[color].killed += self.game_ui.last_turn.total_dead[color.other()]
+        # assert self.game_ui.last_turn
+        # for color in (Color.BLACK, Color.WHITE):
+        #    result[color].killed += self.game_ui.last_turn.total_dead[color.other()]
         self.game_ui.boardwidget.update()
 
     def received_result_done(self, result: results.GameResultDone) -> None:

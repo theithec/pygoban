@@ -2,7 +2,7 @@ from . import results
 from .board import Marker
 from .nodescontroller import Color, Node, NodesController, Pos
 from .receivers import BaseReceiver
-from .rulesets import by_key, Ruleset, RuleViolation, ThreePasses
+from .rulesets import BaseRuleset, RuleViolation, ThreePasses
 from .timesettings import PlayerTime
 
 
@@ -13,7 +13,7 @@ class Game:
 
     def __init__(
         self,
-        ruleset: Ruleset,
+        ruleset: BaseRuleset,
         nodes: NodesController | None = None,
     ):
         self.ruleset = ruleset
@@ -90,22 +90,18 @@ class Game:
 
         self.send_game_event(result)
 
-    def _count(self):
+    def _count(self, result=None):
         """Count a board position"""
 
         if self.timers:
             for timer in self.timers.values():
                 timer.cancel_timer()
-        cnt = self.ruleset.CounterCls(board=self.nodes.board)
-        coords, killed = cnt.result()
-        game_result = results.Counted(
-            black=results.ColorResult(
-                killed=killed[Color.WHITE], coords=coords[Color.BLACK]
-            ),
-            white=results.ColorResult(
-                killed=killed[Color.BLACK], coords=coords[Color.WHITE]
-            ),
-        )
+        # counter = counter or self.ruleset.CounterCls(board=self.nodes.board)
+        # cnt = self.ruleset.CounterCls(board=self.nodes.board)
+        # coords, killed = cnt.result()
+        # res = counter.result(komi=self.ruleset.komi)
+        res = result or self.ruleset.count()
+        game_result = results.Counted(**res)
         self.send_game_event(game_result)
 
     def _place(self, color: Color, pos: Pos | None) -> None:
@@ -142,6 +138,10 @@ class Game:
         self.started = True
 
     def toggle_status(self, pos: Pos) -> None:
+        result = self.ruleset.toggle_status(pos)
+        self._count(result)
+
+    def toggle_status2(self, pos: Pos) -> None:
         chain = self.nodes.board.get_chain(pos)
         start = self.nodes.board.intersection(pos)
         owner = (
@@ -207,15 +207,18 @@ class Game:
                 winner = color.other()
                 msg = fmt.format(color=winner)
             case types.COUNTED:
-                cnt = self.ruleset.CounterCls(board=self.nodes.board)
-                coords, killed = cnt.result()
-                for color in (Color.BLACK, Color.WHITE):
-                    killed[color] += self.nodes.total_dead[color.other()] + len(
-                        coords[color]
-                    )
-                killed[Color.WHITE] += self.ruleset.komi
-                winner = max(killed, key=killed.get)
-                points_diff = killed[winner] - killed[winner.other()]
+                count_result = self.ruleset.count()
+                points_diff = abs(
+                    (black_total := count_result["black"].total)
+                    - (white_total := count_result["white"].total)
+                )
+                if black_total > white_total:
+                    winner = Color.BLACK
+                elif white_total > black_total:
+                    winner = Color.WHITE
+                else:
+                    winner = Color.EMPTY
+
                 msg = fmt.format(color=winner, points_diff=points_diff)
 
         result = results.GameResultDone(winner=winner, msg=msg, type=result_type)

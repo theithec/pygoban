@@ -5,7 +5,7 @@ from .board import Board, Color, Marker, Pos
 
 
 @dataclass
-class Annotations:
+class Annotations:  # pylint: disable=too-many-instance-attributes
     chars: dict[Pos, str] = field(default_factory=dict)
     numbers: dict[Pos, str] = field(default_factory=dict)
     markers: dict[Pos, Marker] = field(default_factory=dict)
@@ -71,7 +71,7 @@ class Node:
 
     def __str__(self):
         return (
-            f"Stone {self.color}: {self.pos} / {len(self.path())}"
+            f"Node {self.color}: {self.pos} / {len(self.path())}"
             f"C[{self.annos.comment[: (min(4, len(self.annos.comment) - 1))]}]"
         )
 
@@ -82,11 +82,12 @@ class Node:
     def __eq__(self, other):
         if not isinstance(other, Node):
             return False
-        cmprs = [(self.pos, other.pos), (self.color, other.color)]
-        # TODO: use parent?
-        if not any((self.pos, self.color, other.pos, other.color)):
-            cmprs.append((self.annos, other.annos))
-            return self.annos == other.annos
+
+        cmprs = [
+            (self.parent, other.parent),
+            (self.pos, other.pos),
+            (self.color, other.color),
+        ]
         return not any(sval != oval for (sval, oval) in cmprs)
 
     def __del__(self):

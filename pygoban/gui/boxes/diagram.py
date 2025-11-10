@@ -1,17 +1,14 @@
 # pylint: disable=invalid-name  # bedause qt
 from PyQt6.QtCore import QEvent, QPoint, QRect, Qt
-from PyQt6.QtGui import QColor, QPainter, QIcon
+from PyQt6.QtGui import QColor, QPainter
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QHBoxLayout,
-    QLabel,
     QSizePolicy,
-    QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
 from pygoban import results
-from pygoban.gui import BASE_DIR
 from pygoban.gui.boxes import Box
 from pygoban.gtp import Role
 

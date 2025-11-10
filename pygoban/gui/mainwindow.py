@@ -4,8 +4,8 @@ from PyQt6.QtWidgets import QTabWidget  # pylint: disable=no-name-in-module
 from pygoban import (
     Color,
     Game,
-    MainGameController,
     GameInfo,
+    MainGameController,
     Node,
     Parties,
     TimeSettings,
@@ -59,7 +59,7 @@ class MainWindow(MainUI):
         dlg.show()
 
     def add_game(
-        self, mode: GUIMode, ruleset: rulesets.Ruleset, cursor: Node | None = None
+        self, mode: GUIMode, ruleset: rulesets.BaseRuleset, cursor: Node | None = None
     ) -> MainGameController:
         game = Game(ruleset=ruleset)
         gamecontroller = MainGameController(game=game)
@@ -102,7 +102,8 @@ class MainWindow(MainUI):
             )
         else:
             timesettings = None
-        ruleset: rulesets.Ruleset = rulesets.by_key[rulesets.Key[ruleset_name]](
+        print("K", rulesets.by_key)
+        ruleset: rulesets.BaseRuleset = rulesets.by_key[rulesets.Key[ruleset_name]](
             boardsize=boardsize,
             komi=komi,
             handicap=handicap,

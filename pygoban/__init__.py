@@ -1,10 +1,13 @@
+# isort: skip_file
 import argparse
 import logging
 from dataclasses import dataclass, field
 
+# pos must be first
+from .pos import Pos  # isort: skip_line
 
-from .pos import Pos
-from .board import Color, Intersection, Marker, Board
+#
+from .board import Board, Color, Intersection, Marker
 from .game import Game
 from .gamecontroller import MainGameController, SubGameController
 from .info import GameInfo
@@ -12,8 +15,10 @@ from .node import Node
 from .nodescontroller import NodesController
 from .party import Member, Parties, Party
 from .receivers import BaseReceiver
-from .rulesets import Ruleset
+
+from .rulesets import chinese, japanese
 from .timesettings import TimeSettings
+
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -69,7 +74,6 @@ __all__ = [
     "Parties",
     "Party",
     "Pos",
-    "Ruleset",
     "SubGameController",
     "TimeSettings",
 ]
