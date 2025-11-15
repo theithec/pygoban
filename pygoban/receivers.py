@@ -46,4 +46,4 @@ class BaseReceiver:
             case results.GTPStarted:
                 self.received_gtp_started(cast(results.GTPStarted, result))
             case results.GTPStopped:
-                self.received_gtp_stopped(cast(results.GTPStarted, result))
+                self.received_gtp_stopped(cast(results.GTPStopped, result))

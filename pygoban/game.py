@@ -46,6 +46,7 @@ class Game:
 
     def period_ended(self, color: Color, next_time: int):
         """A time period ended"""
+        assert self.timers
         result: results.Event = results.TimeDone(
             color=color, next_time=next_time, byoyomi=self.timers[color].byoyomi
         )
@@ -96,10 +97,6 @@ class Game:
         if self.timers:
             for timer in self.timers.values():
                 timer.cancel_timer()
-        # counter = counter or self.ruleset.CounterCls(board=self.nodes.board)
-        # cnt = self.ruleset.CounterCls(board=self.nodes.board)
-        # coords, killed = cnt.result()
-        # res = counter.result(komi=self.ruleset.komi)
         res = result or self.ruleset.count()
         game_result = results.Counted(**res)
         self.send_game_event(game_result)

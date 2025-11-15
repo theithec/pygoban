@@ -8,7 +8,6 @@ from . import (
     BaseCounting,
     BaseRuleset,
     FloatByColor,
-    Group,
     Key,
     PosSetByColor,
     by_key,
@@ -24,16 +23,6 @@ class ColorResult(BaseColorResult):
     def __post_init__(self):
         self._summands = ["points", "prisoners", "komi"]
 
-    @property
-    def total(self):
-        """`self.summands` has to be called bevor this"""
-        # total = float(self.points + self.killed)
-        total = 0
-        for _, val in self.summands():
-            if val is not None:
-                total += val
-        return total
-
 
 class JapaneseCounting(BaseCounting):
     def result(self) -> Tuple[PosSetByColor, FloatByColor]:
@@ -48,12 +37,10 @@ class JapaneseCounting(BaseCounting):
                 if group.owner and group.coords:
                     empties[group.owner].update(group.coords)
             else:
-                group = Group()
-            if inter.owner and inter.owner != inter.color:
-                if inter.color:
+                if inter.owner and inter.owner != inter.color:
                     deadonboard[inter.color] += 1
                     if group.owner:
-                        empties[group.owner].add(pos)
+                        empties[inter.owner].add(pos)
 
         return empties, deadonboard
 
@@ -94,7 +81,7 @@ class JapaneseRuleset(BaseRuleset):
             ),
         }
 
-    def toggle_status(self, pos: Pos) -> dict[str, ColorResult]:
+    def toggle_status(self, pos: Pos):
         assert self.nodes
         counter = JapaneseCounting(self.nodes.board)
         counter.toggle_status(pos)

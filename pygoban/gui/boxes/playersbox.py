@@ -1,5 +1,5 @@
 # pylint: disable=abstract-method
-# because qt and do_-commands and Box overloading
+# because qt and Box overloading
 from typing import cast
 
 from PyQt6.QtCore import QTimer, pyqtSignal  # pylint: disable=no-name-in-module
@@ -213,11 +213,9 @@ class PlayersBox(Box):
         for color in (Color.BLACK, Color.WHITE):
             box = cast(PlayerCountBox, boxes[color])
             for caption, value in result[color].summands():
-                print("FF", caption, value)
                 if caption in box.labels:
                     box.labels[caption].setText(str(value))
                 else:
-                    # ibox.rows.add(caption)
                     box.labels[caption] = QLabel(str(value))
                     box.formlayout.addRow(caption, box.labels[caption])
 
@@ -225,26 +223,7 @@ class PlayersBox(Box):
             box.total_label.setText(str(total))
 
             box.formlayout.addRow("", box.total_label)
-            # box.formlayout.setSizeConstraint(QFormLayout.SizeConstraint.SetFixedSize)
             box.setLayout(box.formlayout)
-
-    def received_count2(self, result: results.Counted):
-        boxes = self.boxes_by_mode[GUIMode.PLAY]
-        for color in (Color.BLACK, Color.WHITE):
-            box = cast(PlayerGameBox, boxes[color])
-            box.clock_stop_signal.emit()
-        boxes = self.boxes_by_mode[self.game_ui.gui_mode]
-        for color in (Color.BLACK, Color.WHITE):
-            box = boxes[color]
-            assert isinstance(box, PlayerCountBox), box
-            playerresult = result[color]
-            numcoords = len(playerresult.coords)
-            box.libs_label.setText(str(numcoords))
-            box.prisoners_label.setText(str(playerresult.killed))
-            total = playerresult.total()
-            if box.player.color == Color.WHITE:
-                total += self.game_ui.controller.ruleset.komi
-            box.total_label.setText(str(total))
 
     def mode_changed(self, gui_mode: GUIMode):
         if self.last_gui_mode != gui_mode:

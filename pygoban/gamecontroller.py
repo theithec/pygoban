@@ -1,18 +1,18 @@
 import logging
 from threading import Timer
-from typing import Type, TypeVar, TYPE_CHECKING
+from typing import TYPE_CHECKING, Type, TypeVar, cast
 
+from . import results
 from .board import Color, Marker
 from .game import Game, Node
 from .pos import Pos
 from .receivers import BaseReceiver
-from . import results
 
 if TYPE_CHECKING:
     from .gtp import Role
 
 
-class BaseGameController:
+class BaseGameController:  # pyl2int: disable=too-many-public-functions
     receiver: BaseReceiver
 
     def __init__(self, game: Game) -> None:
@@ -118,11 +118,12 @@ class BaseGameController:
         self.__game.add_receiver(receiver=receiver)
 
     def get_timer(self, color: Color):
+        assert self.__game.timers
         return self.__game.timers[color]
 
 
 class SubGameController(BaseGameController):
-    def __init__(self, game: Game) -> None:
+    def __init__(self, game: Game, **_kwargs) -> None:
         super().__init__(game=game)
         self.__game = self._BaseGameController__game
 
@@ -137,7 +138,7 @@ class MainGameController(BaseGameController):
     def __init__(self, game: Game) -> None:
         super().__init__(game=game)
         self.__game = self._BaseGameController__game
-        self._subs: dict[str, Type[SubGameController]] = {}
+        self._subs: dict[str, SubGameController] = {}
         self.auto = False
         self.stop_auto = False
 
@@ -148,9 +149,9 @@ class MainGameController(BaseGameController):
             ctrl = self._subs[name]
         else:
             ctrl = cls(game=self.__game, name=name, **kwargs)
-            self._subs[name] = ctrl
+            self._subs[name] = cast(G, ctrl)
             created = True
-        return ctrl, created
+        return cast(G, ctrl), created
 
     def start(self, receiver: BaseReceiver, node: Node | None = None) -> None:
         self.receiver = receiver

@@ -134,6 +134,7 @@ class MainUI(QMainWindow):
 
     def add_game_from_atomic_values(
         self,
+        *,
         boardsize: int,
         komi: float,
         handicap: int,
@@ -141,6 +142,7 @@ class MainUI(QMainWindow):
         white_name: str,
         modestr: str,
         timestr: str,
+        ruleset_name: str,
     ) -> MainGameController:
         raise NotImplementedError()
 

@@ -29,20 +29,22 @@ testpaths = "tests"
 max-line-length = 100
 [tool.pylint."messages control"]
 disable = [
-  "raw-checker-failed",
   "bad-inline-option",
-  "locally-disabled",
-  "file-ignored",
-  "suppressed-message",
-  "useless-suppression",
   "deprecated-pragma",
-  "use-symbolic-message-instead",
-  "use-implicit-booleaness-not-comparison-to-string",
-  "use-implicit-booleaness-not-comparison-to-zero",
-  "missing-module-docstring",
+  "file-ignored",
+  "locally-disabled",
   "missing-class-docstring",
   "missing-function-docstring",
-
+  "missing-module-docstring",
+  "raw-checker-failed",
+  "suppressed-message",
+  "too-few-public-methods",
+  "too-many-arguments",
+  "too-many-instance-attributes",
+  "use-implicit-booleaness-not-comparison-to-string",
+  "use-implicit-booleaness-not-comparison-to-zero",
+  "use-symbolic-message-instead",
+  "useless-suppression",
 ]
 
 [tool.black]

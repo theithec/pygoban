@@ -1,8 +1,8 @@
 # pylint: disable=invalid-name
 # because qt
+
 from PyQt6.QtCore import QPoint, Qt, pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
-    QColor,
     QColorConstants,
     QPainter,
     QPen,
@@ -13,8 +13,9 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QSizePolicy,
     QWidget,
 )
-from . import GameUI, GUIMode
+
 from .. import BaseReceiver, Color, Node, results
+from . import GameUI, GUIMode
 
 
 class TreeNode(QLabel):
@@ -57,9 +58,7 @@ class TreeNode(QLabel):
         painter.setPen(pen)
         painter.setBrush(qcol)
         pen.setCosmetic(True)
-        painter.drawEllipse(
-            self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2
-        )
+        painter.drawEllipse(self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2)
         painter.end()
         painter = QPainter()
         painter.begin(self)
@@ -70,9 +69,7 @@ class TreeNode(QLabel):
             pen.setBrush(QColorConstants.Red)  # type: ignore
             pen.setCosmetic(True)
             painter.setPen(pen)
-        painter.drawEllipse(
-            self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2
-        )
+        painter.drawEllipse(self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2)
         super().paintEvent(event)
 
     def mousePressEvent(self, event):

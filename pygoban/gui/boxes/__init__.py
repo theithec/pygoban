@@ -11,14 +11,13 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QLayout,
     QPushButton,
     QRadioButton,
-    QSizePolicy,
     QTextEdit,
-    QWidget,
     QVBoxLayout,
+    QWidget,
 )
 
-from pygoban.gui import BASE_DIR
 from pygoban import BaseReceiver, results
+from pygoban.gui import BASE_DIR
 
 from .. import GameUI, ModeChangeListenerMixin
 
@@ -49,6 +48,7 @@ class Box(QGroupBox, BaseReceiver, ModeChangeListenerMixin):
     game_ui: GameUI
     name: str
     toggle_action: QAction
+    layout: QLayout  # type: ignore
 
     def __init__(self, parent: QWidget, **kwargs):
         super().__init__(  # type: ignore  # pylint: disable=unexpected-keyword-arg
@@ -101,7 +101,7 @@ class GTPBox(Box):
         self.layout.setSpacing(0)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.events = {results.GTPStarted, results.GTPStopped}
-        self.widgets_by_name: dict[str : set[QWidget]] = {}
+        self.widgets_by_name: dict[str, set[QWidget]] = {}
 
     def received_gtp_stopped(self, result: results.GTPStopped) -> None:
         for widget in self.widgets_by_name.get(result.name, []):

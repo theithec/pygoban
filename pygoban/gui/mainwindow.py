@@ -85,6 +85,7 @@ class MainWindow(MainUI):
 
     def add_game_from_atomic_values(
         self,
+        *,
         boardsize: int,
         komi: float,
         handicap: int,

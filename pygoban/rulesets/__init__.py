@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from enum import StrEnum
+from functools import reduce
 from typing import Generator, Optional, Type, Union
 
 from ..board import Board, Color, Pos
@@ -60,7 +61,18 @@ class BaseColorResult(Event):
 
     def summands(self) -> Generator[tuple, None, None]:
         for summand in self._summands:
-            yield summand, getattr(self, summand)
+            if (val := getattr(self, summand)) is None:
+                continue
+            yield summand, val
+
+    @property
+    def total(self):
+        total = 0
+        for _, val in self.summands():
+            total += val
+        total2 = reduce(lambda x, y: x + y[1], self.summands(), 0)
+        assert total == total2
+        return total
 
 
 PosSetByColor = dict[Color, set[Pos]]

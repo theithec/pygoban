@@ -16,7 +16,7 @@ from .nodescontroller import NodesController
 from .party import Member, Parties, Party
 from .receivers import BaseReceiver
 
-from .rulesets import chinese, japanese
+from .rulesets import chinese, japanese  # type: ignore
 from .timesettings import TimeSettings
 
 
