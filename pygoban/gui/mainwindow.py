@@ -64,12 +64,9 @@ class MainWindow(MainUI):
         game = Game(ruleset=ruleset)
         gamecontroller = MainGameController(game=game)
         parties = {
-            color.name.lower(): GUIPlayer(
-                color=color, name=ruleset.info.names[color], members=[]
-            )
+            color.name.lower(): GUIPlayer(color=color, name=ruleset.info.names[color], members=[])
             for color in (Color.BLACK, Color.WHITE)
         }
-
         gamewidget = GameWidget(
             parent=self,
             parties=Parties(**parties),
@@ -98,12 +95,9 @@ class MainWindow(MainUI):
         mode: GUIMode = GUIMode[modestr]
         info = GameInfo(names={Color.BLACK: black_name, Color.WHITE: white_name})
         if timestr:
-            timesettings = TimeSettings(
-                *[int(part) for part in timestr.strip().split(":")]
-            )
+            timesettings = TimeSettings(*[int(part) for part in timestr.strip().split(":")])
         else:
             timesettings = None
-        print("K", rulesets.by_key)
         ruleset: rulesets.BaseRuleset = rulesets.by_key[rulesets.Key[ruleset_name]](
             boardsize=boardsize,
             komi=komi,

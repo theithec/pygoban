@@ -2,8 +2,7 @@ from pygoban.board import Color, Pos
 from pygoban.game import Game
 from pygoban.gamecontroller import MainGameController
 from pygoban.info import GameInfo
-
-from pygoban.rulesets import Ruleset
+from pygoban.rulesets.japanese import JapaneseRuleset as Ruleset
 
 
 def test_game_start(mocker, receiver) -> None:

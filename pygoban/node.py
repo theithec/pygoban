@@ -38,9 +38,9 @@ class Node:
         self.is_root = not any([self.color, self.pos, self.parent])
 
     def set_parent(self, parent: Optional["Node"]):
+        self.parent = parent
         if parent and self not in parent.children:
             parent.children.append(self)
-        self.parent = parent
 
     def _full_path(self) -> list["Node"]:
         path = []

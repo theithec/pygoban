@@ -89,9 +89,7 @@ class PlayerGameBox(_PlayerBox):
         self.clock = QLCDNumber()
         self.byoyomi_label = QLabel("")
         if time := self.game_ui.controller.ruleset.timesettings:
-            self.set_byoyomi_text(
-                periods_left=time.byoyomi_num, stones_left=time.byoyomi_stones
-            )
+            self.set_byoyomi_text(periods_left=time.byoyomi_num, stones_left=time.byoyomi_stones)
             self.clock.display(seconds_to_str(0))
             self.formlayout.addRow(self.clock)
             self.formlayout.addRow(self.byoyomi_label)
@@ -115,6 +113,7 @@ class PlayerGameBox(_PlayerBox):
         self.clock.display(txt)
 
     def clock_update(self, seconds, start_timer=False):
+
         self._seconds = seconds
         if start_timer:
             self.stop_clock()
@@ -141,7 +140,9 @@ class PlayerGameBox(_PlayerBox):
             return
         b = result.byoyomi
         self.set_byoyomi_text(periods_left=b.periods_left, stones_left=b.stones_left)
-        self.clock_update_signal.emit(result.next_time, True)
+
+        timesettings = self.game_ui.controller.ruleset.timesettings
+        self.clock_update_signal.emit(result.next_time, timesettings and timesettings.use_clock)
 
     def received_turn(self, result: results.TurnDone):
         super().received_turn(result=result)
@@ -149,15 +150,12 @@ class PlayerGameBox(_PlayerBox):
             return
         if result.next_color == self.player.color:
             time_left = (
-                result.node.parent.annos.time_left
-                if result.node.parent
-                else timesettings.maintime
+                result.node.parent.annos.time_left if result.node.parent else timesettings.maintime
             )
-            self.clock_update_signal.emit(
-                time_left, self.game_ui.gui_mode == GUIMode.PLAY
-            )
+            self.clock_update_signal.emit(time_left, timesettings.use_clock)
         elif result.next_color.other() == self.player.color:
-            self.clock_stop_signal.emit()
+            if timesettings.use_clock:
+                self.clock_stop_signal.emit()
             self.clock_update_signal.emit(result.node.annos.time_left, False)
 
             annos = result.node.annos
@@ -180,9 +178,7 @@ class PlayersBox(Box):
 
     def init(self, players: dict[Color, Party]):  # type: ignore  # pylint: disable=arguments-differ
         self.boxlayout = QHBoxLayout()
-        self.boxes_by_mode: dict[
-            GUIMode, dict[Color, PlayerCountBox | PlayerGameBox]
-        ] = {
+        self.boxes_by_mode: dict[GUIMode, dict[Color, PlayerCountBox | PlayerGameBox]] = {
             GUIMode.PLAY: {
                 Color.BLACK: PlayerGameBox(self, player=players[Color.BLACK]),
                 Color.WHITE: PlayerGameBox(self, player=players[Color.WHITE]),

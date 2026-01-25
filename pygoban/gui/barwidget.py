@@ -6,6 +6,7 @@ from typing import TypeVar, cast
 from PyQt6.QtCore import Qt  # , pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt6.QtGui import QAction  # pylint: disable=no-name-in-module
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
+    QDialog,
     QFormLayout,
     QFrame,
     QHBoxLayout,
@@ -20,7 +21,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
 from pygoban import Color, gtp
 from pygoban.sgf import writer
 
-from . import GameUI, GUIMode, filedialog
+from . import GameUI, GUIMode, filedialog, infodialog
 from .boxes import Box, BoxesByName, CommentsBox, GTPBox
 from .boxes.controlsbox import ControllsBox
 from .boxes.diagram import DiagramBox
@@ -51,6 +52,8 @@ class BoxesWidget(QWidget):
         self.add_box(DiagramBox(self), vis=False)
         self.add_box(CommentsBox(self), vis=is_edit)
         infoBtn = QPushButton("🛈")
+        infoBtn.setFlat(True)
+        infoBtn.clicked.connect(self.show_info)
         self._layout.addRow("", infoBtn)
         self.setLayout(self._layout)
 
@@ -59,6 +62,10 @@ class BoxesWidget(QWidget):
         self._layout.addRow(box)
         box.setVisible(vis)
         return box
+
+    def show_info(self, _):
+        dlg = infodialog.InfoDialog(self.game_ui.ruleset)
+        dlg.exec()
 
     def vis_action_handler(self, box: Box, action):
         def handle():
@@ -89,9 +96,7 @@ class BarWidget(QFrame):
         # self.tree.setVisible(False)
         self.game_ui.controller.add_receiver(self.tree)
         splitter.addWidget(self.tree)
-        splitter.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-        )
+        splitter.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.btn_settings.setMenu(self.get_menu())
         self._layout.addRow(splitter)
         self.setLayout(self._layout)
@@ -99,10 +104,7 @@ class BarWidget(QFrame):
     def update_menu(self):
         found = False
         for action in self.engines_menu.actions():
-            is_connected = (
-                action.iconText()
-                not in self.game_ui.controller.connected_engines.keys()
-            )
+            is_connected = action.iconText() not in self.game_ui.controller.connected_engines.keys()
             action.setEnabled(is_connected)
             found = found or is_connected
         if found:
@@ -189,5 +191,4 @@ class BarWidget(QFrame):
 
     def open_file(self) -> None:
         path = filedialog.filename_from_opendialog(parent=self)
-        self.game_ui.main_ui.load_sgf(path)
         self.game_ui.main_ui.load_sgf(path)

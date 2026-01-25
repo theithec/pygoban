@@ -23,6 +23,7 @@ class TimeSettings:
     byoyomi_time: int = 10
     byoyomi_num: int = 3
     byoyomi_stones: int = 1
+    use_clock: bool = True
 
 
 @dataclass
@@ -68,13 +69,9 @@ class PlayerTime:
 
     def period_ended(self):
         assert not self.ended
-
-        # assert self.maintime == 0, self.maintime
         if self.maintime == 0:
             self.byoyomi.periods_left -= 1
         self.cancel_timer()
-        print("MT", self.maintime)
-        # if self.maintime > 0:
         self.maintime = 0
 
         if self.byoyomi.periods_left > 0:
@@ -82,9 +79,7 @@ class PlayerTime:
             self.start_timer()
         else:
             self.byoyomi.time_left = 0
-            # self.game.timers = None  # [1, 2]
             self.ended = True
-            print("ENDED TIMER", self)
 
         logging.info("Timeperiod ended %s", self.byoyomi)
         self.game.period_ended(self.color, self.nexttime())

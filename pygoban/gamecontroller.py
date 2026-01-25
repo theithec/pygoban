@@ -111,7 +111,6 @@ class BaseGameController:  # pyl2int: disable=too-many-public-functions
         self.__game.send_game_event(results.GTPStarted(name=name, roles=roles))
 
     def gtp_stopped(self, name: str, roles: set["Role"]):
-        print("CTRL STOP", name, roles)
         self.__game.send_game_event(results.GTPStopped(name=name, roles=roles))
 
     def add_receiver(self, receiver: BaseReceiver):

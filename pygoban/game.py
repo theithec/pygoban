@@ -19,6 +19,7 @@ class Game:
         self.ruleset = ruleset
         if not nodes:
             nodes = NodesController(self.ruleset.boardsize, self.ruleset.handicap)
+
         assert nodes
         self.receivers: list[BaseReceiver] = []
         self.ruleset.set_node_controller(nodes)
@@ -29,38 +30,11 @@ class Game:
                 Color.BLACK: PlayerTime(self, Color.BLACK),
                 Color.WHITE: PlayerTime(self, Color.WHITE),
             }
-            if ruleset.timesettings
+            if ruleset.timesettings and ruleset.timesettings.use_clock
             else None
         )
 
         self.started = False
-
-    def send_game_event(self, result: results.Event):
-        """Send the event to all registered recivers"""
-
-        cls = result.__class__
-        for receiver in self.receivers:
-            if cls not in receiver.events:
-                continue
-            receiver.receive_game_event(result)
-
-    def period_ended(self, color: Color, next_time: int):
-        """A time period ended"""
-        assert self.timers
-        result: results.Event = results.TimeDone(
-            color=color, next_time=next_time, byoyomi=self.timers[color].byoyomi
-        )
-        self.send_game_event(result)
-        if not next_time:
-            self.timers = None
-            result_type = results.GameResultType.LOST_BY_TIME
-            msg = results.GAME_RESULT_STR_BY_TYPE[result_type].format(
-                color=color.other()
-            )
-            result = results.GameResultDone(
-                winner=color.other(), msg=msg, type=results.GameResultType.LOST_BY_TIME
-            )
-            self.send_game_event(result)
 
     def _start(self, receivers: list[BaseReceiver], cursor: Node | None = None):
         """Start a game, sending the emtpy root node"""
@@ -114,9 +88,7 @@ class Game:
         else:
             self.nodes.apply_result(result)
             if self.timers:  # and not color.is_empty():
-                self.nodes.cursor.annos.time_left = self.timers[color].cancel_timer(
-                    is_turn=True
-                )
+                self.nodes.cursor.annos.time_left = self.timers[color].cancel_timer(is_turn=True)
                 other_timer = self.timers[color.other()]
                 if not other_timer.ended:
                     other_timer.start_timer()
@@ -130,30 +102,38 @@ class Game:
         self.send_game_event(result)
 
     def start(self, receivers: list[BaseReceiver], node: Node | None = None):
-        assert not self.started
         self._start(receivers=receivers, cursor=node)
-        self.started = True
+
+    def send_game_event(self, result: results.Event):
+        """Send the event to all registered recivers"""
+
+        cls = result.__class__
+        for receiver in self.receivers:
+            if cls not in receiver.events:
+                continue
+            receiver.receive_game_event(result)
+
+    def period_ended(self, color: Color, next_time: int):
+        """A time period ended"""
+        assert self.timers
+        result: results.Event = results.TimeDone(
+            color=color, next_time=next_time, byoyomi=self.timers[color].byoyomi
+        )
+        self.send_game_event(result)
+        if not next_time:
+            self.timers = None
+            result_type = results.GameResultType.LOST_BY_TIME
+            msg = results.GAME_RESULT_STR_BY_TYPE[result_type].format(color=color.other())
+            result = results.GameResultDone(
+                winner=color.other(), msg=msg, type=results.GameResultType.LOST_BY_TIME
+            )
+            self.send_game_event(result)
 
     def toggle_status(self, pos: Pos) -> None:
         result = self.ruleset.toggle_status(pos)
         self._count(result)
 
-    def toggle_status2(self, pos: Pos) -> None:
-        chain = self.nodes.board.get_chain(pos)
-        start = self.nodes.board.intersection(pos)
-        owner = (
-            None
-            if start.owner
-            else (Color.BLACK if start.color == Color.WHITE else Color.WHITE)
-        )
-        for cpos in chain:
-            inter = self.nodes.board.intersection(cpos)
-            inter.owner = owner
-        self._count()
-
-    def annotate(
-        self, pos: Pos, name: str | Color | Marker, end: Pos | None = None
-    ) -> None:
+    def annotate(self, pos: Pos, name: str | Color | Marker, end: Pos | None = None) -> None:
         cursor = self.nodes.cursor
         if isinstance(name, Color):
             cursor.annos.stones[pos] = name

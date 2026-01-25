@@ -1,6 +1,8 @@
 import time
-from pygoban import Game, Ruleset, results, GameInfo
+
+from pygoban import Game, GameInfo, results
 from pygoban.receivers import BaseReceiver
+from pygoban.rulesets.japanese import JapaneseRuleset as Ruleset
 from pygoban.timesettings import TimeSettings
 
 
@@ -12,9 +14,7 @@ class Receiver(BaseReceiver):
 
 def test_timesettings(mocker):
     receiver = Receiver()
-    mocked_received_period_ended = mocker.patch.object(
-        receiver, "received_period_ended"
-    )
+    mocked_received_period_ended = mocker.patch.object(receiver, "received_period_ended")
     mocked_received_game_result = mocker.patch.object(receiver, "received_result_done")
     ruleset = Ruleset(
         boardsize=5,

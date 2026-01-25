@@ -23,7 +23,7 @@ dev = [
 ]
 
 [tool.pytest]
-testpaths = "tests"
+testpaths = ["tests"]
 
 [tool.pylint.format]
 max-line-length = 100

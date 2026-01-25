@@ -3,7 +3,7 @@ import os
 import re
 from typing import Callable, Dict, List
 
-from pygoban import Color, GameInfo, Marker, Node, coords, rulesets
+from pygoban import Color, GameInfo, Marker, Node, TimeSettings, coords, rulesets
 
 from . import INFO_PROPS, NODE_PROPS, ROOT_PROPS
 
@@ -11,6 +11,10 @@ WHITESPACE_PATTERN = re.compile(" |\t|\n")
 
 
 class Parser:
+
+    class ParsingError(Exception):
+        pass
+
     def __init__(self, sgftxt: str, defaults: Dict):
         self.sgftxt = sgftxt
         self.defaults = defaults
@@ -37,6 +41,28 @@ class Parser:
         self.node_props: dict[str, list[str]] = {}
         self.colors = {"B": Color.BLACK, "W": Color.WHITE}
 
+    def parse_timesettings(self) -> TimeSettings:
+        try:
+            maintime = int(self.infos["TM"])
+        except (ValueError, KeyError) as err:
+            raise self.ParsingError(err)
+
+        try:
+            byoyomi_time = 30
+            byoyomi_stones = 1
+            byoyomi_num = 3
+        except KeyError as err:
+
+            raise self.ParsingError(err)
+
+        return TimeSettings(
+            maintime=maintime,
+            byoyomi_num=byoyomi_num,
+            byoyomi_stones=byoyomi_stones,
+            byoyomi_time=byoyomi_time,
+            use_clock=False,
+        )
+
     def add_stone(self):
         color = Color.EMPTY
         pos = None
@@ -44,25 +70,32 @@ class Parser:
         if not self.ruleset:
             self.infos.update({key: val[0] for key, val in self.node_props.items()})
             info = GameInfo(
-                names={Color.BLACK: self.infos["PB"], Color.WHITE: self.infos["PW"]}
+                names={Color.BLACK: self.infos["PB"], Color.WHITE: self.infos["PW"]},
+                ranks={Color.BLACK: self.infos.get("BR"), Color.WHITE: self.infos.get("WR")},
+                result=self.infos["RE"],
+                ruleset=self.infos["RU"],
             )
+            # print("OT?", self.infos["TM"], self.infos["OT"])
+            # maintime = self.infos["TM"]
+            try:
+                timesettings = self.parse_timesettings()
+            except self.ParsingError as err:
+                logging.error(err)
+                timesettings = None
             self.ruleset = rulesets.by_key[rulesets.Key.JAPANESE](
                 boardsize=int(self.infos["SZ"]),
                 komi=float(self.infos["KM"]),
                 handicap=int(self.infos["HA"]),
                 info=info,
                 first=self.infos["PL"],
+                timesettings=timesettings,
             )
         else:
             for colchr in ("B", "W"):
                 if colchr in self.node_props:
                     color = self.colors[colchr]
                     coord = self.node_props[colchr][0]
-                    pos = (
-                        coords.sgf_to_pos(coord)
-                        if coord and coord.lower() != "tt"
-                        else None
-                    )
+                    pos = coords.sgf_to_pos(coord) if coord and coord.lower() != "tt" else None
                     self.node_props.pop(colchr)
                     break
             self.cursor = Node(color=color, pos=pos, parent=self.cursor)
@@ -118,8 +151,11 @@ class Parser:
             "EV",
             "GN",
             "IT",
+            "OT",
             "PC",
+            "RE",
             "SO",
+            "TM",
             "VW",
             "W",
             "WR",
@@ -209,10 +245,15 @@ class Parser:
                     self.cursor.annos.stones[pos] = color
 
     def _do_l(self, val, color: Color):
-        self.cursor.annos.time_left[color] = val[0]
+        # self.cursor.annos.time_left[color] = val[0]
+        print("DO L", val, color)
+        self.cursor.annos.time_left = val[0]
 
     def _do_o(self, val, color: Color):
-        self.cursor.annos.stones_left[color] = val[0]
+
+        print("DO O", val, color)
+        # self.cursor.annos.stones_left[color] = val[0]
+        self.cursor.annos.stones_left = val[0]
 
     def _do_own(self, val, color: Color):
         for coordset in val:

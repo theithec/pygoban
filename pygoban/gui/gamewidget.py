@@ -112,12 +112,6 @@ class GameWidget(GameUI):
         self.bar.btn_settings.setFocus()
         self.receiver = GuiReceiver(game_ui=self)
 
-    # def gameended_action(self, reason: str):
-    #    msg = QMessageBox(self)
-    #    msg.setIcon(QMessageBox.Information)
-    #    msg.setText(reason)
-    #    msg.show()
-
     @property
     def gui_mode(self):
         return self._gui_mode
