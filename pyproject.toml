@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Just another Go Board/ SGF Reader"
 authors = [{ name = "Tim Heithecker", email = "tim.heithecker@gmail.com" }]
 
-dependencies = ["pyqt6", "PyQt6-Graphs>=6.8.0", "PyQt6-Charts>=6.8.0"]
+# dependencies = ["pyqt6", "PyQt6-Graphs>=6.8.0", "PyQt6-Charts>=6.8.0", "PyQt6-Multimedia>=6.8.0"]
+dependencies = ["pyqt6", "PyQt6-Graphs>=6.8.0", "PyQt6-Charts>=6.8.0"] #, "PyQt6-Multimedia>=6.8.0"]
 requires-python = ">=3.12"
 readme = "README.md"
 license = { text = "MIT" }
@@ -20,6 +21,7 @@ dev = [
     "pytest",
     "pytest-mock>=3.12.0",
     "pytest-cov>=7.0.0",
+    "pytest-qt>=4.2.0",
 ]
 
 [tool.pytest]
@@ -78,3 +80,4 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 [tool.pdm.scripts]
 start = "python -m pygoban.gui"
+cov = "python -m pytest --cov=pygoban tests"
