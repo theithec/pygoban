@@ -18,9 +18,8 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QWidget,
 )
 
-from pygoban import Settings
+from pygoban import Settings, gtp
 
-from pygoban import gtp
 from . import CenteredMixin
 
 _translate = QCoreApplication.translate
@@ -134,10 +133,10 @@ class SettingsDialog(QDialog, CenteredMixin):
         lbl.setMinimumWidth(80)
         layout.addWidget(lbl, 1, 3)
 
-        # items = list(self.settings.gtp_engines.items())
-        # items.append(("", "", False))
+        items = list(self.settings.gtp_engines.items())
+        items.append(("", ("", False)))
 
-        for index, (name, vals) in enumerate(self.settings.gtp_engines.items()):
+        for index, (name, vals) in enumerate(items):
             cmd, checked = vals
             gtp_nameedit = QLineEdit(name)
             gtp_nameedit.setMinimumWidth(80)
@@ -149,9 +148,7 @@ class SettingsDialog(QDialog, CenteredMixin):
             gtp_checkbox_analyze = QCheckBox("")
             gtp_checkbox_analyze.setChecked(checked)
             layout.addWidget(gtp_checkbox_analyze, index + 2, 3)
-            self.gtp_fields_list.append(
-                (gtp_nameedit, gtp_cmdedit, gtp_checkbox_analyze)
-            )
+            self.gtp_fields_list.append((gtp_nameedit, gtp_cmdedit, gtp_checkbox_analyze))
         return layout
 
     def save(self):

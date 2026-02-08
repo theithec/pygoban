@@ -63,7 +63,7 @@ class Parser:
             use_clock=False,
         )
 
-    def add_stone(self):
+    def add_node(self):
         color = Color.EMPTY
         pos = None
 
@@ -72,7 +72,7 @@ class Parser:
             info = GameInfo(
                 names={Color.BLACK: self.infos["PB"], Color.WHITE: self.infos["PW"]},
                 ranks={Color.BLACK: self.infos.get("BR"), Color.WHITE: self.infos.get("WR")},
-                result=self.infos["RE"],
+                result=self.infos.get("RE", ""),
                 ruleset=self.infos["RU"],
             )
             # print("OT?", self.infos["TM"], self.infos["OT"])
@@ -90,6 +90,7 @@ class Parser:
                 first=self.infos["PL"],
                 timesettings=timesettings,
             )
+            print("\nADDED RULESET")
         else:
             for colchr in ("B", "W"):
                 if colchr in self.node_props:
@@ -113,26 +114,32 @@ class Parser:
             else:
                 self[f"do_{key.lower()}"](val)
             # self[f"do_{key.lower()}"](val)
+        print("ADDED NODE", self.cursor)
 
     def start_vari(self):
+        print("VARI STARTED")
         self.node_ended()
         self.variations.append(self.cursor)
 
     def end_vari(self):
+        print("VARI ENDED")
         self.node_ended()
         self.node_started = False
         self.node_props = {}
         self.cursor = self.variations.pop()
 
     def node_ended(self):
+        print("END NODE")  # , self.node_props)
         if self.node_props:
-            self.add_stone()
-        self.node_props = {}
+            self.add_node()
+            self.node_props = {}
         self.node_started = False
         self.curr_cmd = ""
         self.curr_val = ""
 
     def start_node(self):
+
+        print("NODE STARTED")
         self.node_ended()
         self.node_started = True
 
@@ -162,6 +169,7 @@ class Parser:
         ), f"{self.curr_cmd} / {self.curr_val}"
         self.node_props.setdefault(self.curr_cmd, [])
         self.node_props[self.curr_cmd].append(self.curr_val)
+        print("\tEND VAL", self.node_props)
         self.curr_val = ""
 
     def parse(self):
@@ -201,6 +209,9 @@ class Parser:
                 )
 
             # info()
+
+            # print("SGF", self.sgftxt[:_])
+            # print("CHAR", char)
             match char:
                 case "(" if not self.val_started:
                     self.start_vari()
@@ -344,4 +355,5 @@ def load(path: str) -> tuple[rulesets.BaseRuleset, Node]:
     with open(path, encoding="utf-8") as fobj:
         sgftxt = fobj.read()
     ruleset, cursor = parse(sgftxt, {})
+    breakpoint()
     return ruleset, cursor

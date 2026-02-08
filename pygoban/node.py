@@ -72,7 +72,7 @@ class Node:
     def __str__(self):
         return (
             f"Node {self.color}: {self.pos} / {len(self.path())}"
-            f"C[{self.annos.comment[: (min(4, len(self.annos.comment) - 1))]}]"
+            f"C[{self.annos.comment[: (min(14 , len(self.annos.comment) - 1))]}]"
         )
 
     def __repr__(self):
