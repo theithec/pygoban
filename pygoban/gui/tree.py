@@ -110,7 +110,7 @@ class TreeCanvas(QWidget):
             while stone.parent:
                 stone = stone.parent
             self.root = stone
-        if not (stone.parent and stone.parent.is_pass and stone.is_pass):
+            # if not (stone.parent and stone.parent.is_pass and stone.is_pass):
             add(stone)
             self.set_stones()
 
@@ -220,7 +220,6 @@ class Tree(QScrollArea, BaseReceiver):
         self.canvas.update()
 
     def received_turn(self, result: results.TurnDone):
-        # return
         self.stones_signal.emit(result.node)
 
     # def received_annotated(self, result):

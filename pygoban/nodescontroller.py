@@ -1,8 +1,8 @@
 from copy import deepcopy
 
 from .board import Board, Color, Pos
-from .results import TurnDone
 from .node import Annotations, Node
+from .results import TurnDone
 
 HANDICAPS: dict[int, tuple] = {0: tuple(), 2: ((3, 15), (15, 3))}
 HANDICAPS[3] = HANDICAPS[2] + ((3, 3),)
@@ -30,6 +30,7 @@ class NodesController:
         self.default_next_color = Color.BLACK if not self.handicap else Color.WHITE
 
     def set_cursor(self, stone: Node) -> TurnDone:
+        # raise ValueError()
         if not stone.parent:
             self.root = stone
         self.cursor = self.root
@@ -58,9 +59,9 @@ class NodesController:
         oldcursor = self.cursor
         self.cursor = result.node
         self.cursor.set_parent(oldcursor)
-        self.total_dead[
-            Color.BLACK if result.node.color == Color.WHITE else Color.WHITE
-        ] += len(result.killed)
+        self.total_dead[Color.BLACK if result.node.color == Color.WHITE else Color.WHITE] += len(
+            result.killed
+        )
         result.total_dead = self.total_dead
         self.board = result.board
         for pos in result.killed:

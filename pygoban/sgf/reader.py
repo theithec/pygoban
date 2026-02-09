@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from typing import Callable, Dict, List
+from typing import Callable
 
 from pygoban import Color, GameInfo, Marker, Node, TimeSettings, coords, rulesets
 
@@ -15,7 +15,7 @@ class Parser:
     class ParsingError(Exception):
         pass
 
-    def __init__(self, sgftxt: str, defaults: Dict):
+    def __init__(self, sgftxt: str, defaults: dict):
         self.sgftxt = sgftxt
         self.defaults = defaults
         self.defaults.setdefault("HA", 0)
@@ -25,7 +25,7 @@ class Parser:
         self.defaults.setdefault("PB", "Black")
         self.defaults.setdefault("PW", "White")
         self.defaults.setdefault("RU", "Japanese")
-        self.variations: List[Node] = []
+        self.variations: list[Node] = []
         self.infos = {**defaults}
         self.ruleset: rulesets.BaseRuleset | None = None
         self.must_match_when_set = {
@@ -64,6 +64,9 @@ class Parser:
         )
 
     def add_node(self):
+
+        # if self.node_props.get("C", [""])[0].startswith("Black & white"):
+        #     breakpoint()
         color = Color.EMPTY
         pos = None
 
@@ -90,7 +93,6 @@ class Parser:
                 first=self.infos["PL"],
                 timesettings=timesettings,
             )
-            print("\nADDED RULESET")
         else:
             for colchr in ("B", "W"):
                 if colchr in self.node_props:
@@ -114,22 +116,18 @@ class Parser:
             else:
                 self[f"do_{key.lower()}"](val)
             # self[f"do_{key.lower()}"](val)
-        print("ADDED NODE", self.cursor)
 
     def start_vari(self):
-        print("VARI STARTED")
         self.node_ended()
         self.variations.append(self.cursor)
 
     def end_vari(self):
-        print("VARI ENDED")
         self.node_ended()
         self.node_started = False
         self.node_props = {}
         self.cursor = self.variations.pop()
 
     def node_ended(self):
-        print("END NODE")  # , self.node_props)
         if self.node_props:
             self.add_node()
             self.node_props = {}
@@ -138,8 +136,6 @@ class Parser:
         self.curr_val = ""
 
     def start_node(self):
-
-        print("NODE STARTED")
         self.node_ended()
         self.node_started = True
 
@@ -147,6 +143,7 @@ class Parser:
         self.val_started = True
 
     def end_val(self):
+
         self.val_started = False
 
         assert self.curr_cmd
@@ -169,7 +166,6 @@ class Parser:
         ), f"{self.curr_cmd} / {self.curr_val}"
         self.node_props.setdefault(self.curr_cmd, [])
         self.node_props[self.curr_cmd].append(self.curr_val)
-        print("\tEND VAL", self.node_props)
         self.curr_val = ""
 
     def parse(self):
@@ -185,33 +181,6 @@ class Parser:
             if self.val_started:
                 assert self.node_started
 
-            def info():
-                print(
-                    "last",
-                    last_char,
-                    "char",
-                    char,
-                    "val_started",
-                    self.val_started,
-                    "node started",
-                    self.node_started,
-                    "cmd",
-                    self.curr_cmd,
-                    "val",
-                    self.curr_val[:5],
-                    "...",
-                    self.curr_val[-5:-1],
-                    "(",
-                    len(self.curr_val),
-                    ")",
-                    "lastesc",
-                    last_is_escape,
-                )
-
-            # info()
-
-            # print("SGF", self.sgftxt[:_])
-            # print("CHAR", char)
             match char:
                 case "(" if not self.val_started:
                     self.start_vari()
@@ -257,12 +226,9 @@ class Parser:
 
     def _do_l(self, val, color: Color):
         # self.cursor.annos.time_left[color] = val[0]
-        print("DO L", val, color)
         self.cursor.annos.time_left = val[0]
 
     def _do_o(self, val, color: Color):
-
-        print("DO O", val, color)
         # self.cursor.annos.stones_left[color] = val[0]
         self.cursor.annos.stones_left = val[0]
 
@@ -344,7 +310,7 @@ class Parser:
         self._do_l(val, Color.WHITE)
 
 
-def parse(sgftxt: str, defaults: Dict) -> tuple[rulesets.BaseRuleset, Node]:
+def parse(sgftxt: str, defaults: dict) -> tuple[rulesets.BaseRuleset, Node]:
     parser = Parser(sgftxt, defaults)
     parser.parse()
     assert parser.ruleset and parser.cursor, f"{parser.ruleset} / {parser.cursor}"
@@ -355,5 +321,4 @@ def load(path: str) -> tuple[rulesets.BaseRuleset, Node]:
     with open(path, encoding="utf-8") as fobj:
         sgftxt = fobj.read()
     ruleset, cursor = parse(sgftxt, {})
-    breakpoint()
     return ruleset, cursor

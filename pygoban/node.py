@@ -87,6 +87,7 @@ class Node:
             (self.parent, other.parent),
             (self.pos, other.pos),
             (self.color, other.color),
+            (self.annos, other.annos),
         ]
         return not any(sval != oval for (sval, oval) in cmprs)
 

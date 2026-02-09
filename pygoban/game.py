@@ -38,6 +38,7 @@ class Game:
 
     def _start(self, receivers: list[BaseReceiver], cursor: Node | None = None):
         """Start a game, sending the emtpy root node"""
+        # breakpoint()
         assert not self._started
         self._started = True
         receiver = receivers.pop(0)
