@@ -77,18 +77,28 @@ class Node:
 
     def __repr__(self):
         return self.__str__()
-        # return self if not self.parent else self.path()[0].parent
 
     def __eq__(self, other):
         if not isinstance(other, Node):
             return False
 
         cmprs = [
-            (self.parent, other.parent),
             (self.pos, other.pos),
             (self.color, other.color),
-            (self.annos, other.annos),
+            (self.annos.comment, other.annos.comment),
         ]
+        if self.parent and other.parent:
+            cmprs.extend(
+                [
+                    (self.parent.pos, other.parent.pos),
+                    (self.parent.color, other.parent.color),
+                ]
+            )
+        else:
+            cmprs.append((self.parent is None, other.parent is None))
+        for sval, oval in cmprs:
+            if sval != oval:
+                return False
         return not any(sval != oval for (sval, oval) in cmprs)
 
     def __del__(self):

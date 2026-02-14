@@ -111,8 +111,8 @@ class TreeCanvas(QWidget):
                 stone = stone.parent
             self.root = stone
             # if not (stone.parent and stone.parent.is_pass and stone.is_pass):
-            add(stone)
-            self.set_stones()
+        add(stone)
+        self.set_stones()
 
     def del_stone(self, tree_node: TreeNode):
         parent = tree_node.node.parent
