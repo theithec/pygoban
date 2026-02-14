@@ -148,11 +148,15 @@ class PlayerGameBox(_PlayerBox):
         super().received_turn(result=result)
         if not (timesettings := self.game_ui.controller.ruleset.timesettings):
             return
+        start_clock = timesettings.use_clock and self.game_ui.gui_mode == GUIMode.PLAY
         if result.next_color == self.player.color:
-            time_left = (
-                result.node.parent.annos.time_left if result.node.parent else timesettings.maintime
-            )
-            self.clock_update_signal.emit(time_left, timesettings.use_clock)
+            if timesettings.use_clock:
+                time_left = (
+                    result.node.parent.annos.time_left
+                    if result.node.parent
+                    else timesettings.maintime
+                )
+                self.clock_update_signal.emit(time_left, start_clock)
         elif result.next_color.other() == self.player.color:
             if timesettings.use_clock:
                 self.clock_stop_signal.emit()
