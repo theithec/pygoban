@@ -1,15 +1,15 @@
 from collections import defaultdict
 
-from PyQt6.QtCore import QCoreApplication  # pylint: disable=no-name-in-module
-from PyQt6.QtCore import QSettings  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import (
+    QCoreApplication,  # pylint: disable=no-name-in-module
+    QSettings,  # pylint: disable=no-name-in-module
+)
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QCheckBox,
     QComboBox,
     QDialog,
     QFormLayout,
     QGridLayout,
-    QGroupBox,
-    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QWidget,
 )
 
-from pygoban import Settings, gtp
+from pygoban import Settings
 
 from . import CenteredMixin
 
@@ -105,19 +105,12 @@ class SettingsDialog(QDialog, CenteredMixin):
     def get_playerlayout(self):
         layout = QFormLayout()
 
-        for name in (
-            "min_wait",
-            "auto_save",
-        ):
-            if name == "auto_save":
-                widget = QCheckBox()
-            else:
-                widget = None
-            self.add_row(layout, name, widget)
+        self.add_row(layout, "min_wait", None)
+        self.add_row(layout, "auto_save", QCheckBox())
 
         autowidget = self.elems["auto_save"]
         assert isinstance(autowidget, QCheckBox)
-        # autowidget.setChecked(bool(self.settings.get("auto_save")))
+        autowidget.setChecked(bool(self.settings.auto_save))
         return layout
 
     def get_gtplayout(self):
@@ -148,7 +141,9 @@ class SettingsDialog(QDialog, CenteredMixin):
             gtp_checkbox_analyze = QCheckBox("")
             gtp_checkbox_analyze.setChecked(checked)
             layout.addWidget(gtp_checkbox_analyze, index + 2, 3)
-            self.gtp_fields_list.append((gtp_nameedit, gtp_cmdedit, gtp_checkbox_analyze))
+            self.gtp_fields_list.append(
+                (gtp_nameedit, gtp_cmdedit, gtp_checkbox_analyze)
+            )
         return layout
 
     def save(self):
@@ -169,12 +164,20 @@ class SettingsDialog(QDialog, CenteredMixin):
             "byoyomi_num": "clock/byoyomi_num",
             "byoyomi_time": "clock/byoyomi_time",
             "byoyomi_stones": "clock/byoyomi_stones",
+            "min_wait": "player/min_wait",
+            "autosave": "player/autosave",
         }
         for name, widget in handled.items():
-            if isinstance(widget, QComboBox):
-                val = widget.currentText()
-            else:
-                val = widget.text()
+            match widget.__class__.__name__:
+                case "QComboBox":
+                    val = widget.currentText()
+                case "QCheckBox":
+                    val = widget.isChecked()
+                case "QLineEdit":
+                    val = widget.text()
+                case _:
+                    raise Exception(f"Unhandled Widget: {widget.__class__}")
+
             full_name = full_names.get(name, name)
             self.qsettings.setValue(full_name, val)
             setattr(self.settings, name, val)

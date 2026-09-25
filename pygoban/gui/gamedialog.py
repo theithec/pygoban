@@ -22,7 +22,7 @@ _translate = QCoreApplication.translate
 
 
 class NewGameBaseDialog(QDialog):
-    """Define gamesettings"""
+    """Set gamesettings"""
 
     SHOW_PLAYER_TYPE = False
     GUI_MODE: GUIMode
@@ -54,7 +54,9 @@ class NewGameBaseDialog(QDialog):
                 widgets["type"] = QComboBox()
                 playertypes = ["human", *settings.gtp_engines.keys()]
                 widgets["type"].addItems(playertypes)
-                widgets["type"].currentTextChanged.connect(self.name_changer_for_color(color))
+                widgets["type"].currentTextChanged.connect(
+                    self.name_changer_for_color(color)
+                )
                 group_layout.addRow("Type", widgets["type"])
             group_layout.addRow("Name", widgets["name_edit"])
             group_box.setLayout(group_layout)
@@ -101,7 +103,9 @@ class NewGameBaseDialog(QDialog):
                 "boardsize": int(self.size_box.currentText()),
                 "komi": float(self.komi_edit.text()),
                 "handicap": int(self.handicap_box.currentText()),
-                "black_name": str(self.widgets_by_color[Color.BLACK]["name_edit"].text()),
+                "black_name": str(
+                    self.widgets_by_color[Color.BLACK]["name_edit"].text()
+                ),
                 "white_name": self.widgets_by_color[Color.WHITE]["name_edit"].text(),
                 "modestr": self.GUI_MODE.value,
                 "timestr": timestr,

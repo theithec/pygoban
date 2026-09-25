@@ -58,7 +58,9 @@ class TreeNode(QLabel):
         painter.setPen(pen)
         painter.setBrush(qcol)
         pen.setCosmetic(True)
-        painter.drawEllipse(self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2)
+        painter.drawEllipse(
+            self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2
+        )
         painter.end()
         painter = QPainter()
         painter.begin(self)
@@ -69,7 +71,9 @@ class TreeNode(QLabel):
             pen.setBrush(QColorConstants.Red)  # type: ignore
             pen.setCosmetic(True)
             painter.setPen(pen)
-        painter.drawEllipse(self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2)
+        painter.drawEllipse(
+            self.WIDTH // 4, self.WIDTH // 4, self.WIDTH // 2, self.WIDTH // 2
+        )
         super().paintEvent(event)
 
     def mousePressEvent(self, event):
@@ -159,16 +163,13 @@ class TreeCanvas(QWidget):
         super().paintEvent(event)
         # visible_rect = self.visibleRegion().rects()[0]
         visible_rect = self.visibleRegion().boundingRect()
-        width = visible_rect.width()
         assert self.tree_cursor
-        path = self.tree_cursor.node.path()
 
         def centered(pos):
             return QPoint(pos.x() + TreeNode.WIDTH // 2, pos.y() + TreeNode.WIDTH // 2)
 
         def conn(tree_node):
             pos = tree_node.pos()
-            height = tree_node.height()
             if visible_rect.contains(pos) and tree_node.child_index is not None:
                 painter.drawLine(
                     centered(pos),

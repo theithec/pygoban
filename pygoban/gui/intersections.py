@@ -52,7 +52,9 @@ class IntersectionWidget(QWidget):
         self.inter: Intersection | None = None
 
     def mousePressEvent(self, event) -> None:
-        self.game_ui.inter_clicked(self, is_rightclick=event.button() == Qt.MouseButton.RightButton)
+        self.game_ui.inter_clicked(
+            self, is_rightclick=event.button() == Qt.MouseButton.RightButton
+        )
 
         self._hover = False
 
@@ -71,9 +73,6 @@ class IntersectionWidget(QWidget):
             txt,
         )
 
-    def draw_x(self, painter, params, color=None):
-        self.draw_char("X", painter, params)
-
     def draw_winrate(self, info, painter, params):
         font = painter.font()
         font.setPixelSize(int(params.size / (len(info[0]) / 1.4)))
@@ -84,7 +83,9 @@ class IntersectionWidget(QWidget):
         green = val // 1
         blue = 0
         painter.setBrush(QColor(red, green, blue))
-        painter.drawEllipse(fwidth, fwidth, params.size - (fwidth * 2), params.size - (fwidth * 2))
+        painter.drawEllipse(
+            fwidth, fwidth, params.size - (fwidth * 2), params.size - (fwidth * 2)
+        )
         # luminace = float(0.2126 * red + 0.7152 * green + 0.0722 * blue)
         fg = QColor("black" if perc > 25 else "white")
         # fg = QColor.black if luminace > 70 else QColor.white
@@ -114,8 +115,9 @@ class IntersectionWidget(QWidget):
         width = params.size // 8
         pen = QPen(QColor("red"), width)
         painter.setPen(pen)
-        painter.drawEllipse(width, width, params.size - (width * 2), params.size - (width * 2))
-        # painter.drawEllipse(0, 0, params.size, params.size)
+        painter.drawEllipse(
+            width, width, params.size - (width * 2), params.size - (width * 2)
+        )
 
     def draw_triangle(self, painter, params):
         path = QPainterPath()
@@ -157,8 +159,6 @@ class IntersectionWidget(QWidget):
 
     def draw_dimmed(self, painter: QPainter, params: "InsParams"):
         painter.setBrush(QColor("gray"))
-        # self.draw_char(info[0], painter, params, fg)
-        # self.draw_char(info[0], painter, params, fg)
         painter.setOpacity(0.8)
         painter.fillRect(0, 0, params.size, params.size, painter.brush())
         painter.setOpacity(1)
@@ -190,7 +190,9 @@ class IntersectionWidget(QWidget):
 
         assert self.inter
         stone_pixmap = get_pixmap(self.inter.color)
-        if (not stone_pixmap) and (rate := last_turn.node.annos.winrates.get(self.board_pos)):
+        if (not stone_pixmap) and (
+            rate := last_turn.node.annos.winrates.get(self.board_pos)
+        ):
             if not self.game_ui.show_analyzed_variation:
                 self.draw_winrate(rate, painter, params)
 
@@ -228,7 +230,6 @@ class IntersectionWidget(QWidget):
                 marked = True
         if not marked and self.game_ui.gui_mode in (GUIMode.EDIT, GUIMode.PLAY):
             for child in last_turn.node.children:
-
                 if self.board_pos == child.pos:
                     break
             else:
@@ -247,20 +248,19 @@ class IntersectionWidget(QWidget):
                 )
             painter.setOpacity(1)
 
-        if (not stone_pixmap) and self._hover:
-            if not self.game_ui.annotation_type:
-                next_color = last_turn.next_color
-                assert (hover_pixmap := get_pixmap(next_color))
-                painter.setOpacity(0.8)
-                painter.drawPixmap(
-                    QRect(
-                        params.stone_pos,
-                        params.stone_pos,
-                        params.stone_size,
-                        params.stone_size,
-                    ),
-                    hover_pixmap,
-                )
+        if (not stone_pixmap) and self._hover and not self.game_ui.annotation_type:
+            next_color = last_turn.next_color
+            assert (hover_pixmap := get_pixmap(next_color))
+            painter.setOpacity(0.8)
+            painter.drawPixmap(
+                QRect(
+                    params.stone_pos,
+                    params.stone_pos,
+                    params.stone_size,
+                    params.stone_size,
+                ),
+                hover_pixmap,
+            )
         if analyzed_variation:
             index, color = analyzed_variation
             assert (vari_pixmap := get_pixmap(color))
@@ -278,21 +278,20 @@ class IntersectionWidget(QWidget):
             color = QColor(10 * index, 255, 255 - 20 * index)
             self.draw_char(str(index), painter, params, color)
             # self._hover = False
-        if self.game_ui.gui_mode == GUIMode.COUNT:
-            if self.inter.owner:
-                self.draw_owned(self.inter.owner, painter, params)
-                assert (owned_pixmap := get_pixmap(self.inter.owner))
-                painter.setOpacity(0.5)
-                painter.drawPixmap(
-                    QRect(
-                        params.small_pos,
-                        params.small_pos,
-                        params.small_size,
-                        params.small_size,
-                    ),
-                    owned_pixmap,
-                )
-                painter.setOpacity(1)
+        if self.game_ui.gui_mode == GUIMode.COUNT and self.inter.owner:
+            self.draw_owned(self.inter.owner, painter, params)
+            assert (owned_pixmap := get_pixmap(self.inter.owner))
+            painter.setOpacity(0.5)
+            painter.drawPixmap(
+                QRect(
+                    params.small_pos,
+                    params.small_pos,
+                    params.small_size,
+                    params.small_size,
+                ),
+                owned_pixmap,
+            )
+            painter.setOpacity(1)
         self._hover = False
         painter.end()
 
@@ -324,8 +323,7 @@ class IntersectionWidget(QWidget):
                 return True
 
             if (
-                type_
-                == QEvent.Type.Leave
+                type_ == QEvent.Type.Leave
                 # and not self.controller.bar.inner.boxes["EditBox"].decogroup.checkedButton()
             ):
                 # if not self.controller.is_annotating:

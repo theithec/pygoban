@@ -1,8 +1,8 @@
 # pylint: disable=abstract-method
 from typing import cast
 
-from PyQt6.QtGui import QIcon  # pylint: disable=no-name-in-module
-from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module; QFormLayout,
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import (
     QButtonGroup,
     QGridLayout,
     QGroupBox,
@@ -14,9 +14,9 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module; QFormLayout,
 )
 
 from pygoban import results
-from pygoban.gui import BASE_DIR, GUIMode
+from pygoban.gui import BASE_DIR, GUIMode, btn_adder
 
-from . import Box, btn_adder
+from . import Box
 
 
 class GameBox(Box):
@@ -63,7 +63,6 @@ class EditBox(Box):
         btns_layout2 = QHBoxLayout()
         add_dirbutton = btn_adder(btns_layout2)
         self.btn_auto = add_dirbutton("Pass", controller.do_pass)
-        # self.btn_auto.setCheckable(True)
         self.btn_count = add_dirbutton("Count", self.toggle_count)
         self.btn_count.setCheckable(True)
 
@@ -96,9 +95,6 @@ class EditBox(Box):
         self.decobox.setVisible(False)
         self.decogroup = QButtonGroup()
         self.decogroup.setExclusive(True)
-        # self.decobox.setCheckable(True)
-        # self.decobox.setChecked(False)
-        # self.decobox.toggled.connect(self.toggle_deco)
         self.decogroup.addButton(
             add_decobutton(0, 0, "B", icon=f"{BASE_DIR}/gui/imgs/black.png")
         )
@@ -134,7 +130,6 @@ class EditBox(Box):
         checked = self.decobtn.isChecked()
         self.decobox.setVisible(checked)
         if checked:
-            print("B", self.decogroup.checkedButton())
             if btn := self.decogroup.checkedButton():
                 self.game_ui.annotation_type = btn.key
         else:

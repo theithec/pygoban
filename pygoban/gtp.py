@@ -3,9 +3,8 @@ import os
 import re
 import subprocess
 import threading
-from collections.abc import Iterable
-from typing import cast
 from enum import Enum
+from typing import cast
 
 from . import results
 from .coords import gtp_coord_to_pos, pos_to_gtp_coord
@@ -25,7 +24,7 @@ KATA_ANALYZE_STR = (
 )
 
 COORD_OR_PASS = r"= ([A-Z]\d{1,2}|PASS)"
-pattern = re.compile((KATA_ANALYZE_STR))
+pattern = re.compile(KATA_ANALYZE_STR)
 
 
 class Role(Enum):
@@ -154,8 +153,9 @@ class GTPController(BaseReceiver, SubGameController):
         has_role = role in self.roles
         if has_role:
             self.roles.remove(role)
-            if role in (Role.ANALYZE, Role.ANALYZE_FULL):
-                self.do_cmd("stop")
+            if role in (Role.ANALYZE, Role.ANALYZE_FULL) or not self.roles:
+                self.do_cmd("quit")
+                # self.do_cmd("stop")
 
             self.gtp_stopped(self.name, {role})
         else:
@@ -189,10 +189,13 @@ class GTPController(BaseReceiver, SubGameController):
                     self.do_cmd(cmd=f"play {node.color.name} {coord}")
         else:
             node = result.node
-            if Role[node.color.name] not in self.roles:
-                if node.pos and self.last_own_move != (node.color, node.pos):
-                    coord = pos_to_gtp_coord(node.pos, boardsize=self.ruleset.boardsize)
-                    self.do_cmd(cmd=f"play {node.color.name} {coord}")
+            if (
+                Role[node.color.name] not in self.roles
+                and node.pos
+                and self.last_own_move != (node.color, node.pos)
+            ):
+                coord = pos_to_gtp_coord(node.pos, boardsize=self.ruleset.boardsize)
+                self.do_cmd(cmd=f"play {node.color.name} {coord}")
         is_undo = result.reset and result.node.pos and self.got_turn
         if Role[(col := result.next_color).name] in self.roles and not is_undo:
             if self.ruleset.timesettings:
@@ -202,7 +205,7 @@ class GTPController(BaseReceiver, SubGameController):
             self.do_cmd(f"genmove {result.next_color}")
 
         if Role.ANALYZE in self.roles or Role.ANALYZE_FULL in self.roles:
-            self.do_cmd(f"kata-analyze {result.next_color.name} 100")
+            self.do_cmd(f"kata-analyze {result.next_color.name} 10")
 
         self.got_turn = True
 

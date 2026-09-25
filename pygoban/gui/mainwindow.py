@@ -11,7 +11,6 @@ from pygoban import (
     TimeSettings,
     rulesets,
 )
-from pygoban.sgf import reader
 
 from . import BASE_DIR, MainUI, Settings
 from .gamedialog import NewGameEditDialog, NewGamePlayDialog
@@ -64,7 +63,9 @@ class MainWindow(MainUI):
         game = Game(ruleset=ruleset)
         gamecontroller = MainGameController(game=game)
         parties = {
-            color.name.lower(): GUIPlayer(color=color, name=ruleset.info.names[color], members=[])
+            color.name.lower(): GUIPlayer(
+                color=color, name=ruleset.info.names[color], members=[]
+            )
             for color in (Color.BLACK, Color.WHITE)
         }
         gamewidget = GameWidget(
@@ -95,7 +96,9 @@ class MainWindow(MainUI):
         mode: GUIMode = GUIMode[modestr]
         info = GameInfo(names={Color.BLACK: black_name, Color.WHITE: white_name})
         if timestr:
-            timesettings = TimeSettings(*[int(part) for part in timestr.strip().split(":")])
+            timesettings = TimeSettings(
+                *[int(part) for part in timestr.strip().split(":")]
+            )
         else:
             timesettings = None
         ruleset: rulesets.BaseRuleset = rulesets.by_key[rulesets.Key[ruleset_name]](
@@ -106,10 +109,6 @@ class MainWindow(MainUI):
             timesettings=timesettings,
         )
         return self.add_game(mode=mode, ruleset=ruleset, cursor=None)
-
-    def load_sgf(self, path: str):
-        ruleset, cursor = reader.load(path)
-        self.add_game(mode=GUIMode.EDIT, ruleset=ruleset, cursor=cursor)
 
     def closeEvent(self, event: QCloseEvent | None) -> None:  # pylint: disable=invalid-name
         for index in range(self.tabs.count()):

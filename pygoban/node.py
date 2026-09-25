@@ -13,7 +13,7 @@ class Annotations:  # pylint: disable=too-many-instance-attributes
     owned: dict[Pos, Color] = field(default_factory=dict)
     winrates: dict[Pos, str] = field(default_factory=dict)
     comment: str = ""
-    time_left: int = 0
+    time_left: float = 0.0
     stones_left: int = 0
     periods_left: int = 0
     progress: dict[Pos, Any] = field(default_factory=dict)
@@ -26,12 +26,12 @@ class Node:
     def __init__(
         self,
         color: Color,
-        pos: Optional[Pos] = None,
+        pos: Pos | None = None,
         parent: Optional["Node"] = None,
     ) -> None:
         self.color = color
         self.pos = pos
-        self.children: list["Node"] = []
+        self.children: list[Node] = []
         self.annos = Annotations()
         self.set_parent(parent)
         self.is_pass = self.color and self.parent and not self.pos
@@ -44,7 +44,7 @@ class Node:
 
     def _full_path(self) -> list["Node"]:
         path = []
-        curr: Optional[Node] = self
+        curr: Node | None = self
         while curr:
             path.append(curr)
             curr = curr.parent
@@ -108,7 +108,7 @@ class Node:
 
     def as_copy(self) -> "Node":
         pos = Pos(*self.pos) if self.pos else None
-        move: "Node" = self.__class__(color=self.color, pos=pos)
+        move: Node = self.__class__(color=self.color, pos=pos)
         move.annos = Annotations(**vars(self.annos))
         for child in self.children:
             child_cpy = child.as_copy()

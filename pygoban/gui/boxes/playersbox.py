@@ -17,6 +17,7 @@ from . import Box
 
 
 def seconds_to_str(seconds):
+    seconds = int(seconds)
     hours = int(seconds / 360) if seconds >= 360 else 0
     seconds -= hours * 360
     minutes = int(seconds / 60) if seconds >= 60 else 0
@@ -48,7 +49,7 @@ class _PlayerBox(Box):
         """
         clsname = self.__class__.__name__
         css1 = f"""
-{clsname} {{
+        {clsname} {{
            padding-top: 2ex; /* leave space at the top for the title */
            background-color: {bg};
            {colors}
@@ -82,14 +83,16 @@ class PlayerGameBox(_PlayerBox):
     timer = None
     _seconds: int
     clock_stop_signal = pyqtSignal()
-    clock_update_signal = pyqtSignal(int, bool)
+    clock_update_signal = pyqtSignal(float, bool)
 
     def init(self, player: Party, **_kwargs) -> None:  # type: ignore
         super().init(player)
         self.clock = QLCDNumber()
         self.byoyomi_label = QLabel("")
         if time := self.game_ui.controller.ruleset.timesettings:
-            self.set_byoyomi_text(periods_left=time.byoyomi_num, stones_left=time.byoyomi_stones)
+            self.set_byoyomi_text(
+                periods_left=time.byoyomi_num, stones_left=time.byoyomi_stones
+            )
             self.clock.display(seconds_to_str(0))
             self.formlayout.addRow(self.clock)
             self.formlayout.addRow(self.byoyomi_label)
@@ -113,7 +116,6 @@ class PlayerGameBox(_PlayerBox):
         self.clock.display(txt)
 
     def clock_update(self, seconds, start_timer=False):
-
         self._seconds = seconds
         if start_timer:
             self.stop_clock()
@@ -123,6 +125,7 @@ class PlayerGameBox(_PlayerBox):
         self.clock.display(seconds_to_str(seconds))
 
     def set_byoyomi_text(self, periods_left, stones_left):
+        # raise ValueError()
         if not (time := self.game_ui.controller.ruleset.timesettings):
             return
         txt = ""
@@ -142,7 +145,9 @@ class PlayerGameBox(_PlayerBox):
         self.set_byoyomi_text(periods_left=b.periods_left, stones_left=b.stones_left)
 
         timesettings = self.game_ui.controller.ruleset.timesettings
-        self.clock_update_signal.emit(result.next_time, timesettings and timesettings.use_clock)
+        self.clock_update_signal.emit(
+            result.next_time, timesettings and timesettings.use_clock
+        )
 
     def received_turn(self, result: results.TurnDone):
         super().received_turn(result=result)
@@ -173,7 +178,6 @@ class PlayerCountBox(_PlayerBox):
 
         self.total_label = QLabel(str(0))
         self.total_label.setObjectName("total_label")
-        # self.setLayout(self.formlayout)
 
 
 class PlayersBox(Box):
@@ -182,7 +186,9 @@ class PlayersBox(Box):
 
     def init(self, players: dict[Color, Party]):  # type: ignore  # pylint: disable=arguments-differ
         self.boxlayout = QHBoxLayout()
-        self.boxes_by_mode: dict[GUIMode, dict[Color, PlayerCountBox | PlayerGameBox]] = {
+        self.boxes_by_mode: dict[
+            GUIMode, dict[Color, PlayerCountBox | PlayerGameBox]
+        ] = {
             GUIMode.PLAY: {
                 Color.BLACK: PlayerGameBox(self, player=players[Color.BLACK]),
                 Color.WHITE: PlayerGameBox(self, player=players[Color.WHITE]),

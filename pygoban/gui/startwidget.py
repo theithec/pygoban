@@ -1,30 +1,21 @@
-from typing import TYPE_CHECKING, Callable
+
+from PyQt6.QtCore import (  # pylint: disable=no-name-in-module
+    QCoreApplication,
+    QMetaObject,
+)
+from PyQt6.QtGui import QIcon  # pylint: disable=no-name-in-module
 
 #  from OpenGL import GL  # noqa: F401
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
-    QLayout,
     QFrame,
-    QPushButton,
     QGridLayout,
     QVBoxLayout,
 )
-from PyQt6.QtCore import QCoreApplication, QMetaObject  # pylint: disable=no-name-in-module
-from PyQt6.QtGui import QIcon  # pylint: disable=no-name-in-module
 
-from . import BASE_DIR, CenteredMixin, MainUI
+from . import BASE_DIR, CenteredMixin, MainUI, btn_adder
 from .filedialog import filename_from_opendialog
 
 _translate = QCoreApplication.translate
-
-
-def btn_adder(layout: QLayout):
-    def add_button(label: str, callback: Callable):
-        button = QPushButton(label)
-        button.clicked.connect(callback)  # type: ignore
-        layout.addWidget(button)
-        return button
-
-    return add_button
 
 
 class StartWidget(CenteredMixin, QFrame):
@@ -59,7 +50,9 @@ class StartWidget(CenteredMixin, QFrame):
         self.newgameedit = add_btn(
             _translate("Dialog", "Edit Board"), self.manager.show_edit_board_dialog
         )
-        self.openfile_button = add_btn(_translate("Dialog", "Open File"), self.open_file)
+        self.openfile_button = add_btn(
+            _translate("Dialog", "Open File"), self.open_file
+        )
         self.settings_button = add_btn(
             _translate("Dialog", "Settings"), self.manager.show_settings_dialog
         )
@@ -74,5 +67,3 @@ class StartWidget(CenteredMixin, QFrame):
     def open_file(self):
         if filename := filename_from_opendialog(self):
             self.manager.load_sgf(filename)
-            # args = self.controller.parser.parse_args([filename])
-            # self.starter_callback(args, init_gui=False)

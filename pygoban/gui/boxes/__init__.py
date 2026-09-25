@@ -1,6 +1,6 @@
 # pylint: disable=invalid-name, arguments-differ, abstract-method
 # because qt and do_-commands and Box overloading
-from typing import Any, Callable, Type
+from typing import Any
 
 from PyQt6.QtCore import pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt6.QtGui import QAction, QPixmap  # pylint: disable=no-name-in-module
@@ -10,7 +10,6 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QLabel,
     QLayout,
     QPushButton,
-    QRadioButton,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -26,22 +25,6 @@ def _(txt):
     return txt
 
 
-def btn_adder(
-    layout: QLayout, buttoncls: Type[QPushButton] | Type[QRadioButton] = QPushButton
-) -> Callable:
-    def add_button(
-        label: str, callback: Callable | None = None
-    ) -> QPushButton | QRadioButton:
-        button = buttoncls(label)
-        # m = QSizePolicy.Policy.Minimum
-        button.setMinimumWidth(5)
-        # button.setSizePolicy(m, m)
-        if callback:
-            button.clicked.connect(callback)  # type: ignore
-        layout.addWidget(button)
-        return button
-
-    return add_button
 
 
 class Box(QGroupBox, BaseReceiver, ModeChangeListenerMixin):
@@ -129,7 +112,7 @@ class GTPBox(Box):
             widget.setLayout(layout)
             self.widgets_by_name.setdefault(result.name, set())
             self.widgets_by_name[result.name].add(widget)
-            label1 = QLabel()  # f"{result.name}: {role.name}")
+            label1 = QLabel()
             label1.setPixmap(QPixmap(f"{BASE_DIR}/gui/imgs/led-green-black.svg"))
             layout.addWidget(label1)
             label2 = QLabel(f"{result.name}: {role.name}")

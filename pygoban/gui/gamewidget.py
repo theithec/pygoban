@@ -1,5 +1,3 @@
-# pylint: disable=invalid-name
-# because qt
 import os
 from copy import copy
 
@@ -36,7 +34,7 @@ class GuiReceiver(BaseReceiver):
             results.Counted,
             results.GameResultDone,
         }
-        self.game_ui: "GameWidget" = game_ui
+        self.game_ui: GameWidget = game_ui
 
     def received_turn(self, result: results.TurnDone) -> None:
         self.game_ui.last_turn = result
@@ -46,17 +44,11 @@ class GuiReceiver(BaseReceiver):
             # QBasicTimer::start: QBasicTimer can only be used with threads started with QThread
             QTimer.singleShot(0, self.game_ui.stonesound.play)
 
-    def received_resign(self, result) -> None:
-        pass
-
     def received_annotated(self, result) -> None:
         self.game_ui.boardwidget.update()
 
     def received_count(self, result) -> None:
         self.game_ui.gui_mode = GUIMode.COUNT
-        # assert self.game_ui.last_turn
-        # for color in (Color.BLACK, Color.WHITE):
-        #    result[color].killed += self.game_ui.last_turn.total_dead[color.other()]
         self.game_ui.boardwidget.update()
 
     def received_result_done(self, result: results.GameResultDone) -> None:
@@ -76,7 +68,6 @@ class GameWidget(GameUI):
         gui_mode: GUIMode,
         parent: MainUI,
         controller: MainGameController,
-        # gtp_conns: dict,
     ) -> None:
         super().__init__(parent=parent)
         self.parties = parties
@@ -131,13 +122,13 @@ class GameWidget(GameUI):
             found: Pos | Marker | str | bool | None = False
             match atype:
                 case "B" | "W":
-                    # self.last_turn.node.annos.stones.pop(pos, None)
                     if found := self.last_turn.board.intersection(
                         pos
                     ).color.name.startswith(atype):
                         self.controller.annotate(iwidget.board_pos, Color.EMPTY)
                 case "TR" | "SQ" | "CR":
-                    if annos.markers[pos].name == atype:
+                    # TODO check
+                    if annos.markers.get(pos) and annos.markers[pos].name == atype:
                         found = annos.markers.pop(pos, None)
                 case "1":
                     found = annos.numbers.pop(pos, None)

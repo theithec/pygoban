@@ -4,13 +4,13 @@ import os
 from itertools import permutations
 from typing import TYPE_CHECKING, cast
 
-from PyQt6.QtCore import (  # py2lint: disable=no-name-in-module
+from PyQt6.QtCore import (
     QLineF,
     QPointF,
     QRect,
     Qt,
 )
-from PyQt6.QtGui import (  # pylint: disable=no-name-in-module; QBrush,
+from PyQt6.QtGui import (
     QColor,
     QImage,
     QPainter,
@@ -109,6 +109,12 @@ class BoardWidget(QWidget):
     def paintEvent(self, _event):
         """Paint a board"""
         painter = QPainter()
+
+        # painter.setRenderHints(
+        #     # painter.Antialiasing | painter.SmoothPixmapTransform | painter.HighQualityAntialiasing
+        #     QPainter.RenderHint.Antialiasing
+        #     | QPainter.RenderHint.SmoothPixmapTransform
+        # )
         painter.begin(self)
         painter.drawImage(
             QRect(0, 0, self.width(), self.height()),
@@ -120,15 +126,11 @@ class BoardWidget(QWidget):
         pen.setColor(QColor("black"))
         pen.setWidth(1)  # if pos in (0, self.boardsize - 1) else 2)
         painter.setPen(pen)
-        painter.setRenderHints(
-            # painter.Antialiasing | painter.SmoothPixmapTransform | painter.HighQualityAntialiasing
-            QPainter.RenderHint.Antialiasing | QPainter.RenderHint.SmoothPixmapTransform
-        )
         hdist = dist // 2
         for pos in self.boardrange:
             pen = painter.pen()
             firstorlast = pos in (0, self.boardsize - 1)
-            pen.setWidth(4 if firstorlast else 2)
+            pen.setWidth(2 if firstorlast else 1)
             width = self.boardwidth - (1 if not firstorlast else 2)
             painter.setPen(pen)
             x = self.borderspace + pos * dist

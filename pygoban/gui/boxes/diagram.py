@@ -9,13 +9,13 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
 )
 
 from pygoban import results
-from pygoban.gui.boxes import Box
 from pygoban.gtp import Role
+from pygoban.gui.boxes import Box
 
 
 class DiagramCanvas(QWidget):
     def __init__(self, parent) -> None:
-        self.diagram: "DiagramBox" = parent
+        self.diagram: DiagramBox = parent
         self.last_turn: results.TurnDone | None = None
         self.results: list[dict] = []
         self._hover: int | None = None
@@ -37,7 +37,7 @@ class DiagramCanvas(QWidget):
 
         node = self.last_turn.node
         num_turns = len(node.full_path_to_last())
-        block = (width - self._left) // (num_turns or 1) or 1
+        block = (width - self._left) / (num_turns or 1) or 1
         self._block = block
         onepc = height / 100
         painter.fillRect(0, 0, width, int(onepc * 50), QColor(255, 255, 255, 100))
@@ -46,8 +46,6 @@ class DiagramCanvas(QWidget):
         )
         text_color = self.palette().text().color()
         painter.setBrush(text_color)
-        last_num: int | None = None
-        last_percent: int | None = None
         biggest = int(max([val["num"] for val in self.results] + [10]))
         painter.setPen(text_color)
         painter.drawText(
@@ -66,77 +64,61 @@ class DiagramCanvas(QWidget):
             f"{biggest}",
         )
         horheight = height / (biggest * 2 + 1)
+
+        pen = painter.pen()
+        pen.setWidth(2)
+        plines = []
+        nlines = []
+        last_npoint: QPoint | None = None
+        last_ppoint: QPoint | None = None
         for index in range(num_turns):
             if not (
                 result := self.results[index] if index < len(self.results) else None
             ):
-                continue
-            percent = int(float(result["percent"]))
-            num = int(float(result["num"]))
+                break
+            percent = float(result["percent"])
+            num = float(result["num"])
             if index % 2 == 1:
                 percent = 100 - percent
                 num = num * -1
-            if last_percent:
-                pen = painter.pen()
-                pen.setColor(QColor("green"))
-                pen.setWidth(2)
-                painter.setPen(pen)
-                hor_pos1 = block * index + self._left
-                hor_pos2 = block * (index + 1) + self._left
-                vert_ppos1 = int(last_percent * onepc) + 1
-                vert_ppos2 = int(percent * onepc) + 1
-                painter.drawLine(
-                    QPoint(hor_pos1, vert_ppos1),
-                    QPoint(hor_pos2, vert_ppos2),
-                )
-                pen.setColor(QColor("blue"))
-                painter.setPen(pen)
 
-                vert_npos1 = int(last_num * horheight + 50 * onepc)
-                vert_npos2 = int(num * horheight + 50 * onepc)
-                painter.drawLine(
-                    QPoint(
-                        # block * (index - 1) + self._left,
-                        hor_pos1,
-                        vert_npos1,
-                    ),
-                    QPoint(
-                        # block * index + self._left,
-                        hor_pos2,
-                        vert_npos2,
-                    ),
-                )
-                # //print("%: ",last_percent,percent)
-                print(
-                    "%",
-                    "\t".join(
-                        (
-                            str(x)
-                            for x in (vert_ppos1, vert_ppos2, last_percent, percent)
-                        )
-                    ),
-                )
-            last_num = num
-            last_percent = percent
+            hor_pos = int(block * (index + 1) + self._left)
+            vert_ppos = int(percent * onepc) + 1
+            vert_npos = int(num * horheight + 50 * onepc)
+            ppoint = QPoint(hor_pos, vert_ppos)
+            npoint = QPoint(hor_pos, vert_npos)
+            if last_npoint:
+                plines.extend((last_ppoint, ppoint))
+                nlines.extend((last_npoint, npoint))
+
+            last_ppoint = ppoint
+            last_npoint = npoint
             biggest = max(biggest, num)
+        pen.setColor(QColor("green"))
+        painter.setPen(pen)
+        painter.drawLines(plines)
+        pen.setColor(QColor("blue"))
+        painter.setPen(pen)
+        painter.drawLines(nlines)
 
-        if self._hover is not None:
-            painter.setPen(text_color)
-            painter.drawLine(
-                QPoint(self._hover, 0), QPoint(self._hover, int(onepc * 100))
-            )
+        painter.setPen(text_color)
 
-            # for index in range(-10, -10, -5):
-            #    text_pos = int(onepc * index)
-            #    painter.drawText(
-            #        QRect(0, text_pos - 5, 18, 10), Qt.AlignmentFlag.AlignCenter, f"{100 - index}"
-            #    )
+        cursor_pos = int(block * (len(self.last_turn.node.path()) + 1) + self._left)
+        painter.drawLine(QPoint(cursor_pos, 0), QPoint(cursor_pos, int(onepc * 100)))
+        # if self._hover is not None:
+        #    painter.setPen(text_color)
+        #    painter.drawLine(QPoint(self._hover, 0), QPoint(self._hover, int(onepc * 100)))
+
+        #    # for index in range(-10, -10, -5):
+        #    text_pos = int(onepc * index)
+        #    painter.drawText(
+        #        QRect(0, text_pos - 5, 18, 10), Qt.AlignmentFlag.AlignCenter, f"{100 - index}"
+        #    )
 
     def mousePressEvent(self, event) -> None:
         x = event.position().x()
         index = int((x - self._left) / self._block)
         path = self.last_turn.node.full_path_to_last()
-        print("i", index)
         if -1 < index < len(path):
             self.diagram.game_ui.controller.set_cursor(path[index])
 
@@ -179,7 +161,7 @@ class DiagramBox(Box):
         self.canvas.results.clear()
         for pathnode in last_turn.node.full_path_to_last():
             if pathnode.annos.winrates:
-                percent, num = list(pathnode.annos.winrates.values())[0][0:2]
+                percent, num = next(iter(pathnode.annos.winrates.values()))[0:2]
                 self.canvas.results.append(
                     {"percent": float(percent), "num": float(num)}
                 )

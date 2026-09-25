@@ -1,11 +1,8 @@
 from unittest.mock import Mock, patch
 
-import pytest
-
 from pygoban import Color, Marker, Pos, results
 from pygoban.gui import GUIMode
 from pygoban.gui.gamewidget import GameWidget, GuiReceiver
-from pygoban.gui.intersections import IntersectionWidget
 
 
 class TestGameWidget:
@@ -284,11 +281,3 @@ class TestGuiReceiver:
         assert game_widget.gui_mode == GUIMode.EDIT
         mock_subctrl.quit.assert_called_once()
         game_widget.boardwidget.update.assert_called_once()
-
-    def test_received_resign(self, game_widget: GameWidget):
-        """Test handling of resign event"""
-        receiver = GuiReceiver(game_widget)
-
-        mock_result = Mock()
-        # Should not raise any errors
-        receiver.received_resign(mock_result)

@@ -1,12 +1,12 @@
 import logging
 import os
 import signal
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable
 
-from PyQt6.QtCore import QSettings  # pylint: disable=no-name-in-module
-from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import QSettings
+from PyQt6.QtWidgets import (
     QLayout,
     QMainWindow,
     QPushButton,
@@ -22,8 +22,9 @@ from pygoban import (
     results,
 )
 from pygoban.rulesets import BaseRuleset as Ruleset
+from pygoban.sgf import reader
 
-# kill with strg c
+# kill with ctrl+c
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -153,7 +154,8 @@ class MainUI(QMainWindow):
         raise NotImplementedError()
 
     def load_sgf(self, path: str):
-        raise NotImplementedError()
+        ruleset, cursor = reader.load(path)
+        self.add_game(mode=GUIMode.EDIT, ruleset=ruleset, cursor=cursor)
 
 
 class ModeChangeListenerMixin:

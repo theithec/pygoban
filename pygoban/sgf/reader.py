@@ -1,17 +1,17 @@
 import logging
 import os
 import re
-from typing import Callable
+from collections.abc import Callable
 
 from pygoban import Color, GameInfo, Marker, Node, TimeSettings, coords, rulesets
 
 from . import INFO_PROPS, NODE_PROPS, ROOT_PROPS
 
 WHITESPACE_PATTERN = re.compile(" |\t|\n")
+OT_PATTERN = re.compile(r"(?P<bn>\d+)x(?P<bt>\d+) byo-yomi")
 
 
 class Parser:
-
     class ParsingError(Exception):
         pass
 
@@ -47,12 +47,24 @@ class Parser:
         except (ValueError, KeyError) as err:
             raise self.ParsingError(err)
 
+        ot_str = self.infos["OT"]
+        res = OT_PATTERN.search(ot_str)
+        byoyomi_time = int(res.group("bt"))
+        byoyomi_stones = 1
+        byoyomi_num = int(res.group("bn"))
+        byoyomi_time = int(res.group("bt"))
         try:
+            ot_str = self.infos["OT"]
+            res = OT_PATTERN.search(ot_str)
+            byoyomi_time = int(res.group("bt"))
+            byoyomi_stones = 1
+            byoyomi_num = int(res.group("bn"))
+        except ValueError as err:
+            print(err)
             byoyomi_time = 30
             byoyomi_stones = 1
             byoyomi_num = 3
         except KeyError as err:
-
             raise self.ParsingError(err)
 
         return TimeSettings(
@@ -74,7 +86,10 @@ class Parser:
             self.infos.update({key: val[0] for key, val in self.node_props.items()})
             info = GameInfo(
                 names={Color.BLACK: self.infos["PB"], Color.WHITE: self.infos["PW"]},
-                ranks={Color.BLACK: self.infos.get("BR"), Color.WHITE: self.infos.get("WR")},
+                ranks={
+                    Color.BLACK: self.infos.get("BR"),
+                    Color.WHITE: self.infos.get("WR"),
+                },
                 result=self.infos.get("RE", ""),
                 ruleset=self.infos["RU"],
             )
@@ -98,7 +113,11 @@ class Parser:
                 if colchr in self.node_props:
                     color = self.colors[colchr]
                     coord = self.node_props[colchr][0]
-                    pos = coords.sgf_to_pos(coord) if coord and coord.lower() != "tt" else None
+                    pos = (
+                        coords.sgf_to_pos(coord)
+                        if coord and coord.lower() != "tt"
+                        else None
+                    )
                     self.node_props.pop(colchr)
                     break
             self.cursor = Node(color=color, pos=pos, parent=self.cursor)
@@ -172,9 +191,8 @@ class Parser:
         for _, char in enumerate(self.sgftxt):
             # if _ == 2000:
             #    break
-            if char in (" ", "\\n", "\\t", os.linesep):
-                if not self.val_started:
-                    continue
+            if char in (" ", "\\n", "\\t", os.linesep) and not self.val_started:
+                continue
             last_char = self.last_char
             self.last_char = char
             last_is_escape = last_char == "\\"
@@ -226,7 +244,8 @@ class Parser:
 
     def _do_l(self, val, color: Color):
         # self.cursor.annos.time_left[color] = val[0]
-        self.cursor.annos.time_left = val[0]
+        assert color == self.cursor.color
+        self.cursor.annos.time_left = float(val[0])
 
     def _do_o(self, val, color: Color):
         # self.cursor.annos.stones_left[color] = val[0]
