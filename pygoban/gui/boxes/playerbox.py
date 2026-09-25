@@ -15,6 +15,31 @@ from pygoban import Color
 from pygoban.timesettings import TimeSettings
 
 
+def player_box_theme(color: Color) -> str:
+	background, foreground, muted, accent, border = (
+		("#171717", "#f5f5f5", "#bcbcbc", "#f1d36c", "#555555")
+		if color == Color.BLACK
+		else ("#f8f8f5", "#202020", "#686860", "#806511", "#c8c5b9")
+	)
+	stylesheet = (
+		f"QGroupBox#playerBox {{ background-color: {background}; "
+		f"border: 2px solid {border}; border-radius: 14px; color: {foreground}; }}"
+		f"QLabel {{ color: {foreground}; }}"
+		"QLabel#playerName { font-size: 20px; font-weight: 700; }"
+		f"QLabel#stone {{ border-radius: 19px; border: 2px solid {border}; }}"
+		f"QLabel#prisonersTitle, QLabel#byoyomi {{ color: {muted}; }}"
+		"QLabel#prisoners { font-size: 27px; font-weight: 700; }"
+		"QLabel#clock { font-family: 'DejaVu Sans Mono'; font-size: 32px; font-weight: 700; }"
+		"QLCDNumber#clock { background: transparent; border: none; }"
+		f"QLabel#points {{ font-size: 20px; font-weight: 700; color: {accent}; }}"
+		f"QLabel#totalLabel {{ font-size: 22px; font-weight: 700; color: {accent}; }}"
+		f"QCheckBox {{ color: {foreground}; spacing: 7px; }}"
+		"QCheckBox::indicator { width: 16px; height: 16px; }"
+		f"QCheckBox::indicator:checked {{ background: {accent}; border: 1px solid {accent}; }}"
+	)
+	return stylesheet
+
+
 class PlayerBox(QGroupBox):
 	"""Display one Go player's color, prisoners, clock, and final score."""
 
@@ -28,26 +53,7 @@ class PlayerBox(QGroupBox):
 		super().__init__(parent=parent)
 		self.setObjectName("playerBox")
 		self.color = color
-		background, foreground, muted, accent, border = (
-			("#171717", "#f5f5f5", "#bcbcbc", "#f1d36c", "#555555")
-			if color == Color.BLACK
-			else ("#f8f8f5", "#202020", "#686860", "#806511", "#c8c5b9")
-		)
-
-		self.setStyleSheet(
-			f"QGroupBox#playerBox {{ background-color: {background}; "
-			f"border: 2px solid {border}; border-radius: 14px; color: {foreground}; }}"
-			f"QLabel {{ color: {foreground}; }}"
-			"QLabel#playerName { font-size: 20px; font-weight: 700; }"
-			f"QLabel#stone {{ border-radius: 19px; border: 2px solid {border}; }}"
-			f"QLabel#prisonersTitle, QLabel#byoyomi {{ color: {muted}; }}"
-			"QLabel#prisoners { font-size: 27px; font-weight: 700; }"
-			"QLabel#clock { font-family: 'DejaVu Sans Mono'; font-size: 32px; font-weight: 700; }"
-			f"QLabel#points {{ font-size: 20px; font-weight: 700; color: {accent}; }}"
-			f"QCheckBox {{ color: {foreground}; spacing: 7px; }}"
-			"QCheckBox::indicator { width: 16px; height: 16px; }"
-			f"QCheckBox::indicator:checked {{ background: {accent}; border: 1px solid {accent}; }}"
-		)
+		self.setStyleSheet(player_box_theme(color))
 
 		layout = QVBoxLayout(self)
 		layout.setContentsMargins(18, 16, 18, 16)

@@ -2,18 +2,19 @@
 # because qt and Box overloading
 from typing import cast
 
-from PyQt6.QtCore import QTimer, pyqtSignal  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal  # pylint: disable=no-name-in-module
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
-    QFormLayout,
     QHBoxLayout,
     QLabel,
     QLCDNumber,
+    QVBoxLayout,
 )
 
 from pygoban import Color, Party, results
 
 from .. import GUIMode
 from . import Box
+from .playerbox import player_box_theme
 
 
 def seconds_to_str(seconds):
@@ -36,43 +37,42 @@ class _PlayerBox(Box):
         super().__init__(parent, visible=False, **kwargs)
 
     def init(self, player: Party):  # type: ignore  # pylint: disable=arguments-differ
-        self.setTitle(player.name)
+        self.setTitle("")
+        self.setObjectName("playerBox")
         self.player = player
+        self.setStyleSheet(player_box_theme(player.color))
 
-        self.othercolor = Color.WHITE if player.color == Color.BLACK else Color.BLACK
-        fg = "#eeeeee" if player.color == Color.BLACK else "#011111"
-        bg = "#eeeeee" if player.color == Color.WHITE else "#011111"
+        self.card_layout = QVBoxLayout(self)
+        self.card_layout.setContentsMargins(18, 16, 18, 16)
+        self.card_layout.setSpacing(10)
 
-        colors = f"""
-           background-color : {bg};
-           color: {fg} ;
-        """
-        clsname = self.__class__.__name__
-        css1 = f"""
-        {clsname} {{
-           padding-top: 2ex; /* leave space at the top for the title */
-           background-color: {bg};
-           {colors}
-        }}
-        {clsname}::title {{
-            subcontrol-origin: margin;
-            subcontrol-position: top left; /* position at the top center */
-           {colors}
-        }}
-        QLabel{{
-           {colors}
-        }}
-        QRow#total_row {{
-           font-weight: bold;
-        }}
-        QLabel#total_label{{
-           {colors}
-           font-weight: bold;
-        }}
+        header = QHBoxLayout()
+        self.stone_label = QLabel()
+        self.stone_label.setObjectName("stone")
+        self.stone_label.setFixedSize(38, 38)
+        self.stone_label.setStyleSheet(
+            "background-color: #080808;"
+            if player.color == Color.BLACK
+            else "background-color: #ffffff;"
+        )
+        self.player_name_label = QLabel(player.name)
+        self.player_name_label.setObjectName("playerName")
+        header.addWidget(self.stone_label)
+        header.addWidget(self.player_name_label)
+        header.addStretch()
+        self.card_layout.addLayout(header)
 
-        """
-        self.setStyleSheet(css1)
-        self.formlayout = QFormLayout()
+    def add_score_row(self, caption: str, value_label: QLabel) -> None:
+        row = QHBoxLayout()
+        caption_label = QLabel(caption)
+        caption_label.setObjectName("prisonersTitle")
+        row.addWidget(caption_label)
+        row.addStretch()
+        row.addWidget(value_label)
+        if hasattr(self, "total_label") and value_label is not self.total_label:
+            self.card_layout.insertLayout(self.card_layout.count() - 1, row)
+        else:
+            self.card_layout.addLayout(row)
 
     def received_turn(self, result: results.TurnDone):
         numdead = result.total_dead[self.player.color.other()]
@@ -88,18 +88,23 @@ class PlayerGameBox(_PlayerBox):
     def init(self, player: Party, **_kwargs) -> None:  # type: ignore
         super().init(player)
         self.clock = QLCDNumber()
+        self.clock.setObjectName("clock")
+        self.clock.setDigitCount(8)
+        self.clock.setMinimumHeight(54)
         self.byoyomi_label = QLabel("")
+        self.byoyomi_label.setObjectName("byoyomi")
+        self.byoyomi_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         if time := self.game_ui.controller.ruleset.timesettings:
             self.set_byoyomi_text(
                 periods_left=time.byoyomi_num, stones_left=time.byoyomi_stones
             )
             self.clock.display(seconds_to_str(0))
-            self.formlayout.addRow(self.clock)
-            self.formlayout.addRow(self.byoyomi_label)
+            self.card_layout.addWidget(self.clock)
+            self.card_layout.addWidget(self.byoyomi_label)
 
         self.prisoners_label = QLabel(str(0))
-        self.formlayout.addRow("Prisoners:", self.prisoners_label)
-        self.setLayout(self.formlayout)
+        self.prisoners_label.setObjectName("prisoners")
+        self.add_score_row("GEFANGENE STEINE", self.prisoners_label)
         self.clock_stop_signal.connect(self.stop_clock)
         self.clock_update_signal.connect(self.clock_update)
         self.events = {results.TurnDone, results.TimeDone}
@@ -177,7 +182,8 @@ class PlayerCountBox(_PlayerBox):
         self.labels: dict[str, QLabel] = {}
 
         self.total_label = QLabel(str(0))
-        self.total_label.setObjectName("total_label")
+        self.total_label.setObjectName("totalLabel")
+        self.add_score_row("GESAMTPUNKTE", self.total_label)
 
 
 class PlayersBox(Box):
@@ -223,13 +229,10 @@ class PlayersBox(Box):
                     box.labels[caption].setText(str(value))
                 else:
                     box.labels[caption] = QLabel(str(value))
-                    box.formlayout.addRow(caption, box.labels[caption])
+                    box.add_score_row(caption, box.labels[caption])
 
             total = result[color].total
             box.total_label.setText(str(total))
-
-            box.formlayout.addRow("", box.total_label)
-            box.setLayout(box.formlayout)
 
     def mode_changed(self, gui_mode: GUIMode):
         if self.last_gui_mode != gui_mode:

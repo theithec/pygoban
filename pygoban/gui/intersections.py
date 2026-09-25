@@ -25,6 +25,45 @@ if TYPE_CHECKING:
     from .boardwidget import BoardWidget, InsParams
 
 
+def winrate_colors(perc: float) -> tuple[QColor, QColor]:
+    """Return a red-to-green winrate background and a contrasting text color."""
+    value = min(max(float(perc), 0.0), 100.0)
+    stops = (QColor("#c93636"), QColor("#e5c84b"), QColor("#2e9d55"))
+    segment = min(int(value // 50), 1)
+    fraction = (value - segment * 50) / 50
+    start, end = stops[segment], stops[segment + 1]
+    background = QColor(
+        round(start.red() + (end.red() - start.red()) * fraction),
+        round(start.green() + (end.green() - start.green()) * fraction),
+        round(start.blue() + (end.blue() - start.blue()) * fraction),
+    )
+
+    def luminance(channel: int) -> float:
+        normalized = channel / 255
+        return (
+            normalized / 12.92
+            if normalized <= 0.04045
+            else ((normalized + 0.055) / 1.055) ** 2.4
+        )
+
+    lightness = (
+        0.2126 * luminance(background.red())
+        + 0.7152 * luminance(background.green())
+        + 0.0722 * luminance(background.blue())
+    )
+    black_contrast = (lightness + 0.05) / 0.05
+    white_contrast = 1.05 / (lightness + 0.05)
+    foreground = QColor("black" if black_contrast >= white_contrast else "white")
+    return background, foreground
+
+
+def variation_number_color(index: int, stone_color: Color) -> QColor:
+    """Return an ordered hue with readable brightness on the variation stone."""
+    hue = ((max(index, 1) - 1) * 30) % 360
+    value = 255 if stone_color == Color.BLACK else 105
+    return QColor.fromHsv(hue, 220, value)
+
+
 @lru_cache()
 def get_pixmap(status: Color) -> QPixmap | None:
     if status == Color.BLACK:
@@ -74,26 +113,19 @@ class IntersectionWidget(QWidget):
         )
 
     def draw_winrate(self, info, painter, params):
-        font = painter.font()
-        font.setPixelSize(int(params.size / (len(info[0]) / 1.4)))
         fwidth = 4
         perc = float(info[0])
-        val = int(perc * 2.55)
-        red = 255 - val
-        green = val // 1
-        blue = 0
-        painter.setBrush(QColor(red, green, blue))
+        background, foreground = winrate_colors(perc)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(background)
         painter.drawEllipse(
             fwidth, fwidth, params.size - (fwidth * 2), params.size - (fwidth * 2)
         )
-        # luminace = float(0.2126 * red + 0.7152 * green + 0.0722 * blue)
-        fg = QColor("black" if perc > 25 else "white")
-        # fg = QColor.black if luminace > 70 else QColor.white
         font = painter.font()
         txt = info[0]
         font.setPixelSize(int(params.size / (len(txt) / 1.4)))
         painter.setFont(font)
-        painter.setPen(fg)
+        painter.setPen(foreground)
         painter.drawText(
             QRect(0, params.font_bottom, params.size, params.size),
             Qt.AlignmentFlag.AlignCenter,
@@ -163,6 +195,134 @@ class IntersectionWidget(QWidget):
         painter.fillRect(0, 0, params.size, params.size, painter.brush())
         painter.setOpacity(1)
 
+    def _draw_hoshi(self, painter: QPainter, params: "InsParams") -> None:
+        if not self.is_hoshi:
+            return
+        brush = painter.brush()
+        painter.setBrush(QColor("black"))
+        painter.drawEllipse(
+            params.hoshi_pos, params.hoshi_pos, params.hoshi_size, params.hoshi_size
+        )
+        painter.setBrush(brush)
+
+    def _draw_stone(self, painter: QPainter, params: "InsParams", last_turn) -> None:
+        stone_pixmap = get_pixmap(self.inter.color)
+        if not stone_pixmap:
+            return
+        painter.drawPixmap(
+            QRect(
+                params.stone_pos,
+                params.stone_pos,
+                params.stone_size,
+                params.stone_size,
+            ),
+            stone_pixmap,
+        )
+        if self.board_pos == last_turn.node.pos:
+            painter.setBrush(QColor("red"))
+            painter.drawEllipse(
+                params.small_pos,
+                params.small_pos,
+                params.small_size,
+                params.small_size,
+            )
+
+    def _draw_edit_annotations(self, painter: QPainter, params: "InsParams", last_turn):
+        if self.game_ui.gui_mode != GUIMode.EDIT:
+            return False
+        annos = last_turn.node.annos
+        marked = False
+        if marker := annos.markers.get(self.board_pos):
+            getattr(self, f"draw_{marker.value}")(painter, params)
+            marked = True
+        if color := annos.owned.get(self.board_pos):
+            self.draw_owned(color, painter, params)
+            marked = True
+        elif txt := annos.chars.get(self.board_pos):
+            self.draw_char(txt, painter, params)
+            marked = True
+        elif txt := annos.numbers.get(self.board_pos):
+            self.draw_char(txt, painter, params)
+            marked = True
+        return marked
+
+    def _draw_child_hint(self, painter: QPainter, params: "InsParams", last_turn) -> None:
+        if self.game_ui.gui_mode not in (GUIMode.EDIT, GUIMode.PLAY):
+            return
+        child = next(
+            (child for child in last_turn.node.children if self.board_pos == child.pos),
+            None,
+        )
+        if child:
+            child_pixmap = get_pixmap(child.color)
+            painter.setOpacity(0.5)
+            painter.drawPixmap(
+                QRect(
+                    params.small_pos,
+                    params.small_pos,
+                    params.small_size,
+                    params.small_size,
+                ),
+                child_pixmap,
+            )
+        painter.setOpacity(1)
+
+    def _draw_hover(self, painter: QPainter, params: "InsParams", last_turn) -> None:
+        if self.inter.color != Color.EMPTY or not self._hover or self.game_ui.annotation_type:
+            return
+        hover_pixmap = get_pixmap(last_turn.next_color)
+        assert hover_pixmap
+        painter.setOpacity(0.8)
+        painter.drawPixmap(
+            QRect(
+                params.stone_pos,
+                params.stone_pos,
+                params.stone_size,
+                params.stone_size,
+            ),
+            hover_pixmap,
+        )
+
+    def _draw_analyzed_variation(
+        self, painter: QPainter, params: "InsParams", last_turn
+    ) -> None:
+        analyzed_variation = last_turn.node.annos.progress.get(self.board_pos)
+        if not analyzed_variation:
+            return
+        index, color = analyzed_variation
+        vari_pixmap = get_pixmap(color)
+        assert vari_pixmap
+        painter.setOpacity(0.8)
+        painter.drawPixmap(
+            QRect(
+                params.stone_pos,
+                params.stone_pos,
+                params.stone_size,
+                params.stone_size,
+            ),
+            vari_pixmap,
+        )
+        painter.setOpacity(1)
+        self.draw_char(str(index), painter, params, variation_number_color(index, color))
+
+    def _draw_count_ownership(self, painter: QPainter, params: "InsParams") -> None:
+        if self.game_ui.gui_mode != GUIMode.COUNT or not self.inter.owner:
+            return
+        self.draw_owned(self.inter.owner, painter, params)
+        owned_pixmap = get_pixmap(self.inter.owner)
+        assert owned_pixmap
+        painter.setOpacity(0.5)
+        painter.drawPixmap(
+            QRect(
+                params.small_pos,
+                params.small_pos,
+                params.small_size,
+                params.small_size,
+            ),
+            owned_pixmap,
+        )
+        painter.setOpacity(1)
+
     def paintEvent(self, _) -> None:
         """Draw"""
         if not (last_turn := self.game_ui.last_turn):
@@ -178,120 +338,24 @@ class IntersectionWidget(QWidget):
         pen.setColor(QColor("black"))
         painter.setPen(pen)
         params: "InsParams" = cast("BoardWidget", self.parent()).ins_params
-        analyzed_variation = last_turn.node.annos.progress.get(self.board_pos)
-
-        if self.is_hoshi:
-            brush = painter.brush()
-            size = params.hoshi_size
-            pos = params.hoshi_pos
-            painter.setBrush(QColor("black"))
-            painter.drawEllipse(pos, pos, size, size)
-            painter.setBrush(brush)
+        self._draw_hoshi(painter, params)
 
         assert self.inter
         stone_pixmap = get_pixmap(self.inter.color)
-        if (not stone_pixmap) and (
-            rate := last_turn.node.annos.winrates.get(self.board_pos)
+        if (
+            (not stone_pixmap)
+            and (rate := last_turn.node.annos.winrates.get(self.board_pos))
+            and not self.game_ui.show_analyzed_variation
         ):
-            if not self.game_ui.show_analyzed_variation:
-                self.draw_winrate(rate, painter, params)
+            self.draw_winrate(rate, painter, params)
 
-        if stone_pixmap:
-            painter.drawPixmap(
-                QRect(
-                    params.stone_pos,
-                    params.stone_pos,
-                    params.stone_size,
-                    params.stone_size,
-                ),
-                stone_pixmap,
-            )
-            if self.board_pos == last_turn.node.pos:
-                painter.setBrush(QColor("red"))
-                painter.drawEllipse(
-                    params.small_pos,
-                    params.small_pos,
-                    params.small_size,
-                    params.small_size,
-                )
-        marked = False
-        if self.game_ui.gui_mode == GUIMode.EDIT:
-            if marker := last_turn.node.annos.markers.get(self.board_pos):
-                getattr(self, f"draw_{marker.value}")(painter, params)
-                marked = True
-            if color := last_turn.node.annos.owned.get(self.board_pos):
-                self.draw_owned(color, painter, params)
-                marked = True
-            elif txt := last_turn.node.annos.chars.get(self.board_pos):
-                self.draw_char(txt, painter, params)
-                marked = True
-            elif txt := last_turn.node.annos.numbers.get(self.board_pos):
-                self.draw_char(txt, painter, params)
-                marked = True
-        if not marked and self.game_ui.gui_mode in (GUIMode.EDIT, GUIMode.PLAY):
-            for child in last_turn.node.children:
-                if self.board_pos == child.pos:
-                    break
-            else:
-                child = None
-            if child:
-                child_pixmap = get_pixmap(child.color)
-                painter.setOpacity(0.5)
-                painter.drawPixmap(
-                    QRect(
-                        params.small_pos,
-                        params.small_pos,
-                        params.small_size,
-                        params.small_size,
-                    ),
-                    child_pixmap,
-                )
-            painter.setOpacity(1)
-
-        if (not stone_pixmap) and self._hover and not self.game_ui.annotation_type:
-            next_color = last_turn.next_color
-            assert (hover_pixmap := get_pixmap(next_color))
-            painter.setOpacity(0.8)
-            painter.drawPixmap(
-                QRect(
-                    params.stone_pos,
-                    params.stone_pos,
-                    params.stone_size,
-                    params.stone_size,
-                ),
-                hover_pixmap,
-            )
-        if analyzed_variation:
-            index, color = analyzed_variation
-            assert (vari_pixmap := get_pixmap(color))
-            painter.setOpacity(0.8)
-            painter.drawPixmap(
-                QRect(
-                    params.stone_pos,
-                    params.stone_pos,
-                    params.stone_size,
-                    params.stone_size,
-                ),
-                vari_pixmap,
-            )
-            painter.setOpacity(1)
-            color = QColor(10 * index, 255, 255 - 20 * index)
-            self.draw_char(str(index), painter, params, color)
-            # self._hover = False
-        if self.game_ui.gui_mode == GUIMode.COUNT and self.inter.owner:
-            self.draw_owned(self.inter.owner, painter, params)
-            assert (owned_pixmap := get_pixmap(self.inter.owner))
-            painter.setOpacity(0.5)
-            painter.drawPixmap(
-                QRect(
-                    params.small_pos,
-                    params.small_pos,
-                    params.small_size,
-                    params.small_size,
-                ),
-                owned_pixmap,
-            )
-            painter.setOpacity(1)
+        self._draw_stone(painter, params, last_turn)
+        marked = self._draw_edit_annotations(painter, params, last_turn)
+        if not marked:
+            self._draw_child_hint(painter, params, last_turn)
+        self._draw_hover(painter, params, last_turn)
+        self._draw_analyzed_variation(painter, params, last_turn)
+        self._draw_count_ownership(painter, params)
         self._hover = False
         painter.end()
 

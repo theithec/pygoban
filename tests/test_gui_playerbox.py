@@ -2,6 +2,7 @@ import pytest
 
 from pygoban import Color
 from pygoban.gui.boxes.playerbox import PlayerBox
+from pygoban.gui import GUIMode
 from pygoban.timesettings import TimeSettings
 
 
@@ -48,3 +49,31 @@ def test_player_box_shows_optional_byoyomi_settings(qtbot):
 
     widget.set_additional_time_text("")
     assert widget.additional_time_label.isHidden()
+
+
+def test_game_and_count_boxes_share_style_but_keep_mode_contents(game_widget):
+    players_box = game_widget.bar.inner.players_box
+    game_box = players_box.boxes_by_mode[GUIMode.PLAY][Color.BLACK]
+    count_box = players_box.boxes_by_mode[GUIMode.COUNT][Color.BLACK]
+
+    assert game_box.styleSheet() == count_box.styleSheet()
+    assert hasattr(game_box, "prisoners_label")
+    assert not hasattr(game_box, "total_label")
+    assert hasattr(count_box, "total_label")
+    assert not hasattr(count_box, "prisoners_label")
+
+    class Score:
+        def summands(self):
+            return [("points", 10), ("komi", 0.5)]
+
+        @property
+        def total(self):
+            return 10.5
+
+    players_box.received_count({Color.BLACK: Score(), Color.WHITE: Score()})
+
+    assert count_box.labels["points"].text() == "10"
+    assert count_box.labels["komi"].text() == "0.5"
+    assert count_box.total_label.text() == "10.5"
+    last_row = count_box.card_layout.itemAt(count_box.card_layout.count() - 1).layout()
+    assert last_row.itemAt(0).widget().text() == "GESAMTPUNKTE"
