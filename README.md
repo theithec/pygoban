@@ -7,6 +7,9 @@ variations, scoring, and optional GTP engines.
 > **Work in progress:** Pygoban is under active development. Features and
 > behavior may change, and the project is not yet feature-complete.
 
+> **License:** Pygoban source code is licensed under [GPL-3.0-only](LICENSE).
+> Bundled media may have separate terms; see [Media Credits](#media-credits).
+
 ## Features
 
 - Create a game or open an existing SGF file.
@@ -59,3 +62,15 @@ Build a wheel and source distribution with:
 ```bash
 uv build
 ```
+
+## Media Credits
+
+Some bundled images and sound files are not original work by the Pygoban
+project.
+
+- `shinkaya.jpg`: [jgoboard](https://github.com/jokkebk/jgoboard/blob/master/large/shinkaya.jpg)
+- `go-board-intersections.jpg`: [PublicDomainPictures](http://www.publicdomainpictures.net/view-image.php?image=162737&picture=go-board-intersections)
+- `black.png` and `white.png`: Go stone images from [Wikimedia](https://upload.wikimedia.org/wikipedia/en/thumb/b/b6/Realistic_Go_Stone.svg/1024px-Realistic_Go_Stone.svg.png) and [Wikimedia](https://upload.wikimedia.org/wikipedia/en/thumb/2/20/Realistic_White_Go_Stone.svg/1024px-Realistic_White_Go_Stone.svg.png)
+- `stone.wav`: [QGo](http://qgo.sourceforge.net/)
+
+Check the original sources for applicable licenses and reuse terms.

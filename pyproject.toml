@@ -8,7 +8,8 @@ authors = [{ name = "Tim Heithecker", email = "tim.heithecker@gmail.com" }]
 dependencies = ["pyqt6", "PyQt6-Graphs>=6.8.0", "PyQt6-Charts>=6.8.0"] #, "PyQt6-Multimedia>=6.8.0"]
 requires-python = ">=3.12"
 readme = "README.md"
-license = { text = "MIT" }
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
 
 [project.optional-dependencies]
 [build-system]
