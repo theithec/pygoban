@@ -12,8 +12,8 @@ license = { text = "MIT" }
 
 [project.optional-dependencies]
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["uv_build>=0.11.26,<0.12.0"]
+build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
@@ -72,12 +72,8 @@ exclude = '''
 profile = "black"
 
 
-[tool.pdm]
-distribution = true
-[[tool.pdm.source]]
-name = "pypi"
-url = "https://pypi.org/simple"
-verify_ssl = true
-[tool.pdm.scripts]
-start = "python -m pygoban.gui"
-cov = "python -m pytest --cov=pygoban tests"
+[tool.uv.build-backend]
+module-name = "pygoban"
+module-root = ""
+source-exclude = ["**/.mypy_cache/**"]
+wheel-exclude = ["**/.mypy_cache/**"]
