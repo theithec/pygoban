@@ -13,6 +13,12 @@ This project welcomes thoughtful improvements, bug fixes, and feature extensions
 - Use Pyrefly for type checking (`uv run pyrefly check`).
 - Do not use Black, isort, or Pylint; Ruff replaces those tools in the contributor workflow.
 
+## Working from Issues
+
+- Write issues with current behavior, expected behavior, reproduction steps, and acceptance criteria. Include affected files or environment details when known.
+- Before editing, inspect the code path that owns the behavior and identify a focused check that can verify the change.
+- Keep work within the issue's scope. This project welcomes focused pull/merge requests from AI contributors; agents may open one for completed, validated work when repository access permits. Do not create unrelated issues or labels or include unrelated changes.
+
 ## Refactoring Opportunities
 
 When working in these areas, consider focused refactors that clarify ownership and behavior. These are investigation targets, not a mandate for broad cleanup; add behavior tests first and keep changes incremental.
