@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from enum import Enum, IntEnum
-from typing import Dict, List, Optional, Set, Tuple
 
 from . import Pos, coords
 
@@ -45,27 +44,29 @@ class Intersection:
     """A 'value' on a go board"""
 
     color: Color
-    owner: Optional[Color] = None
+    owner: Color | None = None
 
     def is_empty(self):
         return self.color.is_empty()
 
 
-class Board(List[List[Intersection]]):
+class Board(list[list[Intersection]]):
     """A Go board as a two dimensional list of intersections"""
 
-    def __init__(self, boardsize: int):
+    def __init__(self, boardsize: int, boardheight: int | None = None):
         super().__init__()
+        boardheight = boardsize if boardheight is None else boardheight
         self.boardrange = range(boardsize)
+        self.boardheight = boardheight
         self.extend(
             [
-                [Intersection(color=Color.EMPTY) for _x in self.boardrange]
-                for _y in self.boardrange
+                [Intersection(color=Color.EMPTY) for _y in range(boardheight)]
+                for _x in self.boardrange
             ]
         )
         self.boardsize = boardsize
 
-    def get_chain(self, pos: Pos, chain: Optional[Set[Pos]] = None):
+    def get_chain(self, pos: Pos, chain: set[Pos] | None = None):
         """Return the chain of stones for a given position"""
         inter = self.intersection(pos)
         assert inter.color
@@ -77,7 +78,7 @@ class Board(List[List[Intersection]]):
                 self.get_chain(adj_pos, chain)
         return chain
 
-    def adjacent_ins(self, index) -> Dict[Pos, Intersection]:
+    def adjacent_ins(self, index) -> dict[Pos, Intersection]:
         """Return the 'neighbours' of a position"""
         adjacents = {}
         x, y = index
@@ -90,7 +91,7 @@ class Board(List[List[Intersection]]):
         if y > 0:
             adjacents[Pos(x, y - 1)] = self[x][y - 1]
 
-        if y < self.boardsize - 1:
+        if y < self.boardheight - 1:
             adjacents[Pos(x, y + 1)] = self[x][y + 1]
 
         return adjacents
@@ -98,12 +99,12 @@ class Board(List[List[Intersection]]):
     def _analyze(
         self,
         pos: Pos,
-        started: Optional[Set[Pos]] = None,
-        group: Set[Pos] | None = None,
-        killed: Set[Pos] | None = None,
-        libs: Set[Pos] | None = None,
+        started: set[Pos] | None = None,
+        group: set[Pos] | None = None,
+        killed: set[Pos] | None = None,
+        libs: set[Pos] | None = None,
         findkilled: bool = True,
-    ) -> Tuple[Set[Pos], Set[Pos], Set[Pos], Set[Pos], bool]:
+    ) -> tuple[set[Pos], set[Pos], set[Pos], set[Pos], bool]:
         """Return the analyze a stone (pos, already played)"""
         started = started or set()
         group = group or set()
@@ -153,7 +154,7 @@ class Board(List[List[Intersection]]):
         return killed, libs
 
     def intersection(
-        self, pos: Pos, status: Optional[Color] = None, owner: Optional[Color] = None
+        self, pos: Pos, status: Color | None = None, owner: Color | None = None
     ) -> Intersection:
         """Return the `Intersection`(holding the value) of a `Pos`"""
         x, y = pos
@@ -165,9 +166,8 @@ class Board(List[List[Intersection]]):
         return self[x][y]
 
     def iter(self):
-        boardrange = range(self.boardsize)
-        for x in boardrange:
-            for y in boardrange:
+        for x in range(self.boardsize):
+            for y in range(self.boardheight):
                 yield Pos(x, y), self[x][y]
 
     def __str__(self):
@@ -177,8 +177,8 @@ class Board(List[List[Intersection]]):
         txt += " ".join([coords.letter_from_int(i) for i in range(cpy.boardsize)])
 
         txt += "\n\n"
-        for xorg in range(cpy.boardsize):
-            x = cpy.boardsize - xorg - 1
+        for xorg in range(cpy.boardheight):
+            x = cpy.boardheight - xorg - 1
             txt += "%2s  " % (x + 1)
             txt += " ".join(
                 [
@@ -191,7 +191,7 @@ class Board(List[List[Intersection]]):
         return txt
 
     def __repr__(self):
-        return "x".join((str(self.boardsize),) * 2)
+        return f"{self.boardsize}x{self.boardheight}"
 
     # def rotated(self, switch_axis=False, switch_x=False, switch_y=False):
     #     if not any((switch_axis, switch_x, switch_y)):

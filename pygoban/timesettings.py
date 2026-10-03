@@ -34,7 +34,7 @@ class Byoyomi:
 
 
 class PlayerTime:
-    def __init__(self, game: "Game", color: "Color"):
+    def __init__(self, game: Game, color: Color):
         self.game = game
         self.color = color
         settings = game.ruleset.timesettings

@@ -4,7 +4,7 @@ from .board import Board, Color, Pos
 from .node import Annotations, Node
 from .results import TurnDone
 
-HANDICAPS: dict[int, tuple] = {0: tuple(), 2: ((3, 15), (15, 3))}
+HANDICAPS: dict[int, tuple] = {0: (), 2: ((3, 15), (15, 3))}
 HANDICAPS[3] = HANDICAPS[2] + ((3, 3),)
 HANDICAPS[4] = HANDICAPS[3] + ((15, 15),)
 HANDICAPS[5] = HANDICAPS[4] + ((9, 9),)
@@ -21,11 +21,14 @@ class NodesController:
     cursor: Node
     total_dead: dict[Color, int]
 
-    def __init__(self, boardsize: int, handicap: int = 0) -> None:
+    def __init__(
+        self, boardsize: int, handicap: int = 0, boardheight: int | None = None
+    ) -> None:
         self.total_dead = {Color.BLACK: 0, Color.WHITE: 0}
         self.handicap = handicap
         self.boardsize = boardsize
-        self.board = Board(self.boardsize)
+        self.boardheight = boardsize if boardheight is None else boardheight
+        self.board = Board(self.boardsize, self.boardheight)
         self.root: Node = Node(color=Color.EMPTY)
         self.default_next_color = Color.BLACK if not self.handicap else Color.WHITE
 
@@ -35,7 +38,7 @@ class NodesController:
             self.root = stone
         self.cursor = self.root
         self.total_dead = {Color.BLACK: 0, Color.WHITE: 0}
-        self.board = Board(self.boardsize)
+        self.board = Board(self.boardsize, self.boardheight)
         self.cursor.apply_permanent_annos(self.board)
         for x, y in HANDICAPS[self.handicap]:
             self.board.intersection(Pos(x, y), Color.BLACK)

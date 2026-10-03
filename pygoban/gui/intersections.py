@@ -337,7 +337,7 @@ class IntersectionWidget(QWidget):
         pen.setWidth(2)
         pen.setColor(QColor("black"))
         painter.setPen(pen)
-        params: "InsParams" = cast("BoardWidget", self.parent()).ins_params
+        params: InsParams = cast("BoardWidget", self.parent()).ins_params
         self._draw_hoshi(painter, params)
 
         assert self.inter

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Set
+from typing import TYPE_CHECKING
 
 from .board import Board, Color, Pos
 
@@ -23,9 +23,9 @@ class TurnDone(Event):
     board: Board
     node: "Node"
     next_color: Color
-    killed: Set[Pos] = field(default_factory=set)
-    libs: Set[Pos] = field(default_factory=set)
-    total_dead: Dict[Color, int] = field(
+    killed: set[Pos] = field(default_factory=set)
+    libs: set[Pos] = field(default_factory=set)
+    total_dead: dict[Color, int] = field(
         default_factory=lambda: {Color.BLACK: 0, Color.WHITE: 0}
     )
     ko: Pos | None = None

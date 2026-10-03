@@ -22,3 +22,14 @@ def test_chain():
         == board.get_chain(Pos(2, 0))
         == set((Pos(1, 0), Pos(2, 0)))
     )
+
+
+def test_rectangular_board():
+    board = Board(9, 13)
+
+    assert board.boardsize == 9
+    assert board.boardheight == 13
+    assert len(board) == 9
+    assert len(board[0]) == 13
+    assert set(board.adjacent_ins(Pos(8, 12))) == {Pos(7, 12), Pos(8, 11)}
+    assert len(list(board.iter())) == 9 * 13

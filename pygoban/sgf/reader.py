@@ -100,13 +100,17 @@ class Parser:
             except self.ParsingError as err:
                 logging.error(err)
                 timesettings = None
+            board_dimensions = str(self.infos["SZ"]).split(":")
+            boardsize = int(board_dimensions[0])
+            boardheight = int(board_dimensions[-1])
             self.ruleset = rulesets.by_key[rulesets.Key.JAPANESE](
-                boardsize=int(self.infos["SZ"]),
+                boardsize=boardsize,
                 komi=float(self.infos["KM"]),
                 handicap=int(self.infos["HA"]),
                 info=info,
                 first=self.infos["PL"],
                 timesettings=timesettings,
+                boardheight=boardheight,
             )
         else:
             for colchr in ("B", "W"):

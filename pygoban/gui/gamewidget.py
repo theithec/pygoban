@@ -95,7 +95,9 @@ class GameWidget(GameUI):
         )
         self._gui_mode = gui_mode
         self.initial_gui_mode = gui_mode
-        self.boardwidget = BoardWidget(self, controller.ruleset.boardsize)
+        self.boardwidget = BoardWidget(
+            self, controller.ruleset.boardsize, controller.ruleset.boardheight
+        )
         self.boardoverlay = BoardOverlay(self)
         self.mode_change_listeners = []
         self.bar = BarWidget(self)

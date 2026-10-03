@@ -1,4 +1,4 @@
-from typing import Type, cast
+from typing import cast
 
 from . import results
 
@@ -6,7 +6,7 @@ from . import results
 class BaseReceiver:
     def __init__(self) -> None:  # type: ignore
         self.last_turn: results.TurnDone | None = None
-        self.events: set[Type[results.Event]] = set()
+        self.events: set[type[results.Event]] = set()
 
     def received_turn(self, result: results.TurnDone) -> None:
         raise NotImplementedError()

@@ -1,6 +1,4 @@
-from typing import Callable, Optional
-
-from pygoban import Color, Party
+from pygoban import Party
 
 
 class GUIPlayer(Party):

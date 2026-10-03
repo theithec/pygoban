@@ -27,7 +27,16 @@ from .intersections import IntersectionWidget
 if TYPE_CHECKING:
     from .gamewidget import GameWidget
 
-COORDS = [chr(i) for i in list(range(97, 117))]
+COORDS = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
+
+
+def _column_label(index: int) -> str:
+    label = ""
+    while index >= 0:
+        index, remainder = divmod(index, len(COORDS))
+        label = COORDS[remainder] + label
+        index -= 1
+    return label
 
 
 def _hoshi_combis(singlecoords):
@@ -42,14 +51,20 @@ HOSHIS = {
 
 
 class BoardWidget(QWidget):
-    def __init__(self, parent: GameUI, boardsize: int):
+    def __init__(
+        self, parent: GameUI, boardsize: int, boardheight: int | None = None
+    ):
         super().__init__(parent=parent)
         self.bgimage = QImage(os.path.join(BASE_DIR, "gui/imgs/shinkaya.jpg"))
         self.boardsize = boardsize
+        self.boardheight = boardsize if boardheight is None else boardheight
         self.boardwidth = 0
-        self.borderspace = 0
+        self.boardpixelheight = 0
+        self.boardleft = 0
+        self.boardtop = 0
         self.intersections: dict[Pos, IntersectionWidget] = {}
-        self.boardrange = range(self.boardsize)
+        self.boardrange_x = range(self.boardsize)
+        self.boardrange_y = range(self.boardheight)
         self.current_in = None  # "Active" intersection
         self.ins_params = InsParams()
         self.create_intersections()
@@ -57,8 +72,8 @@ class BoardWidget(QWidget):
 
     def create_intersections(self):
         assert not self.intersections
-        hoshis = HOSHIS.get(self.boardsize, [])
-        for x, y in [(x, y) for x in self.boardrange for y in self.boardrange]:
+        hoshis = HOSHIS.get(self.boardsize, []) if self.boardheight == self.boardsize else []
+        for x, y in [(x, y) for x in self.boardrange_x for y in self.boardrange_y]:
             cx, cy = x, y  # rotate(x, y, self.boardsize)
             pos = Pos(cx, cy)
             is_hoshi = (cx, cy) in hoshis
@@ -73,19 +88,29 @@ class BoardWidget(QWidget):
         if not ins:
             return
 
-        self.borderspace = int(self.width() / self.boardsize)
-        intersize = int((self.width() - 2 * self.borderspace) / self.boardsize)
+        intersize = max(
+            1,
+            int(
+                min(
+                    self.width() / (self.boardsize + 2),
+                    self.height() / (self.boardheight + 2),
+                )
+            ),
+        )
         if intersize != self.ins_params.size:
             self.calc_intersize(intersize)
         self.boardwidth = self.ins_params.size * self.boardsize
+        self.boardpixelheight = self.ins_params.size * self.boardheight
+        self.boardleft = (self.width() - self.boardwidth) // 2
+        self.boardtop = (self.height() - self.boardpixelheight) // 2
         if self.intersections:
-            for x in self.boardrange:
-                for y in self.boardrange:
+            for x in self.boardrange_x:
+                for y in self.boardrange_y:
                     pos = Pos(x, y)
                     inter = self.intersections[pos]
                     inter.setGeometry(
-                        x * intersize + self.borderspace,
-                        y * intersize + self.borderspace,
+                        x * intersize + self.boardleft,
+                        y * intersize + self.boardtop,
                         intersize,
                         intersize,
                     )
@@ -121,55 +146,56 @@ class BoardWidget(QWidget):
             self.bgimage,
             QRect(0, 0, 905, 898),
         )
-        dist = int(self.boardwidth / self.boardsize)
+        dist = self.ins_params.size
         pen = painter.pen()
         pen.setColor(QColor("black"))
         pen.setWidth(1)  # if pos in (0, self.boardsize - 1) else 2)
         painter.setPen(pen)
         hdist = dist // 2
-        for pos in self.boardrange:
+        for pos in self.boardrange_x:
             pen = painter.pen()
             firstorlast = pos in (0, self.boardsize - 1)
             pen.setWidth(2 if firstorlast else 1)
-            width = self.boardwidth - (1 if not firstorlast else 2)
             painter.setPen(pen)
-            x = self.borderspace + pos * dist
-            letter_index = pos
-            if pos > 7:
-                letter_index += 1
+            x = self.boardleft + pos * dist
             painter.drawText(
-                QRect(x, int(self.borderspace / 4), dist, dist),
+                QRect(x, self.boardtop - dist, dist, dist),
                 Qt.AlignmentFlag.AlignCenter,
-                COORDS[letter_index].upper(),
+                _column_label(pos),
             )
             painter.drawText(
-                QRect(x, int(self.borderspace) + self.boardwidth, dist, dist),
+                QRect(x, self.boardtop + self.boardpixelheight, dist, dist),
                 Qt.AlignmentFlag.AlignCenter,
-                COORDS[letter_index].upper(),
+                _column_label(pos),
             )
-
-            painter.drawText(
-                QRect(int(self.borderspace / 4), x, dist, dist),
-                Qt.AlignmentFlag.AlignCenter,
-                str(self.boardsize - pos),
-            )
-            painter.drawText(
-                QRect(int(self.borderspace) + self.boardwidth, x, dist, dist),
-                Qt.AlignmentFlag.AlignCenter,
-                str(self.boardsize - pos),
-            )
-
             painter.drawLine(
                 x + hdist,
-                self.borderspace + hdist,
+                self.boardtop + hdist,
                 x + hdist,
-                self.borderspace + width - hdist,
+                self.boardtop + self.boardpixelheight - hdist,
+            )
+
+        for pos in self.boardrange_y:
+            pen = painter.pen()
+            firstorlast = pos in (0, self.boardheight - 1)
+            pen.setWidth(2 if firstorlast else 1)
+            painter.setPen(pen)
+            y = self.boardtop + pos * dist
+            painter.drawText(
+                QRect(self.boardleft - dist, y, dist, dist),
+                Qt.AlignmentFlag.AlignCenter,
+                str(self.boardheight - pos),
+            )
+            painter.drawText(
+                QRect(self.boardleft + self.boardwidth, y, dist, dist),
+                Qt.AlignmentFlag.AlignCenter,
+                str(self.boardheight - pos),
             )
             painter.drawLine(
-                self.borderspace + hdist,
-                x + hdist,
-                self.borderspace + width - hdist,
-                x + hdist,
+                self.boardleft + hdist,
+                y + hdist,
+                self.boardleft + self.boardwidth - hdist,
+                y + hdist,
             )
 
         painter.end()

@@ -28,9 +28,14 @@ def sgf_to_poslist(coord: str) -> list[Pos]:
     poslist = []
 
     def getpos(coord):
-        pos = Pos(int_from_letter(coord[0], False), int_from_letter(coord[1], False))
-        assert pos[0] < 19
-        return pos
+        def sgf_int_from_letter(letter: str) -> int:
+            if "a" <= letter <= "z":
+                return ord(letter) - ord("a")
+            if "A" <= letter <= "Z":
+                return ord(letter) - ord("A") + 26
+            raise ValueError(f"Invalid SGF coordinate: {coord}")
+
+        return Pos(sgf_int_from_letter(coord[0]), sgf_int_from_letter(coord[1]))
 
     if ":" in coord:
         startcoord, endcoord = coord.split(":")
@@ -51,4 +56,11 @@ def sgf_to_pos(coord: str) -> Pos:
 
 
 def pos_to_sgf(pos: Pos) -> str:
-    return (letter_from_int(pos[0], False) + letter_from_int(pos[1], False)).lower()
+    def sgf_letter_from_int(value: int) -> str:
+        if 0 <= value < 26:
+            return chr(ord("a") + value)
+        if 26 <= value < 52:
+            return chr(ord("A") + value - 26)
+        raise ValueError(f"SGF coordinate out of range: {value}")
+
+    return sgf_letter_from_int(pos[0]) + sgf_letter_from_int(pos[1])

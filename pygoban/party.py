@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, List, Optional
 
 from .board import Color
 
@@ -10,9 +10,9 @@ class Member:
 
 
 class Party:
-    interact: Optional[Callable]
+    interact: Callable | None
 
-    def __init__(self, color: Color, members: List[Member], name: Optional[str] = None):
+    def __init__(self, color: Color, members: list[Member], name: str | None = None):
         self.color = color
         self.name = name or str(color)
         self.members = members

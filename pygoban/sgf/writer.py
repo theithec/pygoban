@@ -62,8 +62,13 @@ def write(cursor: Node, ruleset: rulesets.BaseRuleset) -> str:
     # print("I", ruleset.info)
     info = ruleset.info
     curr = cursor.root()
+    boardsize = (
+        str(ruleset.boardsize)
+        if ruleset.boardsize == ruleset.boardheight
+        else f"{ruleset.boardsize}:{ruleset.boardheight}"
+    )
     return (
-        f"(;GM[1]FF[4]CA[UTF-8]SZ[{ruleset.boardsize}]KM[{ruleset.komi}]HA[{ruleset.handicap}]"
+        f"(;GM[1]FF[4]CA[UTF-8]SZ[{boardsize}]KM[{ruleset.komi}]HA[{ruleset.handicap}]"
         f"PB[{info.names[Color.BLACK]}]PW[{info.names[Color.WHITE]}]"
         f"{to_sgf(curr)})"
     )

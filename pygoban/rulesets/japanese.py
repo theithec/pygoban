@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Tuple
 
 from pygoban.board import Color, Pos
 
@@ -25,7 +24,7 @@ class ColorResult(BaseColorResult):
 
 
 class JapaneseCounting(BaseCounting):
-    def result(self) -> Tuple[PosSetByColor, FloatByColor]:
+    def result(self) -> tuple[PosSetByColor, FloatByColor]:
         self.checked = set()
         empties: PosSetByColor = {Color.BLACK: set(), Color.WHITE: set()}
         deadonboard: FloatByColor = {Color.BLACK: 0, Color.WHITE: 0}

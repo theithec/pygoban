@@ -1,7 +1,7 @@
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from enum import StrEnum
 from functools import reduce
-from typing import Generator, Optional, Type, Union
 
 from ..board import Board, Color, Pos
 from ..info import GameInfo
@@ -41,7 +41,7 @@ class ThreePasses(Exception):
 
 @dataclass
 class Group:
-    owner: Optional[Union[Color, bool]] = None
+    owner: Color | bool | None = None
     coords: set[Pos] = field(default_factory=set)
 
 
@@ -84,7 +84,7 @@ class BaseCounting:
         self.board = board
         self.checked: set[Pos] = set()
 
-    def check(self, pos: Pos, group: Optional[Group] = None):
+    def check(self, pos: Pos, group: Group | None = None):
         group = group or Group()
         group.coords.add(pos)
         self.checked.add(pos)
@@ -113,7 +113,7 @@ class BaseCounting:
 
 class BaseRuleset:
     name = "default"
-    _CounterCls: Type[BaseCounting]
+    _CounterCls: type[BaseCounting]
 
     def __init__(
         self,
@@ -123,14 +123,16 @@ class BaseRuleset:
         info: GameInfo,
         first: Color = Color.BLACK,
         timesettings: TimeSettings | None = None,
+        boardheight: int | None = None,
     ):
         self.boardsize = boardsize
+        self.boardheight = boardsize if boardheight is None else boardheight
         self.komi = komi
         self.handicap = handicap
-        self.ko: Optional[Pos] = None
+        self.ko: Pos | None = None
         self.passed = 0
         self.first: Color = first
-        self.nodes: Optional[NodesController] = None
+        self.nodes: NodesController | None = None
         self.info: GameInfo = info
         self.timesettings = timesettings
 
@@ -176,4 +178,4 @@ class BaseRuleset:
         raise NotImplementedError
 
 
-by_key: dict[Key, Type[BaseRuleset]] = {}
+by_key: dict[Key, type[BaseRuleset]] = {}

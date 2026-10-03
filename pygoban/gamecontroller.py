@@ -1,6 +1,6 @@
 import logging
 from threading import Timer
-from typing import TYPE_CHECKING, Type, TypeVar, cast
+from typing import TYPE_CHECKING, TypeVar, cast
 
 from . import results
 from .board import Color, Marker
@@ -141,7 +141,7 @@ class MainGameController(BaseGameController):
         self.auto = False
         self.stop_auto = False
 
-    def add_controller(self, cls: Type[G], name, **kwargs) -> tuple[G, bool]:
+    def add_controller(self, cls: type[G], name, **kwargs) -> tuple[G, bool]:
         created = False
         ctrl = None
         if name in self._subs:

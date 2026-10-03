@@ -18,7 +18,11 @@ class Game:
     ):
         self.ruleset = ruleset
         if not nodes:
-            nodes = NodesController(self.ruleset.boardsize, self.ruleset.handicap)
+            nodes = NodesController(
+                self.ruleset.boardsize,
+                self.ruleset.handicap,
+                self.ruleset.boardheight,
+            )
 
         assert nodes
         self.receivers: list[BaseReceiver] = []

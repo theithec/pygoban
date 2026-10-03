@@ -24,8 +24,11 @@ class InfoWidget(QWidget):
 
         fields = ("boardsize", "komi", "handicap")
         for field in fields:
+            value = getattr(ruleset, field)
+            if field == "boardsize" and ruleset.boardsize != ruleset.boardheight:
+                value = f"{ruleset.boardsize}x{ruleset.boardheight}"
             layout.addRow(
-                field.capitalize() + ":", QLabel(str(getattr(ruleset, field)))
+                field.capitalize() + ":", QLabel(str(value))
             )
 
         layout.addRow("Ruleset", QLabel(ruleset.info.ruleset))
