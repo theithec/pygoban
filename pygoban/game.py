@@ -165,10 +165,11 @@ class Game:
         action_result = results.AnnotationDone()
         self.send_game_event(action_result)
 
-    def annotate_winrates(self, infos: dict) -> None:
+    def annotate_winrates(self, infos: dict, best_move: Pos | None = None) -> None:
         self.nodes.cursor.annos.winrates.clear()
         for pos, rate in infos.items():
             self.nodes.cursor.annos.winrates[pos] = rate
+        self.nodes.cursor.annos.best_move = best_move
         self.send_game_event(results.AnnotationDone())
 
     def add_receiver(self, receiver: BaseReceiver):

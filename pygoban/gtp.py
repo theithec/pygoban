@@ -50,11 +50,15 @@ def get_process(cmd_line: str):
 
 def do_cmd(cmd: str, process):
     try:
+        if process.poll() is not None:
+            return False
         assert process.stdin
         process.stdin.write(f"{cmd}\r\n".encode())
         process.stdin.flush()
     except (BrokenPipeError, ValueError):
         logging.warning("Connection broke", exc_info=True)
+        return False
+    return True
 
 
 class GTPController(BaseReceiver, SubGameController):
@@ -62,21 +66,44 @@ class GTPController(BaseReceiver, SubGameController):
         BaseReceiver.__init__(self)
         SubGameController.__init__(self, game=game)
         self.name = name
+        self.cmd_line = cmd_line
         self.receiver = self
         self.events = {results.TurnDone, results.GameResultDone, results.Counted}
-        self.process = get_process(cmd_line)
-        self.is_running = True
+        self.process: subprocess.Popen | None = None
+        self.reader_thread: threading.Thread | None = None
+        self._process_lock = threading.RLock()
+        self.is_running = False
         self.roles: set[Role] = set()
-        logging.debug("START GTP LOOP %s", self)
         self.got_turn = False
         self.last_own_move = None
-        thread = threading.Thread(target=self.loop, args=tuple())
-        thread.start()
 
-    def loop(self):
+    def start_process(self) -> None:
+        with self._process_lock:
+            if (
+                self.process is not None
+                and self.is_running
+                and self.process.poll() is None
+            ):
+                return
+
+            process = get_process(self.cmd_line)
+            self.process = process
+            self.is_running = True
+            self.reader_thread = threading.Thread(
+                target=self.loop,
+                args=(process,),
+                daemon=True,
+            )
+            logging.debug("START GTP LOOP %s", self)
+            self.reader_thread.start()
+
+    def loop(self, process: subprocess.Popen):
         def parse_output() -> str:
-            assert self.process.stdout
-            nextline = self.process.stdout.readline().decode().strip()
+            assert process.stdout
+            rawline = process.stdout.readline()
+            if not rawline:
+                return ""
+            nextline = rawline.decode().strip()
             res = nextline + os.linesep
             if nextline.startswith("info "):
                 self.annotate_res(res)
@@ -99,24 +126,71 @@ class GTPController(BaseReceiver, SubGameController):
                 logging.debug("GTP OUT: %s", part)
             return res
 
-        while self.is_running and self.process.pid:
-            try:
-                res = parse_output()
-            except BrokenPipeError as err:
-                logging.debug(err)
-                break  # raise
+        try:
+            while (
+                self.is_running and self.process is process and process.poll() is None
+            ):
+                try:
+                    res = parse_output()
+                except BrokenPipeError as err:
+                    logging.debug(err)
+                    break
 
-            if res.startswith("?"):
-                raise GTPException(f"{res}")
-            if not self.is_running:
-                break
+                if not res:
+                    break
+                if res.startswith("?"):
+                    raise GTPException(f"{res}")
+        finally:
+            if self.process is process:
+                self.is_running = False
 
     def do_cmd(self, cmd: str):
-        if not self.is_running:
-            return
+        with self._process_lock:
+            process = self.process
+            if not self.is_running or process is None:
+                return False
+            logging.debug("GTP DO CMD: %s", cmd)
+            return do_cmd(cmd, process)
 
-        logging.debug("GTP DO CMD: %s", cmd)
-        do_cmd(cmd, self.process)
+    def _finish_process(
+        self, process: subprocess.Popen, reader_thread: threading.Thread | None
+    ) -> None:
+        try:
+            process.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            logging.debug("TIMEOUT ON KILL %s", self)
+            process.kill()
+            process.wait()
+
+        if reader_thread and reader_thread is not threading.current_thread():
+            reader_thread.join(timeout=15)
+        for stream in (process.stdin, process.stdout):
+            if stream:
+                stream.close()
+
+    def stop_process(self) -> None:
+        with self._process_lock:
+            process = self.process
+            if process is None:
+                self.is_running = False
+                return
+
+            reader_thread = self.reader_thread
+            self.process = None
+            self.reader_thread = None
+            self.is_running = False
+            if self.roles.intersection((Role.ANALYZE, Role.ANALYZE_FULL)):
+                do_cmd("stop", process)
+            do_cmd("quit", process)
+
+        reaper = threading.Thread(
+            target=self._finish_process,
+            args=(process, reader_thread),
+            daemon=True,
+        )
+        reaper.start()
+        if reader_thread is not threading.current_thread():
+            reaper.join()
 
     def annotate_res(self, res):
         parts = res.split("info ")
@@ -139,26 +213,29 @@ class GTPController(BaseReceiver, SubGameController):
                     else gtp_coord_to_pos(coord, self.ruleset.boardsize)
                     for coord in groups[13].strip().split()
                 ]
-                infos[pos] = (str(winrate)[0:4], str(score), moves)
-        self.annotate_winrates(infos)
+                order = int(groups[12])
+                infos[pos] = (str(winrate)[0:4], str(score), moves, order)
+            best_move = min(infos, key=lambda pos: infos[pos][3], default=None)
+            self.annotate_winrates(infos, best_move=best_move)
         if Role.ANALYZE_FULL in self.roles and self.last_stone:
             if self.last_stone.children:
                 node = self.last_stone.children[-1]
                 self.play(node.color, node.pos)
             else:
                 self.toggle_action(Role.ANALYZE_FULL)
-                self.do_cmd("stop")
 
     def toggle_action(self, role: Role) -> bool:
         has_role = role in self.roles
         if has_role:
             self.roles.remove(role)
-            if role in (Role.ANALYZE, Role.ANALYZE_FULL) or not self.roles:
-                self.do_cmd("quit")
-                # self.do_cmd("stop")
+            if role in (Role.ANALYZE, Role.ANALYZE_FULL):
+                self.do_cmd("stop")
+            if not self.roles:
+                self.stop_process()
 
             self.gtp_stopped(self.name, {role})
         else:
+            self.start_process()
             self.roles.add(role)
             self.gtp_started(self.name, self.roles)
         return not has_role
@@ -210,16 +287,8 @@ class GTPController(BaseReceiver, SubGameController):
         self.got_turn = True
 
     def quit(self):
-        self.do_cmd("quit")
-        self.is_running = False
-        try:
-            logging.debug("TRY KILL %s ", self)
-            outs, errs = self.process.communicate(timeout=15)
-        except subprocess.TimeoutExpired:
-            logging.debug("TIMEOUT ON KILL %s", self)
-            self.process.kill()
-            outs, errs = self.process.communicate()
-        logging.debug("KILLED %s - out: '%s', errs: '%s'", self, outs, errs)
+        self.stop_process()
+        self.roles.clear()
 
     def received_annotated(self, result: results.AnnotationDone) -> None: ...
 
@@ -227,10 +296,12 @@ class GTPController(BaseReceiver, SubGameController):
         for role in (Role.ANALYZE, Role.ANALYZE_FULL):
             if role in self.roles:
                 self.toggle_action(role)
-        self.do_cmd("quit")
 
     def received_period_ended(self, result: results.TimeDone) -> None: ...
 
     def received_result_done(self, result: results.GameResultDone) -> None:
-        self.do_cmd("stop")
-        self.gtp_stopped(self.name, self.roles)
+        roles = self.roles.copy()
+        self.stop_process()
+        self.roles.clear()
+        if roles:
+            self.gtp_stopped(self.name, roles)

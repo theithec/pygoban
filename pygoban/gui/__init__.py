@@ -92,6 +92,10 @@ def get_qsettings() -> QSettings:
         },
     )
     ensure("players", {"black_name": "Black", "white_name": "White"})
+    ensure(
+        "analysis",
+        {"variation_interval_ms": defaults.analysis_variation_interval_ms},
+    )
     ensure("gtp", {"engines": {}})
     return qsettings
 
@@ -109,6 +113,9 @@ def merged_config() -> Settings:
     else:
         for key in ("main_time", "byoyomi_time", "byoyomi_num", "byoyomi_stones"):
             argsdict[key] = qsettings.value(f"clock/{key}")
+    argsdict["analysis_variation_interval_ms"] = int(
+        qsettings.value("analysis/variation_interval_ms")
+    )
     for vals in (
         ("black_name", "players/black_name"),
         ("white_name", "players/white_name"),

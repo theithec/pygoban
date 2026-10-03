@@ -7,6 +7,7 @@ from PyQt6.QtCore import (  # type: ignore  # pylint: disable=no-name-in-module
     QEvent,
     QRect,
     Qt,
+    QTimer,
 )
 from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
     QColor,
@@ -23,7 +24,6 @@ from . import BASE_DIR, GameUI, GUIMode
 
 if TYPE_CHECKING:
     from .boardwidget import BoardWidget, InsParams
-
 
 def winrate_colors(perc: float) -> tuple[QColor, QColor]:
     """Return a red-to-green winrate background and a contrasting text color."""
@@ -89,6 +89,12 @@ class IntersectionWidget(QWidget):
         self._hover = False
         self.installEventFilter(self)
         self.inter: Intersection | None = None
+        self._analysis_moves: list[Pos | None] = []
+        self._analysis_index = 0
+        self._analysis_color = Color.BLACK
+        self._analysis_timer = QTimer(self)
+        self._analysis_timer.setSingleShot(True)
+        self._analysis_timer.timeout.connect(self._show_next_analysis_move)
 
     def mousePressEvent(self, event) -> None:
         self.game_ui.inter_clicked(
@@ -99,6 +105,33 @@ class IntersectionWidget(QWidget):
 
     def draw_number(self, painter, params) -> None:
         self.draw_char(str(len(self.node.annos.numbers)), painter, params)
+
+    def _show_next_analysis_move(self) -> None:
+        if not self._analysis_moves or not self.game_ui.last_turn:
+            return
+
+        pos = self._analysis_moves[self._analysis_index]
+        if pos is not None:
+            self.game_ui.last_turn.node.annos.progress[pos] = (
+                self._analysis_index + 1,
+                self._analysis_color,
+            )
+        self._analysis_index += 1
+        self._analysis_color = self._analysis_color.other()
+        self.parent().repaint()
+
+        if self._analysis_index < len(self._analysis_moves):
+            interval = self.game_ui.main_ui.settings.analysis_variation_interval_ms
+            self._analysis_timer.start(max(1, interval))
+
+    def _clear_analysis_preview(self, last_turn) -> None:
+        self._analysis_timer.stop()
+        self._analysis_moves.clear()
+        self._analysis_index = 0
+        self.game_ui.show_analyzed_variation = False
+        if last_turn.node.annos.progress:
+            last_turn.node.annos.progress.clear()
+            self.parent().repaint()
 
     def draw_char(self, txt, painter, params, color=None):
         font = painter.font()
@@ -112,10 +145,14 @@ class IntersectionWidget(QWidget):
             txt,
         )
 
-    def draw_winrate(self, info, painter, params):
+    @staticmethod
+    def draw_winrate(info, painter, params, is_best_move: bool = False):
         fwidth = 4
         perc = float(info[0])
         background, foreground = winrate_colors(perc)
+        if is_best_move:
+            background = QColor("#3478f6")
+            foreground = QColor("white")
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(background)
         painter.drawEllipse(
@@ -347,7 +384,12 @@ class IntersectionWidget(QWidget):
             and (rate := last_turn.node.annos.winrates.get(self.board_pos))
             and not self.game_ui.show_analyzed_variation
         ):
-            self.draw_winrate(rate, painter, params)
+            self.draw_winrate(
+                rate,
+                painter,
+                params,
+                is_best_move=self.board_pos == last_turn.node.annos.best_move,
+            )
 
         self._draw_stone(painter, params, last_turn)
         marked = self._draw_edit_annotations(painter, params, last_turn)
@@ -374,13 +416,11 @@ class IntersectionWidget(QWidget):
                 # and not self.controller.bar.inner.boxes["EditBox"].decogroup.checkedButton()
                 self._hover = True
                 if analyzed_variation_stones:
-                    color = self.game_ui.last_turn.next_color
-                    for index, pos in enumerate(analyzed_variation_stones):
-                        last_turn.node.annos.progress[pos] = index + 1, color
-                        color = Color.WHITE if color == Color.BLACK else Color.BLACK
+                    self._clear_analysis_preview(last_turn)
+                    self._analysis_moves = analyzed_variation_stones
+                    self._analysis_color = last_turn.next_color
                     self.game_ui.show_analyzed_variation = True
-                    # TODO CHECK
-                    self.parent().repaint()
+                    self._show_next_analysis_move()
                 else:
                     self.repaint()
 
@@ -392,11 +432,8 @@ class IntersectionWidget(QWidget):
             ):
                 # if not self.controller.is_annotating:
                 self._hover = False
-                self.game_ui.show_analyzed_variation = False
+                self._clear_analysis_preview(last_turn)
                 self.repaint()
-                if last_turn.node.annos.progress:
-                    last_turn.node.annos.progress.clear()
-                    self.parent().repaint()
                 return True
 
         return False

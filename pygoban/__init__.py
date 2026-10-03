@@ -39,6 +39,7 @@ class Settings:
     byoyomi_time: int = 30
     byoyomi_num: int = 3
     byoyomi_stones: int = 1
+    analysis_variation_interval_ms: int = 180
 
 
 def get_argparser() -> argparse.ArgumentParser:

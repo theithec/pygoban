@@ -1,3 +1,8 @@
+from PyQt6.QtWidgets import QSpinBox
+
+from pygoban.gui.settingsdialog import SettingsDialog
+
+
 class TestMainWindow:
     def test_main_window_initialization(self, main_window):
         """Test MainWindow initializes correctly"""
@@ -37,3 +42,26 @@ class TestMainWindow:
         # This should not raise an exception
         main_window.show_settings_dialog()
         qt_app.processEvents()  # Allow dialog to appear
+
+    def test_analysis_variation_interval_setting(self, main_window):
+        dialog = SettingsDialog(main_window)
+        widget = dialog.elems["analysis_variation_interval_ms"]
+        assert isinstance(widget, QSpinBox)
+        assert widget.value() == 180
+
+        class MemorySettings:
+            def __init__(self):
+                self.values = {}
+
+            def setValue(self, name, value):
+                self.values[name] = value
+
+            def sync(self):
+                pass
+
+        dialog.qsettings = MemorySettings()
+        widget.setValue(420)
+        dialog.save()
+
+        assert main_window.settings.analysis_variation_interval_ms == 420
+        assert dialog.qsettings.values["analysis/variation_interval_ms"] == 420

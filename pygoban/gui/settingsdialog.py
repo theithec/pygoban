@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QLabel,
     QLineEdit,
     QPushButton,
+    QSpinBox,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -31,7 +32,7 @@ class SettingsDialog(QDialog, CenteredMixin):
     def __init__(self, parent) -> None:
         super().__init__(parent)
         self.settings: Settings = parent.settings
-        self.elems: dict[str, QComboBox | QLineEdit | QCheckBox] = {}
+        self.elems: dict[str, QComboBox | QLineEdit | QCheckBox | QSpinBox] = {}
         self.qsettings = QSettings("theithec", "pygoban")
         self.widgets = defaultdict((lambda: QLineEdit), boardsize=QComboBox)  # type: ignore
         self.gtp_fields_list: list[tuple[QLineEdit, QLineEdit, QCheckBox]] = []
@@ -106,6 +107,12 @@ class SettingsDialog(QDialog, CenteredMixin):
         layout = QFormLayout()
 
         self.add_row(layout, "min_wait", None)
+        interval_widget = QSpinBox()
+        interval_widget.setRange(20, 5000)
+        interval_widget.setSuffix(" ms")
+        interval_widget.setValue(self.settings.analysis_variation_interval_ms)
+        layout.addRow("Analysis variation interval", interval_widget)
+        self.elems["analysis_variation_interval_ms"] = interval_widget
         self.add_row(layout, "auto_save", QCheckBox())
 
         autowidget = self.elems["auto_save"]
@@ -166,6 +173,7 @@ class SettingsDialog(QDialog, CenteredMixin):
             "byoyomi_stones": "clock/byoyomi_stones",
             "min_wait": "player/min_wait",
             "autosave": "player/autosave",
+            "analysis_variation_interval_ms": "analysis/variation_interval_ms",
         }
         for name, widget in handled.items():
             match widget.__class__.__name__:
@@ -173,6 +181,8 @@ class SettingsDialog(QDialog, CenteredMixin):
                     val = widget.currentText()
                 case "QCheckBox":
                     val = widget.isChecked()
+                case "QSpinBox":
+                    val = widget.value()
                 case "QLineEdit":
                     val = widget.text()
                 case _:

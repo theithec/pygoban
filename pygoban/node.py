@@ -11,7 +11,10 @@ class Annotations:  # pylint: disable=too-many-instance-attributes
     markers: dict[Pos, Marker] = field(default_factory=dict)
     stones: dict[Pos, Color] = field(default_factory=dict)
     owned: dict[Pos, Color] = field(default_factory=dict)
-    winrates: dict[Pos, str] = field(default_factory=dict)
+    winrates: dict[Pos, tuple[str, str, list[Pos | None], int]] = field(
+        default_factory=dict
+    )
+    best_move: Pos | None = None
     comment: str = ""
     time_left: float = 0.0
     stones_left: int = 0

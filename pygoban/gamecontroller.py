@@ -95,8 +95,8 @@ class BaseGameController:  # pyl2int: disable=too-many-public-functions
     def rm_anno(self):
         self.__game.rm_anno()
 
-    def annotate_winrates(self, infos: dict) -> None:
-        self.__game.annotate_winrates(infos=infos)
+    def annotate_winrates(self, infos: dict, best_move: Pos | None = None) -> None:
+        self.__game.annotate_winrates(infos=infos, best_move=best_move)
 
     def set_end_result(self, result_type, color: Color | None = None):
         self.__game.set_end_result(result_type, color)
