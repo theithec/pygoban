@@ -18,7 +18,7 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
-from pygoban import BaseReceiver, Pos, results
+from pygoban import BaseReceiver, Node, Pos, coords, results
 
 from . import BASE_DIR, GameUI, InsParams
 from .intersections import IntersectionWidget
@@ -63,6 +63,7 @@ class BoardWidget(QWidget):
         self.boardleft = 0
         self.boardtop = 0
         self.intersections: dict[Pos, IntersectionWidget] = {}
+        self.visible_points: set[Pos] | None = None
         self.boardrange_x = range(self.boardsize)
         self.boardrange_y = range(self.boardheight)
         self.current_in = None  # "Active" intersection
@@ -114,7 +115,28 @@ class BoardWidget(QWidget):
                         intersize,
                         intersize,
                     )
-                    inter.show()
+                    inter.setVisible(
+                        self.visible_points is None or pos in self.visible_points
+                    )
+
+    def set_visible_points(self, node: Node) -> None:
+        visible_points = None
+        for path_node in (node.root(), *node.path()):
+            if "VW" not in path_node.annos.sgf_properties:
+                continue
+            values = path_node.annos.sgf_properties["VW"]
+            if not values or values == [""]:
+                visible_points = None
+            else:
+                visible_points = {
+                    pos
+                    for value in values
+                    for pos in coords.sgf_to_poslist(value)
+                }
+
+        self.visible_points = visible_points
+        for pos, intersection in self.intersections.items():
+            intersection.setVisible(visible_points is None or pos in visible_points)
 
     def calc_intersize(self, size):
         """Calc for one - use for all"""

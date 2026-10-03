@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 from pygoban import Color, GameInfo, Marker, Node, TimeSettings, coords, rulesets
 
-from . import INFO_PROPS, NODE_PROPS, ROOT_PROPS
+from . import INFO_PROPS, NODE_PROPS, PRESERVED_PROPS, ROOT_PROPS
 
 WHITESPACE_PATTERN = re.compile(" |\t|\n")
 OT_PATTERN = re.compile(r"(?P<bn>\d+)x(?P<bt>\d+) byo-yomi")
@@ -21,7 +21,7 @@ class Parser:
         self.defaults.setdefault("HA", 0)
         self.defaults.setdefault("KM", 0.5)
         self.defaults.setdefault("SZ", 19)
-        self.defaults.setdefault("PL", "Black")
+        self.defaults.setdefault("PL", "B")
         self.defaults.setdefault("PB", "Black")
         self.defaults.setdefault("PW", "White")
         self.defaults.setdefault("RU", "Japanese")
@@ -108,7 +108,7 @@ class Parser:
                 komi=float(self.infos["KM"]),
                 handicap=int(self.infos["HA"]),
                 info=info,
-                first=self.infos["PL"],
+                first=self._parse_color(self.infos["PL"]),
                 timesettings=timesettings,
                 boardheight=boardheight,
             )
@@ -131,10 +131,18 @@ class Parser:
                     self.cursor.parent is None or len(self.cursor.parent.children) > 1
                 ), f"{key}={val} / {self.cursor}"
                 self.infos[key] = val[0]
+                self.cursor.annos.sgf_properties[key] = val
             elif key in INFO_PROPS:
                 self.infos[key] = val[0]
+                self.cursor.annos.sgf_properties[key] = val
             elif key in NODE_PROPS:
                 self.cursor.annos.infos[key] = val[0]
+                self.cursor.annos.sgf_properties[key] = val
+            elif key == "PL":
+                self.cursor.annos.sgf_properties[key] = val
+                self.do_pl(val)
+            elif key in PRESERVED_PROPS:
+                self.cursor.annos.sgf_properties[key] = val
 
             else:
                 self[f"do_{key.lower()}"](val)
@@ -176,8 +184,10 @@ class Parser:
             "BR",
             "DO",
             "EV",
+            "FG",
             "GN",
             "IT",
+            "KO",
             "OT",
             "PC",
             "RE",
@@ -229,6 +239,9 @@ class Parser:
     def notsupported(self, name):
         def named(*args, **kwargs):
             logging.warning("NOT SUPPORTED: %s %s %s", name, args, kwargs)
+            if args:
+                prop = name.removeprefix("do_").upper()
+                self.cursor.annos.sgf_properties[prop] = args[0]
 
         return named
 
@@ -296,6 +309,18 @@ class Parser:
 
     def do_ha(self, val):
         self.infos["HA"] = val[0]
+
+    def _parse_color(self, value: str) -> Color:
+        match value.upper():
+            case "B" | "BLACK":
+                return Color.BLACK
+            case "W" | "WHITE":
+                return Color.WHITE
+            case _:
+                raise self.ParsingError(f"Invalid player color: {value}")
+
+    def do_pl(self, val):
+        self.cursor.annos.next_player = self._parse_color(val[0])
 
     def do_lb(self, vals):
         for val in vals:

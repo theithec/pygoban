@@ -47,6 +47,16 @@ def to_sgf(node: Node) -> str:
             txt += "A" + color.short()
             txt += "".join([f"[{p2s(pos)}]" for pos in pos_list])
 
+    node_properties = {key: [value] for key, value in node.annos.infos.items()}
+    node_properties.update(node.annos.sgf_properties)
+    if node.annos.next_player:
+        node_properties["PL"] = [node.annos.next_player.short()]
+    if node.is_root:
+        for key in ("GM", "FF", "CA", "SZ", "KM", "HA", "PB", "PW"):
+            node_properties.pop(key, None)
+    for key, values in node_properties.items():
+        txt += key + "".join(f"[{value}]" for value in values)
+
     for child in node.children:
         if len(node.children) > 1:
             txt += "("

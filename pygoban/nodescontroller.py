@@ -48,12 +48,14 @@ class NodesController:
                 color=stone_.color, pos=stone_.pos, annos=stone_.annos, use_copy=False
             )
             self.apply_result(result)
+            if stone_.annos.next_player:
+                result.next_color = stone_.annos.next_player
 
         if not result:  # path is empty -> only root
             result = TurnDone(
                 board=self.board,
                 node=self.root,
-                next_color=self.default_next_color,
+                next_color=self.root.annos.next_player or self.default_next_color,
             )
         result.reset = True
         return result

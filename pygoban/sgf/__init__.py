@@ -12,7 +12,6 @@ INFO_PROPS = (
     "OT",
     "PB",
     "PC",
-    "PL",
     "PW",
     "RE",
     "RO",
@@ -37,7 +36,11 @@ NODE_PROPS = (
     "DO",
     "IT",
     "MN",
+    "HO",
+    "V",
 )
+
+PRESERVED_PROPS = ("KO", "FG", "PM", "VW")
 
 
 class ParsingFailed(Exception):

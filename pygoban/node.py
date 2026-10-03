@@ -18,6 +18,8 @@ class Annotations:  # pylint: disable=too-many-instance-attributes
     periods_left: int = 0
     progress: dict[Pos, Any] = field(default_factory=dict)
     infos: dict[str, str] = field(default_factory=dict)
+    sgf_properties: dict[str, list[str]] = field(default_factory=dict)
+    next_player: Color | None = None
     arrows: list[tuple[Pos, Pos]] = field(default_factory=list)
     lines: list[tuple[Pos, Pos]] = field(default_factory=list)
 

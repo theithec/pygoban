@@ -14,6 +14,7 @@ from .. import (
     Color,
     MainGameController,
     Marker,
+    Node,
     Parties,
     Pos,
     results,
@@ -38,6 +39,8 @@ class GuiReceiver(BaseReceiver):
 
     def received_turn(self, result: results.TurnDone) -> None:
         self.game_ui.last_turn = result
+        if isinstance(result.node, Node):
+            self.game_ui.boardwidget.set_visible_points(result.node)
         self.game_ui.boardwidget.update()
         if result.node.color != Color.EMPTY and result.node.pos:
             # Avoid warning:

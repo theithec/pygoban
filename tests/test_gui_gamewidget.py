@@ -1,11 +1,26 @@
 from unittest.mock import Mock, patch
 
-from pygoban import Color, Marker, Pos, results
+from pygoban import Color, Marker, Node, Pos, results
 from pygoban.gui import GUIMode
 from pygoban.gui.gamewidget import GameWidget, GuiReceiver
 
 
 class TestGameWidget:
+    def test_vw_property_visibility_inherits_and_clears(self, game_widget: GameWidget):
+        root = game_widget.last_turn.node
+        root.annos.sgf_properties["VW"] = ["aa:bb"]
+        move = Node(color=Color.BLACK, pos=Pos(1, 1), parent=root)
+
+        game_widget.boardwidget.set_visible_points(move)
+
+        assert not game_widget.boardwidget.intersections[Pos(0, 0)].isHidden()
+        assert game_widget.boardwidget.intersections[Pos(2, 2)].isHidden()
+
+        move.annos.sgf_properties["VW"] = [""]
+        game_widget.boardwidget.set_visible_points(move)
+
+        assert not game_widget.boardwidget.intersections[Pos(2, 2)].isHidden()
+
     def test_placement(self, game_widget: GameWidget):
         i1 = game_widget.boardwidget.intersections[Pos(0, 0)]
         game_widget.inter_clicked(i1, is_rightclick=False)
