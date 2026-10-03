@@ -236,6 +236,13 @@ class Parser:
                     else:
                         self.curr_cmd += char
 
+        if self.val_started:
+            raise self.ParsingError("Unterminated property value")
+        if self.node_started:
+            self.node_ended()
+        if self.variations:
+            raise self.ParsingError("Unterminated game tree")
+
     def notsupported(self, name):
         def named(*args, **kwargs):
             logging.warning("NOT SUPPORTED: %s %s %s", name, args, kwargs)

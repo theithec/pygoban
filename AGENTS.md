@@ -13,6 +13,15 @@ This project welcomes thoughtful improvements, bug fixes, and feature extensions
 - Use Pyrefly for type checking (`uv run pyrefly check`).
 - Do not use Black, isort, or Pylint; Ruff replaces those tools in the contributor workflow.
 
+## Refactoring Opportunities
+
+When working in these areas, consider focused refactors that clarify ownership and behavior. These are investigation targets, not a mandate for broad cleanup; add behavior tests first and keep changes incremental.
+
+- SGF parsing and writing (`pygoban/sgf/reader.py`, `pygoban/sgf/writer.py`): parsing, tree construction, property interpretation, and serialization currently share stateful paths. Consider separating tokenization, tree/property representation, and model conversion while preserving unknown properties and variations.
+- GTP lifecycle and protocol handling (`pygoban/gtp.py`): process management, reader-thread lifecycle, GTP parsing, role state, and game updates are coupled. Consider separating the process/session from role orchestration and extracting protocol parsing into testable functions. Cover restart, shutdown, and output handling with fake-process tests.
+- GUI intersection behavior (`pygoban/gui/intersections.py`, `pygoban/gui/gamewidget.py`): painting, input dispatch, annotations, analysis overlays, and hover-preview timers have overlapping responsibilities. Consider separating rendering and preview state from interaction handling; protect behavior with focused GUI tests.
+- Game, node replay, and rulesets (`pygoban/game.py`, `pygoban/nodescontroller.py`, `pygoban/rulesets/`): move transitions, board mutation, replay, captures, scoring, validation, and events cross these boundaries. Clarify and test the move/reset contract before extracting shared transition logic.
+
 ## Before Opening a Pull/Merge Request
 
 - Keep changes focused and consistent with the existing architecture and formatting.

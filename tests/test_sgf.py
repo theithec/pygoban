@@ -1,5 +1,7 @@
+import pytest
+
 from pygoban import Color, Game, NodesController, Pos, coords
-from pygoban.sgf.reader import parse
+from pygoban.sgf.reader import Parser, parse
 from pygoban.sgf.writer import write
 
 
@@ -72,3 +74,28 @@ def test_sgf_properties_are_preserved_and_written():
         "PL[B]",
     ):
         assert prop in serialized
+
+
+def test_sgf_variations_preserve_sibling_branches():
+    _, root = parse("(;GM[1]FF[4]SZ[9];B[aa](;W[bb];B[cc])(;W[dd]))", {})
+
+    first_black = root.children[0]
+    first_white, second_white = first_black.children
+
+    assert first_black.pos == Pos(0, 0)
+    assert first_white.pos == Pos(1, 1)
+    assert first_white.children[0].pos == Pos(2, 2)
+    assert second_white.pos == Pos(3, 3)
+    assert second_white.parent is first_black
+
+
+@pytest.mark.parametrize(
+    "sgf",
+    (
+        "(;GM[1]FF[4]SZ[9];B[aa]",
+        "(;GM[1]FF[4]SZ[9];B[aa",
+    ),
+)
+def test_sgf_rejects_unterminated_tree_or_property(sgf):
+    with pytest.raises(Parser.ParsingError):
+        parse(sgf, {})
