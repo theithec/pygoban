@@ -73,6 +73,7 @@ class GameWidget(GameUI):
         controller: MainGameController,
     ) -> None:
         super().__init__(parent=parent)
+        self.last_turn: results.TurnDone | None = None
         self.parties = parties
         self.main_ui = parent
         self.controller = controller

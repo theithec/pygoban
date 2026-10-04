@@ -141,9 +141,9 @@ class SettingsDialog(QDialog, CenteredMixin):
             gtp_nameedit = QLineEdit(name)
             gtp_nameedit.setMinimumWidth(80)
             gtp_nameedit.setMaximumWidth(80)
+            layout.addWidget(gtp_nameedit, index + 2, 1)
             gtp_cmdedit = QLineEdit(cmd)
             gtp_cmdedit.setMinimumWidth(180)
-            layout.addWidget(gtp_nameedit, index + 2, 1)
             layout.addWidget(gtp_cmdedit, index + 2, 2)
             gtp_checkbox_analyze = QCheckBox("")
             gtp_checkbox_analyze.setChecked(checked)
@@ -151,6 +151,9 @@ class SettingsDialog(QDialog, CenteredMixin):
             self.gtp_fields_list.append(
                 (gtp_nameedit, gtp_cmdedit, gtp_checkbox_analyze)
             )
+            # lbl = QLabel("Analyze Playouts")
+            # lbl.setMinimumWidth(80)
+            # layout.addWidget(lbl, 1, 4)
         return layout
 
     def save(self):

@@ -19,6 +19,8 @@ from PyQt6.QtGui import (  # pylint: disable=no-name-in-module
 )
 from PyQt6.QtWidgets import QWidget  # pylint: disable=no-name-in-module
 
+from pygoban.results import TurnDone
+
 from .. import Color, Intersection, Node, Pos
 from . import BASE_DIR, GameUI, GUIMode
 
@@ -91,7 +93,7 @@ class IntersectionWidget(QWidget):
         self.inter: Intersection | None = None
         self._analysis_moves: list[Pos | None] = []
         self._analysis_index = 0
-        self._analysis_color = Color.BLACK
+        self._analysis_color = Color.EMPTY
         self._analysis_timer = QTimer(self)
         self._analysis_timer.setSingleShot(True)
         self._analysis_timer.timeout.connect(self._show_next_analysis_move)
@@ -322,7 +324,7 @@ class IntersectionWidget(QWidget):
         )
 
     def _draw_analyzed_variation(
-        self, painter: QPainter, params: "InsParams", last_turn
+        self, painter: QPainter, params: "InsParams", last_turn: TurnDone
     ) -> None:
         analyzed_variation = last_turn.node.annos.progress.get(self.board_pos)
         if not analyzed_variation:

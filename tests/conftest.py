@@ -10,13 +10,11 @@ from pygoban import (
     GameInfo,
     MainGameController,
     Parties,
-    Pos,
     Settings,
     results,
 )
 from pygoban.gui import GUIMode
 from pygoban.gui.gamewidget import GameWidget  # , GuiReceiver
-from pygoban.gui.intersections import IntersectionWidget
 from pygoban.gui.mainwindow import MainWindow
 from pygoban.gui.players import GUIPlayer
 from pygoban.receivers import BaseReceiver
@@ -26,7 +24,7 @@ from pygoban.rulesets import japanese
 class TestReceiver(BaseReceiver):
     def __init__(self) -> None:
         super().__init__()
-        self.events = set([results.TurnDone])
+        self.events = {results.TurnDone}
 
     def received_turn(self, result: results.TurnDone) -> None:
         pass

@@ -122,7 +122,7 @@ class GTPController(BaseReceiver, SubGameController):
                 assert self.last_turn
                 self.last_own_move = (self.last_turn.next_color, pos)
                 self.play(self.last_turn.next_color, pos)
-            elif part := nextline[0:50].strip():
+            elif part := nextline[0:79].strip():
                 logging.debug("GTP OUT: %s", part)
             return res
 
@@ -282,7 +282,7 @@ class GTPController(BaseReceiver, SubGameController):
             self.do_cmd(f"genmove {result.next_color}")
 
         if Role.ANALYZE in self.roles or Role.ANALYZE_FULL in self.roles:
-            self.do_cmd(f"kata-analyze {result.next_color.name} 10")
+            self.do_cmd(f"kata-analyze {result.next_color.name} 400")
 
         self.got_turn = True
 
@@ -290,7 +290,7 @@ class GTPController(BaseReceiver, SubGameController):
         self.stop_process()
         self.roles.clear()
 
-    def received_annotated(self, result: results.AnnotationDone) -> None: ...
+    # def received_annotated(self, result: results.AnnotationDone) -> None: ...
 
     def received_count(self, result: results.Counted) -> None:
         for role in (Role.ANALYZE, Role.ANALYZE_FULL):

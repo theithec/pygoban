@@ -16,13 +16,13 @@ class Color(IntEnum):
     def short(self):
         return str(self.name)[0]
 
-    def is_empty(self):
+    def is_empty(self) -> bool:
         return self == self.EMPTY
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.name)[0]
 
-    def other(self):
+    def other(self) -> "Color":
         assert not self.is_empty()
         return self.WHITE if self.name == "BLACK" else self.BLACK
 

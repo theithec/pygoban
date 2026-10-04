@@ -19,7 +19,7 @@ class Annotations:  # pylint: disable=too-many-instance-attributes
     time_left: float = 0.0
     stones_left: int = 0
     periods_left: int = 0
-    progress: dict[Pos, Any] = field(default_factory=dict)
+    progress: dict[Pos, int] = field(default_factory=dict)
     infos: dict[str, str] = field(default_factory=dict)
     sgf_properties: dict[str, list[str]] = field(default_factory=dict)
     next_player: Color | None = None
