@@ -188,6 +188,9 @@ class IntersectionWidget(QWidget):
             width, width, params.size - (width * 2), params.size - (width * 2)
         )
 
+    def draw_x(self, painter, params):
+        self.draw_char("X", painter, params)
+
     def draw_triangle(self, painter, params):
         path = QPainterPath()
         fwidth = params.size // 8
@@ -213,7 +216,7 @@ class IntersectionWidget(QWidget):
         painter.strokePath(path, pen)
 
     def draw_owned(self, color, painter, params):
-        assert (owned_pixmap := get_pixmap(color))
+        owned_pixmap = get_pixmap(color)
         painter.setOpacity(0.5)
         painter.drawPixmap(
             QRect(
