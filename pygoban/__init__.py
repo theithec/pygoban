@@ -40,6 +40,7 @@ class Settings:
     byoyomi_num: int = 3
     byoyomi_stones: int = 1
     analysis_variation_interval_ms: int = 180
+    stone_sound_volume_percent: int = 100
 
 
 def get_argparser() -> argparse.ArgumentParser:
@@ -60,7 +61,6 @@ def get_argparser() -> argparse.ArgumentParser:
 
 
 __all__ = [
-    "get_argparser",
     "BaseReceiver",
     "Board",
     "Color",
@@ -77,4 +77,5 @@ __all__ = [
     "Pos",
     "SubGameController",
     "TimeSettings",
+    "get_argparser",
 ]

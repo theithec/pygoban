@@ -3,17 +3,23 @@
 from copy import copy
 from typing import TypeVar, cast
 
-from PyQt6.QtCore import Qt  # , pyqtSignal  # pylint: disable=no-name-in-module
+from PyQt6.QtCore import (  # , pyqtSignal  # pylint: disable=no-name-in-module
+    QSettings,
+    Qt,
+)
 from PyQt6.QtGui import QAction  # pylint: disable=no-name-in-module
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QFormLayout,
     QFrame,
     QHBoxLayout,
+    QLabel,
     QMenu,
     QPushButton,
     QSizePolicy,
+    QSlider,
     QSplitter,
     QWidget,
+    QWidgetAction,
 )
 
 from pygoban import gtp
@@ -80,6 +86,7 @@ class BarWidget(QFrame):
     def __init__(self, parent: GameUI):
         self.game_ui = parent
         super().__init__(parent)
+        self.qsettings = QSettings("theithec", "pygoban")
         self._layout = QFormLayout()
         self.btn_settings = QPushButton("\u2630")
         settings_layout = QHBoxLayout()
@@ -128,6 +135,28 @@ class BarWidget(QFrame):
             box.toggle_action = action
             vis.addAction(action)
             action.setChecked(box.isVisibleTo(self))
+
+        volume_widget = QWidget(menu)
+        volume_widget.setMinimumWidth(240)
+        volume_layout = QHBoxLayout(volume_widget)
+        volume_layout.setContentsMargins(12, 4, 12, 4)
+        volume_layout.addWidget(QLabel("Stone sound", volume_widget))
+        volume_slider = QSlider(Qt.Orientation.Horizontal, volume_widget)
+        volume_slider.setRange(0, 100)
+        volume_slider.setValue(
+            self.game_ui.main_ui.settings.stone_sound_volume_percent
+        )
+        volume_slider.setToolTip("Stone sound volume")
+        volume_slider.valueChanged.connect(self.set_stone_sound_volume)
+        volume_layout.addWidget(volume_slider)
+        volume_label = QLabel(f"{volume_slider.value()}%", volume_widget)
+        volume_slider.valueChanged.connect(
+            lambda value: volume_label.setText(f"{value}%")
+        )
+        volume_layout.addWidget(volume_label)
+        volume_action = QWidgetAction(menu)
+        volume_action.setDefaultWidget(volume_widget)
+        menu.addAction(volume_action)
 
         settings_action = QAction("Settings", self)
         menu.addAction(settings_action)
@@ -180,6 +209,11 @@ class BarWidget(QFrame):
             self.engines_menu.addMenu(engine_menu)
 
         return menu
+
+    def set_stone_sound_volume(self, volume_percent: int) -> None:
+        self.game_ui.main_ui.settings.stone_sound_volume_percent = volume_percent
+        self.game_ui.stonesound.setVolume(volume_percent / 100)
+        self.qsettings.setValue("sound/stone_volume_percent", volume_percent)
 
     def save_as_file(self):
         path = filedialog.filename_from_savedialog(parent=self)

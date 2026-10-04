@@ -96,6 +96,7 @@ def get_qsettings() -> QSettings:
         "analysis",
         {"variation_interval_ms": defaults.analysis_variation_interval_ms},
     )
+    ensure("sound", {"stone_volume_percent": defaults.stone_sound_volume_percent})
     ensure("gtp", {"engines": {}})
     return qsettings
 
@@ -115,6 +116,9 @@ def merged_config() -> Settings:
             argsdict[key] = qsettings.value(f"clock/{key}")
     argsdict["analysis_variation_interval_ms"] = int(
         qsettings.value("analysis/variation_interval_ms")
+    )
+    argsdict["stone_sound_volume_percent"] = int(
+        qsettings.value("sound/stone_volume_percent")
     )
     for vals in (
         ("black_name", "players/black_name"),

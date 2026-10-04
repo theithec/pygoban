@@ -1,5 +1,7 @@
 from unittest.mock import Mock, patch
 
+from PyQt6.QtWidgets import QSlider, QWidgetAction
+
 from pygoban import Color, Marker, Node, Pos, results
 from pygoban.gui import GUIMode
 from pygoban.gui.gamewidget import GameWidget, GuiReceiver
@@ -37,6 +39,22 @@ class TestGameWidget:
         assert game_widget.gui_mode == GUIMode.EDIT
         assert game_widget.initial_gui_mode == GUIMode.EDIT
         assert game_widget.show_analyzed_variation is False
+
+    def test_menu_volume_slider_updates_sound_and_settings(self, game_widget):
+        menu = game_widget.bar.btn_settings.menu()
+        volume_action = next(
+            action for action in menu.actions() if isinstance(action, QWidgetAction)
+        )
+        slider = volume_action.defaultWidget().findChild(QSlider)
+        assert slider is not None
+
+        qsettings = Mock()
+        game_widget.bar.qsettings = qsettings
+        slider.setValue(40)
+
+        assert game_widget.main_ui.settings.stone_sound_volume_percent == 40
+        assert int((game_widget.stonesound.volume() + 0.05) *10) == 4
+        qsettings.setValue.assert_called_once_with("sound/stone_volume_percent", 40)
 
     def test_gui_mode_property(self, game_widget: GameWidget):
         """Test gui_mode property setter and getter"""

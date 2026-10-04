@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QSpinBox
+from PyQt6.QtWidgets import QSlider, QSpinBox
 
 from pygoban.gui.settingsdialog import SettingsDialog
 
@@ -65,3 +65,26 @@ class TestMainWindow:
 
         assert main_window.settings.analysis_variation_interval_ms == 420
         assert dialog.qsettings.values["analysis/variation_interval_ms"] == 420
+
+    def test_stone_sound_volume_setting(self, main_window):
+        dialog = SettingsDialog(main_window)
+        slider = dialog.elems["stone_sound_volume_percent"]
+        assert isinstance(slider, QSlider)
+        assert slider.value() == 100
+
+        class MemorySettings:
+            def __init__(self):
+                self.values = {}
+
+            def setValue(self, name, value):
+                self.values[name] = value
+
+            def sync(self):
+                pass
+
+        dialog.qsettings = MemorySettings()
+        slider.setValue(35)
+        dialog.save()
+
+        assert main_window.settings.stone_sound_volume_percent == 35
+        assert dialog.qsettings.values["sound/stone_volume_percent"] == 35

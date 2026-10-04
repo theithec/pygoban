@@ -3,6 +3,7 @@ from collections import defaultdict
 from PyQt6.QtCore import (
     QCoreApplication,  # pylint: disable=no-name-in-module
     QSettings,  # pylint: disable=no-name-in-module
+    Qt,
 )
 from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QCheckBox,
@@ -13,6 +14,7 @@ from PyQt6.QtWidgets import (  # pylint: disable=no-name-in-module
     QLabel,
     QLineEdit,
     QPushButton,
+    QSlider,
     QSpinBox,
     QTabWidget,
     QVBoxLayout,
@@ -32,7 +34,9 @@ class SettingsDialog(QDialog, CenteredMixin):
     def __init__(self, parent) -> None:
         super().__init__(parent)
         self.settings: Settings = parent.settings
-        self.elems: dict[str, QComboBox | QLineEdit | QCheckBox | QSpinBox] = {}
+        self.elems: dict[
+            str, QComboBox | QLineEdit | QCheckBox | QSpinBox | QSlider
+        ] = {}
         self.qsettings = QSettings("theithec", "pygoban")
         self.widgets = defaultdict((lambda: QLineEdit), boardsize=QComboBox)  # type: ignore
         self.gtp_fields_list: list[tuple[QLineEdit, QLineEdit, QCheckBox]] = []
@@ -44,6 +48,7 @@ class SettingsDialog(QDialog, CenteredMixin):
         self.add_tab(_translate("SettingsDialog", "Defaults"), self.get_gamelayout())
         self.add_tab(_translate("SettingsDialog", "Player"), self.get_playerlayout())
         self.add_tab(_translate("SettingsDialog", "Clock"), self.get_timelayout())
+        self.add_tab(_translate("SettingsDialog", "Audio"), self.get_sound_layout())
         self.add_tab(_translate("SettingsDialog", "Engines"), self.get_gtplayout())
         ok_button = QPushButton("OK")
         ok_button.clicked.connect(self.save)
@@ -101,6 +106,24 @@ class SettingsDialog(QDialog, CenteredMixin):
             self.add_row(layout, name, None)
             self.elems[name].setText(str(getattr(self.settings, name)))
 
+        return layout
+
+    def get_sound_layout(self):
+        layout = QFormLayout()
+        volume_slider = QSlider(Qt.Orientation.Horizontal)
+        volume_slider.setRange(0, 100)
+        volume_slider.setValue(self.settings.stone_sound_volume_percent)
+        volume_label = QLabel(f"{volume_slider.value()}%")
+        volume_slider.valueChanged.connect(
+            lambda value: volume_label.setText(f"{value}%")
+        )
+        volume_row = QWidget()
+        volume_row_layout = QVBoxLayout(volume_row)
+        volume_row_layout.setContentsMargins(0, 0, 0, 0)
+        volume_row_layout.addWidget(volume_slider)
+        volume_row_layout.addWidget(volume_label)
+        layout.addRow("Stone sound", volume_row)
+        self.elems["stone_sound_volume_percent"] = volume_slider
         return layout
 
     def get_playerlayout(self):
@@ -177,6 +200,7 @@ class SettingsDialog(QDialog, CenteredMixin):
             "min_wait": "player/min_wait",
             "autosave": "player/autosave",
             "analysis_variation_interval_ms": "analysis/variation_interval_ms",
+            "stone_sound_volume_percent": "sound/stone_volume_percent",
         }
         for name, widget in handled.items():
             match widget.__class__.__name__:
@@ -185,6 +209,8 @@ class SettingsDialog(QDialog, CenteredMixin):
                 case "QCheckBox":
                     val = widget.isChecked()
                 case "QSpinBox":
+                    val = widget.value()
+                case "QSlider":
                     val = widget.value()
                 case "QLineEdit":
                     val = widget.text()

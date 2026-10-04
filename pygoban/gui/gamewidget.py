@@ -45,6 +45,9 @@ class GuiReceiver(BaseReceiver):
         if result.node.color != Color.EMPTY and result.node.pos:
             # Avoid warning:
             # QBasicTimer::start: QBasicTimer can only be used with threads started with QThread
+            self.game_ui.stonesound.setVolume(
+                self.game_ui.main_ui.settings.stone_sound_volume_percent / 100
+            )
             QTimer.singleShot(0, self.game_ui.stonesound.play)
 
     def received_annotated(self, result) -> None:
@@ -94,6 +97,7 @@ class GameWidget(GameUI):
 
         self.show_analyzed_variation = False
         self.stonesound = QSoundEffect()
+        self.stonesound.setVolume(parent.settings.stone_sound_volume_percent / 100)
         self.stonesound.setSource(
             QUrl.fromLocalFile(os.path.join(BASE_DIR, "gui/sounds/stone.wav"))
         )
