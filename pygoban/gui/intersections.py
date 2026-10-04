@@ -109,7 +109,6 @@ class IntersectionWidget(QWidget):
     def _show_next_analysis_move(self) -> None:
         if not self._analysis_moves or not self.game_ui.last_turn:
             return
-
         pos = self._analysis_moves[self._analysis_index]
         if pos is not None:
             self.game_ui.last_turn.node.annos.progress[pos] = (
@@ -278,10 +277,9 @@ class IntersectionWidget(QWidget):
         if color := annos.owned.get(self.board_pos):
             self.draw_owned(color, painter, params)
             marked = True
-        elif txt := annos.chars.get(self.board_pos):
+        elif txt := (annos.chars.get(self.board_pos) or  annos.numbers.get(self.board_pos)):
             self.draw_char(txt, painter, params)
             marked = True
-        elif txt := annos.numbers.get(self.board_pos):
             self.draw_char(txt, painter, params)
             marked = True
         return marked
@@ -404,21 +402,16 @@ class IntersectionWidget(QWidget):
         self._hover = False
         painter.end()
 
-    def eventFilter(self, _object, event):
+    def eventFilter(self, _object, event) -> bool:
         if not (last_turn := self.game_ui.last_turn):
             return False
 
-        if self.inter and self.inter.color == Color.EMPTY:
+        if self.inter and self.inter.color.is_empty():
             type_ = event.type()
-
-            analyzed_variation_stones = []
-            if rate := last_turn.node.annos.winrates.get(self.board_pos):
-                analyzed_variation_stones = rate[2]
-
             if type_ == QEvent.Type.Enter:
-                # and not self.controller.bar.inner.boxes["EditBox"].decogroup.checkedButton()
                 self._hover = True
-                if analyzed_variation_stones:
+                analyzed_variation_stones = []
+                if (rate := last_turn.node.annos.winrates.get(self.board_pos)) and (analyzed_variation_stones := rate[2].copy()):
                     self._clear_analysis_preview(last_turn)
                     self._analysis_moves = analyzed_variation_stones
                     self._analysis_color = last_turn.next_color
@@ -426,14 +419,9 @@ class IntersectionWidget(QWidget):
                     self._show_next_analysis_move()
                 else:
                     self.repaint()
-
                 return True
 
-            if (
-                type_ == QEvent.Type.Leave
-                # and not self.controller.bar.inner.boxes["EditBox"].decogroup.checkedButton()
-            ):
-                # if not self.controller.is_annotating:
+            if type_ == QEvent.Type.Leave:
                 self._hover = False
                 self._clear_analysis_preview(last_turn)
                 self.repaint()
