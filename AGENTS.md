@@ -11,7 +11,6 @@ This project welcomes thoughtful improvements, bug fixes, and feature extensions
 - Start the application with `uv run python -m pygoban.gui`.
 - Use Ruff for linting and formatting (`uv run ruff check .` and `uv run ruff format --check .`).
 - Use Pyrefly for type checking (`uv run pyrefly check`).
-- Do not use Black, isort, or Pylint; Ruff replaces those tools in the contributor workflow.
 
 ## Working from Issues
 
